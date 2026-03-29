@@ -21,7 +21,7 @@ export default function LogInPage() {
             <Text style={styles.label}>EMAIL ADDRESS</Text>
             <TextInput
               style={styles.input}
-              placeholder="analyst@agency.gov"
+              placeholder="forensic@agency.gov"
               placeholderTextColor="#4b5563"
               keyboardType="email-address"
               autoCapitalize="none"
