@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView, Platform, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React from 'react';
+import { Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function TargetUserScreen() {
   const router = useRouter();
@@ -11,9 +11,7 @@ export default function TargetUserScreen() {
   };
 
   const goTo = (screenId: string) => {
-    // Navigate to the next screen. Assuming id is standard route for now.
     console.log(`Navigate to ${screenId}`);
-    // example: router.push(`/${screenId}`);
   };
 
   return (
@@ -23,7 +21,7 @@ export default function TargetUserScreen() {
           <Feather name="chevron-left" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.navTitle}>Select Subject</Text>
-        <View style={{ width: 40 }} /> {/* Placeholder to balance the flex space */}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
@@ -32,7 +30,7 @@ export default function TargetUserScreen() {
 
         <View style={styles.searchBox}>
           <Feather name="search" size={20} color="#5A6A8A" style={styles.searchIcon} />
-          <TextInput 
+          <TextInput
             style={styles.searchInput}
             placeholder="Search by name or ID number..."
             placeholderTextColor="#8A8A8A"
@@ -110,7 +108,7 @@ export default function TargetUserScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0A0A0A', // Deep dark theme matching UserDashboard
+    backgroundColor: '#0A0A0A',
   },
   navBar: {
     flexDirection: 'row',
@@ -234,7 +232,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(40, 200, 64, 0.3)',
   },
   badgeGreenText: {
-    color: '#34D399', // bright green
+    color: '#34D399',
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -244,7 +242,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212, 136, 26, 0.3)',
   },
   badgeOrangeText: {
-    color: '#FBBF24', // bright orange
+    color: '#FBBF24',
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
