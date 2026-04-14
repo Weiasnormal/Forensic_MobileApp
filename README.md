@@ -55,7 +55,3 @@ npm run web
 - Investigator portal for document verification
 - Subject search and baseline selection
 
-## Notes
-
-- The app uses route-based navigation through Expo Router.
-- Some touch targets currently act as UI placeholders and can be wired to real navigation or backend logic later.
