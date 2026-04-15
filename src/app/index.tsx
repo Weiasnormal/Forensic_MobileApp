@@ -1,5 +1,5 @@
-import LogInPage from "./LogInPage";
+import IntroPage from "./_introPage";
 
 export default function Index() {
-  return <LogInPage />;
+  return <IntroPage />;
 }
