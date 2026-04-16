@@ -11,7 +11,6 @@ export default function LogInPage() {
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
         <View style={styles.hero}>
-          <Text style={styles.time}>9:41</Text>
           <View style={styles.heroCopy}>
             <Text style={styles.title}>Welcome back</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
