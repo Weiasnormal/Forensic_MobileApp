@@ -10,55 +10,63 @@ export default function LogInPage() {
     >
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-        <View style={styles.header}>
-          <Text style={styles.subtitle}>SECURE ACCESS</Text>
-          <Text style={styles.title}>Welcome</Text>
-          <Text style={styles.title}>Back</Text>
+        <View style={styles.hero}>
+          <Text style={styles.time}>9:41</Text>
+          <View style={styles.heroCopy}>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Sign in to continue</Text>
+          </View>
         </View>
 
-        <View style={styles.formContainer}>
+        <View style={styles.formCard}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>EMAIL ADDRESS</Text>
+            <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
-              placeholder="forensic@agency.gov"
-              placeholderTextColor="#4b5563"
+              placeholder="analyst.cruz@pnp.gov.ph"
+              placeholderTextColor="#a9b5c8"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
               defaultValue=""
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>PASSWORD</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••••••"
-              placeholderTextColor="#4b5563"
-              secureTextEntry
-              defaultValue=""
-            />
+          <View style={styles.passwordRow}>
+            <Text style={styles.label}>Password</Text>
+            <TouchableOpacity activeOpacity={0.7}>
+              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.forgotPasswordContainer}>
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#a9b5c8"
+            secureTextEntry
+            defaultValue=""
+          />
+
+          <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85}>
+            <Text style={styles.primaryButtonText}>Sign in</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Login as Admin</Text>
+          <View style={styles.separatorRow}>
+            <View style={styles.separatorLine} />
+            <Text style={styles.separatorText}>or</Text>
+            <View style={styles.separatorLine} />
+          </View>
+
+          <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.85}>
+            <Text style={styles.secondaryButtonText}>Continue with Google</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Login as Investigator</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.biometricButton}>
-            <Text style={styles.biometricButtonText}>Use Face ID / Fingerprint</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footerContainer}>
-          <Text style={styles.footerText}>Protected by end-to-end encryption</Text>
+          <View style={styles.footerRow}>
+            <Text style={styles.footerPrompt}>Dont have an account?</Text>
+            <TouchableOpacity activeOpacity={0.7}>
+              <Text style={styles.footerAction}>Create account</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -68,109 +76,140 @@ export default function LogInPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0E14',
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 80,
+    backgroundColor: '#ffffff',
+  },
+  hero: {
+    backgroundColor: '#0d4a86',
+    paddingHorizontal: 28,
+    paddingTop: 16,
     paddingBottom: 40,
-    justifyContent: 'space-between',
+    minHeight: 200,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
-  header: {
-    marginBottom: 40,
-  },
-  subtitle: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 11,
-    color: '#3b4b60',
-    letterSpacing: 2,
-    marginBottom: 16,
-    textTransform: 'uppercase',
+  time: {
+    color: '#f8fbff',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   title: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace',
-    fontSize: 36,
-    fontWeight: 'bold',
     color: '#ffffff',
-    lineHeight: 46,
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '800',
   },
-  formContainer: {
-    flex: 1,
+  subtitle: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 16,
+    lineHeight: 22,
+    marginTop: 4,
+    fontWeight: '400',
+  },
+  heroCopy: {
+    marginTop: 34,
+  },
+  formCard: {
+    paddingHorizontal: 28,
+    paddingTop: 18,
+    paddingBottom: 28,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   label: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontSize: 11,
-    color: '#3b4b60',
-    letterSpacing: 1,
-    marginBottom: 8,
+    color: '#9aa7b7',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
     textTransform: 'uppercase',
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#131823',
-    borderRadius: 8,
-    padding: 16,
-    color: '#ffffff',
+    backgroundColor: '#fbfcfe',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: '#1c2738',
     fontSize: 15,
     borderWidth: 1,
-    borderColor: '#1d2433',
+    borderColor: '#dce4ef',
+    shadowColor: '#d8e0eb',
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
-  forgotPasswordContainer: {
+  passwordRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 8,
+    justifyContent: 'space-between',
+    marginTop: 2,
+    marginBottom: 8,
   },
   forgotPasswordText: {
-    color: '#3A82F6',
-    fontSize: 14,
+    color: '#1c62c9',
+    fontSize: 12,
     fontWeight: '500',
   },
   primaryButton: {
-    backgroundColor: '#3A82F6',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#1761ab',
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 12,
+    marginTop: 20,
+    marginBottom: 16,
   },
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
-  secondaryButton: {
-    backgroundColor: '#1E2330',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  secondaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  biometricButton: {
+  separatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E2330',
+    marginBottom: 14,
   },
-  biometricButtonText: {
-    color: '#8b9bb4',
-    fontSize: 14,
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#dbe5f0',
   },
-  footerContainer: {
+  separatorText: {
+    color: '#a2adba',
+    fontSize: 13,
+    paddingHorizontal: 12,
+  },
+  secondaryButton: {
+    backgroundColor: '#f7f9fc',
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 40,
+    borderWidth: 1,
+    borderColor: '#dce4ef',
   },
-  footerText: {
-    fontSize: 11,
-    color: '#3b4b60',
+  secondaryButtonText: {
+    color: '#19253a',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  footerRow: {
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  footerPrompt: {
+    color: '#7a8797',
+    fontSize: 13,
+  },
+  footerAction: {
+    color: '#1761ab',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
