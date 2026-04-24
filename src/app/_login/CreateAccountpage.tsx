@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -39,7 +39,7 @@ export default function CreateAccountPage() {
 				<View style={styles.formArea}>
 					<TouchableOpacity style={styles.googleButton} activeOpacity={0.85}>
 						<Image
-							source={require('../../assets/googleIcon.webp')}
+							source={require('../../../assets/googleIcon.webp')}
 							style={styles.googleIcon}
 							contentFit="contain"
 						/>
@@ -137,7 +137,7 @@ export default function CreateAccountPage() {
 
 					<View style={styles.footerRow}>
 						<Text style={styles.footerPrompt}>Already have an account? </Text>
-						<TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/LogInPage')}>
+						<TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/_login/LogInPage')}>
 							<Text style={styles.footerLink}>Sign in</Text>
 						</TouchableOpacity>
 					</View>

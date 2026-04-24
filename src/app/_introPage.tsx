@@ -1,6 +1,5 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
 import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 const logo = require('../../assets/expo.icon/Assets/Avera_Logo.webp');
@@ -10,11 +9,11 @@ export default function IntroPage() {
 	const router = useRouter();
 
 	const handleGetStarted = () => {
-		router.push('/LogInPage');
+		router.push('/_login/LogInPage');
 	};
 
 	const handleSignIn = () => {
-		router.push('/LogInPage');
+		router.push('/_login/LogInPage');
 	};
 
 	return (

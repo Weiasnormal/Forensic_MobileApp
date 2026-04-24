@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LogInPage() {
+  const router = useRouter();
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -35,7 +38,7 @@ export default function LogInPage() {
         <View style={styles.formCard}>
           <TouchableOpacity style={styles.googleButton} activeOpacity={0.85}>
             <Image
-              source={require('../../assets/googleIcon.webp')}
+                    source={require('../../../assets/googleIcon.webp')}
               style={styles.googleIcon}
               contentFit="contain"
             />
@@ -81,7 +84,11 @@ export default function LogInPage() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.85}
+            onPress={() => router.push('/User/user_dashboard')}
+          >
             <Text style={styles.primaryButtonText}>Sign in</Text>
           </TouchableOpacity>
 

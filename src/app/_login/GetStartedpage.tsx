@@ -99,13 +99,12 @@ const GetStartedPage: React.FC = () => {
     if (currentIndex < slides.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Navigate to signup page
-      //router.push('/_login/CreateAccountpage');
+      router.push('/_login/CreateAccountpage');
     }
   };
 
   const handleSkip = () => {
-    //router.push('/_login/LogInPage');
+    router.push('/_login/LogInPage');
   };
 
   const currentSlide = slides[currentIndex];
