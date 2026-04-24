@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
 	Animated,
@@ -10,6 +11,7 @@ import {
 	View,
 } from 'react-native';
 
+import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { useBottomSheetTransition } from '../transition';
 
 interface NewAnalysisModalProps {
@@ -52,6 +54,32 @@ const options: Array<{
 ];
 
 export default function NewAnalysisModal({ visible, onClose }: NewAnalysisModalProps) {
+	const router = useRouter();
+	const nav = router as any;
+	const initializeFlow = useAnalysisFlowStore((state) => state.initializeFlow);
+
+	const handleOptionPress = (key: string) => {
+		if (key === 'signature') {
+			initializeFlow('signature');
+			onClose();
+			setTimeout(() => {
+				nav.push('/analysis/signature/step1');
+			}, 220);
+			return;
+		}
+
+		if (key === 'handwriting') {
+			initializeFlow('handwriting');
+			onClose();
+			setTimeout(() => {
+				nav.push('/analysis/handwriting/step1');
+			}, 220);
+			return;
+		}
+
+		onClose();
+	};
+
 	const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } = useBottomSheetTransition({
 		visible,
 		onClose,
@@ -78,7 +106,11 @@ export default function NewAnalysisModal({ visible, onClose }: NewAnalysisModalP
 
 					<View style={styles.actionList}>
 						{options.map((option) => (
-							<ActionButton key={option.key} option={option} />
+							<ActionButton
+								key={option.key}
+								option={option}
+								onPress={() => handleOptionPress(option.key)}
+							/>
 						))}
 					</View>
 
@@ -91,9 +123,19 @@ export default function NewAnalysisModal({ visible, onClose }: NewAnalysisModalP
 	);
 }
 
-function ActionButton({ option }: { option: (typeof options)[number] }) {
+function ActionButton({
+	option,
+	onPress,
+}: {
+	option: (typeof options)[number];
+	onPress: () => void;
+}) {
 	return (
-		<TouchableOpacity style={[styles.actionButton, { borderColor: option.borderColor }]} activeOpacity={0.84}>
+		<TouchableOpacity
+			style={[styles.actionButton, { borderColor: option.borderColor }]}
+			activeOpacity={0.84}
+			onPress={onPress}
+		>
 			<View style={[styles.actionIconWrap, { backgroundColor: option.iconBackground }]}> 
 				<Ionicons name={option.icon} size={18} color="#FFFFFF" />
 			</View>
