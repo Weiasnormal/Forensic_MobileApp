@@ -121,7 +121,7 @@ export default function CreateAccountPage() {
 					<TouchableOpacity
 						style={styles.primaryButton}
 						activeOpacity={0.85}
-						onPress={() => router.push('/User/target_user')}
+						onPress={() => router.push('/User/user_dashboard')}
 					>
 						<Text style={styles.primaryButtonText}>Create account</Text>
 					</TouchableOpacity>
