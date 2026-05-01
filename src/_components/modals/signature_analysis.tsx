@@ -2,20 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
-    Alert,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View
+  Alert,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
 } from 'react-native';
 
 import {
-    hasCompleteUploads,
-    useAnalysisFlowStore,
-    type AnalysisPriority,
+  hasCompleteUploads,
+  useAnalysisFlowStore,
+  type AnalysisPriority,
 } from '../../store/analysisFlowStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 import UploadSlot from '../analysis/UploadSlot';
@@ -91,9 +91,11 @@ export function SignatureCaseDetailsScreen() {
   const nav = router as any;
   const flow = useAnalysisFlowStore((state) => state.signature);
   const setSubjectName = useAnalysisFlowStore((state) => state.setSubjectName);
+  const setExaminerName = useAnalysisFlowStore((state) => state.setExaminerName);
   const setDocumentType = useAnalysisFlowStore((state) => state.setDocumentType);
   const setPriority = useAnalysisFlowStore((state) => state.setPriority);
-  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
+  const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
+  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.examinerName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
 
   return (
         <SafeAreaView style={styles.screen}>
@@ -117,21 +119,47 @@ export function SignatureCaseDetailsScreen() {
             style={styles.input}
           />
 
+          <FieldLabel label="Examiner name" />
+          <TextInput
+            value={flow.caseDetails.examinerName}
+            onChangeText={(value) => setExaminerName('signature', value)}
+            placeholder="Enter examiner name"
+            placeholderTextColor="#94A3B8"
+            style={styles.input}
+          />
+
           <FieldLabel label="Document type" />
-          <View style={styles.optionWrap}>
-            {documentOptions.map((option) => {
-              const selected = flow.caseDetails.documentType === option;
-              return (
+          <Pressable
+            onPress={() => setShowDocumentDropdown(!showDocumentDropdown)}
+            style={styles.dropdownButton}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {flow.caseDetails.documentType || 'Select document type'}
+            </Text>
+            <Ionicons
+              name={showDocumentDropdown ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#0F172A"
+            />
+          </Pressable>
+          {showDocumentDropdown && (
+            <View style={styles.dropdownMenu}>
+              {documentOptions.map((option) => (
                 <Pressable
                   key={option}
-                  onPress={() => setDocumentType('signature', option)}
-                  style={[styles.selectChip, selected && { backgroundColor: '#DBEAFE', borderColor: '#BFDBFE' }]}
+                  onPress={() => {
+                    setDocumentType('signature', option);
+                    setShowDocumentDropdown(false);
+                  }}
+                  style={[styles.dropdownItem, flow.caseDetails.documentType === option && styles.dropdownItemSelected]}
                 >
-                  <Text style={[styles.selectChipText, selected && { color: '#1D4ED8' }]}>{option}</Text>
+                  <Text style={[styles.dropdownItemText, flow.caseDetails.documentType === option && styles.dropdownItemTextSelected]}>
+                    {option}
+                  </Text>
                 </Pressable>
-              );
-            })}
-          </View>
+              ))}
+            </View>
+          )}
 
           <FieldLabel label="Priority" />
           <View style={styles.priorityRow}>
@@ -751,5 +779,47 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#DBEAFE',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  dropdownItemTextSelected: {
+    color: '#1D4ED8',
+    fontWeight: '700',
   },
 });

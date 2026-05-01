@@ -6,6 +6,7 @@ export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export interface AnalysisCaseDetails {
   caseId: string;
   subjectName: string;
+  examinerName: string;
   documentType: string;
   priority: AnalysisPriority;
 }
@@ -26,6 +27,7 @@ interface AnalysisFlowStore {
   nextCaseNumber: number;
   initializeFlow: (type: AnalysisFlowType) => void;
   setSubjectName: (type: AnalysisFlowType, value: string) => void;
+  setExaminerName: (type: AnalysisFlowType, value: string) => void;
   setDocumentType: (type: AnalysisFlowType, value: string) => void;
   setPriority: (type: AnalysisFlowType, value: AnalysisPriority) => void;
   setReference: (type: AnalysisFlowType, index: number, uri: string | null) => void;
@@ -36,7 +38,12 @@ interface AnalysisFlowStore {
 const INITIAL_PRIORITY: AnalysisPriority = 'Medium';
 
 function buildCaseId(caseNumber: number) {
-  return `CASE-${new Date().getFullYear()}-${String(caseNumber).padStart(4, '0')}`;
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const year = now.getFullYear();
+  const counter = String(caseNumber).padStart(3, '0');
+  return `${month}-${day}-${year}-${counter}`;
 }
 
 function createInitialFlow(caseId: string): AnalysisFlowState {
@@ -44,6 +51,7 @@ function createInitialFlow(caseId: string): AnalysisFlowState {
     caseDetails: {
       caseId,
       subjectName: '',
+      examinerName: '',
       documentType: '',
       priority: INITIAL_PRIORITY,
     },
@@ -65,13 +73,13 @@ function withUpdatedFlow(
   };
 }
 
-const initialSignatureId = buildCaseId(49);
-const initialHandwritingId = buildCaseId(50);
+const initialSignatureId = buildCaseId(1);
+const initialHandwritingId = buildCaseId(2);
 
 export const useAnalysisFlowStore = create<AnalysisFlowStore>((set) => ({
   signature: createInitialFlow(initialSignatureId),
   handwriting: createInitialFlow(initialHandwritingId),
-  nextCaseNumber: 51,
+  nextCaseNumber: 3,
 
   initializeFlow: (type) =>
     set((state) => {
@@ -89,6 +97,17 @@ export const useAnalysisFlowStore = create<AnalysisFlowStore>((set) => ({
         caseDetails: {
           ...flow.caseDetails,
           subjectName: value,
+        },
+      })),
+    ),
+
+  setExaminerName: (type, value) =>
+    set((state) =>
+      withUpdatedFlow(state, type, (flow) => ({
+        ...flow,
+        caseDetails: {
+          ...flow.caseDetails,
+          examinerName: value,
         },
       })),
     ),
