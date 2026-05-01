@@ -9,7 +9,7 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    View,
+    View
 } from 'react-native';
 
 import {
@@ -91,9 +91,11 @@ export function HandwritingCaseDetailsScreen() {
   const nav = router as any;
   const flow = useAnalysisFlowStore((state) => state.handwriting);
   const setSubjectName = useAnalysisFlowStore((state) => state.setSubjectName);
+  const setExaminerName = useAnalysisFlowStore((state) => state.setExaminerName);
   const setDocumentType = useAnalysisFlowStore((state) => state.setDocumentType);
   const setPriority = useAnalysisFlowStore((state) => state.setPriority);
-  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
+  const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
+  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.examinerName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -116,21 +118,47 @@ export function HandwritingCaseDetailsScreen() {
             style={styles.input}
           />
 
+          <FieldLabel label="Examiner name" />
+          <TextInput
+            value={flow.caseDetails.examinerName}
+            onChangeText={(value) => setExaminerName('handwriting', value)}
+            placeholder="Enter examiner name"
+            placeholderTextColor="#94A3B8"
+            style={styles.input}
+          />
+
           <FieldLabel label="Document type" />
-          <View style={styles.optionWrap}>
-            {documentOptions.map((option) => {
-              const selected = flow.caseDetails.documentType === option;
-              return (
+          <Pressable
+            onPress={() => setShowDocumentDropdown(!showDocumentDropdown)}
+            style={styles.dropdownButton}
+          >
+            <Text style={styles.dropdownButtonText}>
+              {flow.caseDetails.documentType || 'Select document type'}
+            </Text>
+            <Ionicons
+              name={showDocumentDropdown ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#0F172A"
+            />
+          </Pressable>
+          {showDocumentDropdown && (
+            <View style={styles.dropdownMenu}>
+              {documentOptions.map((option) => (
                 <Pressable
                   key={option}
-                  onPress={() => setDocumentType('handwriting', option)}
-                  style={[styles.selectChip, selected && { backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }]}
+                  onPress={() => {
+                    setDocumentType('handwriting', option);
+                    setShowDocumentDropdown(false);
+                  }}
+                  style={[styles.dropdownItem, flow.caseDetails.documentType === option && styles.dropdownItemSelected]}
                 >
-                  <Text style={[styles.selectChipText, selected && { color: '#166534' }]}>{option}</Text>
+                  <Text style={[styles.dropdownItemText, flow.caseDetails.documentType === option && styles.dropdownItemTextSelected]}>
+                    {option}
+                  </Text>
                 </Pressable>
-              );
-            })}
-          </View>
+              ))}
+            </View>
+          )}
 
           <FieldLabel label="Priority" />
           <View style={styles.priorityRow}>
@@ -800,5 +828,47 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#DCFCE7',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  dropdownItemTextSelected: {
+    color: '#166534',
+    fontWeight: '700',
   },
 });
