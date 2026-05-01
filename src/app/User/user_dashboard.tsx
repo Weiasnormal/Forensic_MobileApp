@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-  import NewAnalysisModal from '../../_components/modals/new_analysis';
+import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import CasesScreen from './user_cases';
 import ProfileScreen from './user_profile';
@@ -88,7 +89,14 @@ const statsBars = [
 
 export default function UserDashboardScreen() {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
-  const [isNewAnalysisVisible, setIsNewAnalysisVisible] = useState(false);
+  const router = useRouter();
+  const nav = router as any;
+  const initializeFlow = useAnalysisFlowStore((state) => state.initializeFlow);
+
+  const handleNewAnalysisPress = () => {
+    initializeFlow('signature');
+    nav.push('/analysis/signature/step1');
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -121,12 +129,7 @@ export default function UserDashboardScreen() {
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onNewPress={() => setIsNewAnalysisVisible(true)}
-      />
-
-      <NewAnalysisModal
-        visible={isNewAnalysisVisible}
-        onClose={() => setIsNewAnalysisVisible(false)}
+        onNewPress={handleNewAnalysisPress}
       />
     </SafeAreaView>
   );
