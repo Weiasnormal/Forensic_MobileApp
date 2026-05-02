@@ -21,6 +21,10 @@ export default function LogInPage() {
   };
 
   const emailPlaceholder = roleConfig[activeRole].emailPlaceholder;
+  const forgotPasswordRoute = {
+    pathname: '/_login/forgot_password/enterEmail' as const,
+    params: { role: activeRole },
+  };
 
   const handleSignIn = () => {
     router.push(roleConfig[activeRole].redirectTo);
@@ -29,10 +33,10 @@ export default function LogInPage() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar style="light" translucent backgroundColor="#2D72D1" />
-      <ScrollView contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} color="#EAF3FF" />
@@ -91,7 +95,11 @@ export default function LogInPage() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={styles.forgotPasswordWrap} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.forgotPasswordWrap}
+                activeOpacity={0.7}
+                onPress={() => router.push(forgotPasswordRoute)}
+              >
                 <Text allowFontScaling={false} style={styles.forgotPasswordText}>Forgot password?</Text>
               </TouchableOpacity>
             </View>
@@ -127,6 +135,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 10,
+    backgroundColor: '#ffffff',
+  },
+  scrollView: {
+    flex: 1,
     backgroundColor: '#ffffff',
   },
   hero: {
