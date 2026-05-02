@@ -38,11 +38,9 @@ export default function IntroPage() {
 				<View style={styles.logoLockup}>
 					<Image source={averaMark} style={styles.logo} resizeMode="contain" />
 
-					{rippleStage === 'brand' ? (
-						<Animated.Text style={[styles.brandName, { opacity: brandOpacity, transform: [{ translateY: brandTranslateY }] }]}>
-							Avera
-						</Animated.Text>
-					) : null}
+					<Animated.Text style={[styles.brandName, { opacity: brandOpacity, transform: [{ translateY: brandTranslateY }] }]}>
+						Avera
+					</Animated.Text>
 				</View>
 			</View>
 		</SafeAreaView>

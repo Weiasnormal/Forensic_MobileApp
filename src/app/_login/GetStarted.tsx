@@ -17,7 +17,7 @@ export default function GetStartedPage() {
 	};
 
 	const handleSignIn = () => {
-		router.push('/_login/LogInPage');
+		router.push('/_login/SignInPage');
 	};
 
 	useEffect(() => {

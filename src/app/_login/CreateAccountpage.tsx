@@ -4,14 +4,14 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+	KeyboardAvoidingView,
+	Platform,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from 'react-native';
 
 export default function CreateAccountPage() {
@@ -137,7 +137,7 @@ export default function CreateAccountPage() {
 
 					<View style={styles.footerRow}>
 						<Text style={styles.footerPrompt}>Already have an account? </Text>
-						<TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/_login/LogInPage')}>
+						<TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/_login/SignInPage')}>
 							<Text style={styles.footerLink}>Sign in</Text>
 						</TouchableOpacity>
 					</View>
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
 		backgroundColor: 'rgba(255,255,255,0.12)',
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginBottom: 18,
+		marginBottom: 20,
 	},
 	title: {
 		color: '#ffffff',
