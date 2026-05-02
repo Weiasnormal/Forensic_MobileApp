@@ -2,20 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
-  Alert,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  hasCompleteUploads,
-  useAnalysisFlowStore,
-  type AnalysisPriority,
+    hasCompleteUploads,
+    useAnalysisFlowStore,
+    type AnalysisPriority,
 } from '../../store/analysisFlowStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 import UploadSlot from '../analysis/UploadSlot';

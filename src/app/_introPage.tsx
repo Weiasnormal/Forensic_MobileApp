@@ -1,43 +1,48 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Animated, Image, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const logo = require('../../assets/expo.icon/Assets/Avera_Logo.webp');
-const orb = require('../../assets/expo.icon/Assets/orb1.webp');
+import { useRippleTransition } from '../_components/transition';
+
+const averaMark = require('../../assets/expo.icon/Assets/Avera_Logo.webp');
 
 export default function IntroPage() {
 	const router = useRouter();
 
-	const handleGetStarted = () => {
-		router.push('/_login/LogInPage');
-	};
+	const { stage: rippleStage, rippleStyle, brandOpacity, brandTranslateY } = useRippleTransition({
+		width: 390,
+		height: 844,
+	});
 
-	const handleSignIn = () => {
-		router.push('/_login/LogInPage');
-	};
+	useEffect(() => {
+		if (rippleStage !== 'brand') {
+			return;
+		}
+
+		const finalTimer = setTimeout(() => {
+			router.replace('/_login/GetStarted');
+		}, 2000);
+
+		return () => clearTimeout(finalTimer);
+	}, [router, rippleStage]);
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<StatusBar style="light" />
 
-			<View style={styles.container}>
-				<Image source={orb} style={styles.topOrb} resizeMode="cover" />
-				<Image source={orb} style={styles.bottomOrb} resizeMode="cover" />
+			<View style={[styles.container, rippleStage === 'splash' ? styles.splashStage : styles.brandStage]}>
+				<Animated.View pointerEvents="none" style={[styles.ripple, rippleStyle]} />
 
-				<View style={styles.logoWrapper}>
-					<Image source={logo} style={styles.logo} resizeMode="contain" />
-					<Text style={styles.brandName}>Avera</Text>
-					<Text style={styles.tagline}>FORENSIC SIGNATURE ANALYSIS</Text>
-				</View>
+				<View style={styles.logoLockup}>
+					<Image source={averaMark} style={styles.logo} resizeMode="contain" />
 
-				<View style={styles.buttonContainer}>
-					<Pressable style={styles.primaryButton} onPress={handleGetStarted}>
-						<Text style={styles.primaryButtonText}>Get started</Text>
-					</Pressable>
-
-					<Pressable style={styles.secondaryButton} onPress={handleSignIn}>
-						<Text style={styles.secondaryButtonText}>Sign in</Text>
-					</Pressable>
+					{rippleStage === 'brand' ? (
+						<Animated.Text style={[styles.brandName, { opacity: brandOpacity, transform: [{ translateY: brandTranslateY }] }]}>
+							Avera
+						</Animated.Text>
+					) : null}
 				</View>
 			</View>
 		</SafeAreaView>
@@ -47,81 +52,40 @@ export default function IntroPage() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#042D5B',
+		backgroundColor: '#000000',
 	},
 	container: {
 		flex: 1,
-		backgroundColor: '#042D5B',
 		overflow: 'hidden',
-		justifyContent: 'space-between',
-		paddingHorizontal: 28,
-		paddingTop: 24,
-		paddingBottom: 44,
 	},
-	topOrb: {
+	splashStage: {
+		backgroundColor: '#000000',
+	},
+	brandStage: {
+		backgroundColor: '#2A71D8',
+	},
+	ripple: {
 		position: 'absolute',
-		width: 325,
-		height: 325,
-		top: -84,
-		left: -90,
-		opacity: 0.92,
 	},
-	bottomOrb: {
+	logoLockup: {
 		position: 'absolute',
-		width: 230,
-		height: 230,
-		bottom: 72,
-		left: -90,
-		opacity: 0.92,
-	},
-	logoWrapper: {
+		left: 0,
+		right: 0,
+		top: 0,
+		bottom: 0,
 		alignItems: 'center',
-		marginTop: 170,
+		justifyContent: 'center',
 	},
 	logo: {
-		width: 148,
-		height: 128,
+		width: 155,
+		height: 98,
 	},
 	brandName: {
-		color: '#F5F7FB',
-		fontSize: 50,
-		fontWeight: '700',
-		lineHeight: 44,
-		letterSpacing: 0.3,
-	},
-	tagline: {
-		marginTop: 8,
-		color: '#6E8BAE',
-		fontSize: 12,
-		fontWeight: '600',
-		letterSpacing: 0.9,
-	},
-	buttonContainer: {
-		width: '100%',
-		gap: 12,
-	},
-	primaryButton: {
-		height: 50,
-		borderRadius: 12,
-		backgroundColor: '#E4E5E7',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	primaryButtonText: {
-		color: '#1A4D86',
-		fontSize: 19,
-		fontWeight: '700',
-	},
-	secondaryButton: {
-		height: 50,
-		borderRadius: 12,
-		backgroundColor: '#1B4A7C',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	secondaryButtonText: {
-		color: '#F3F7FF',
-		fontSize: 19,
-		fontWeight: '700',
+		marginTop: 4,
+		color: '#FFFFFF',
+		fontSize: 34,
+		fontWeight: '800',
+		letterSpacing: 0.2,
+		textAlign: 'center',
 	},
 });

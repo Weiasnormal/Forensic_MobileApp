@@ -1,7 +1,8 @@
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AdminDashboard() {
   const router = useRouter();
