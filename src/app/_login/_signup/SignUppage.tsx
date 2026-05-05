@@ -51,7 +51,7 @@ export default function SignUpPage() {
 	return (
 		<KeyboardAvoidingView
 			style={styles.container}
-			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
 		>
 			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
 
@@ -98,28 +98,30 @@ export default function SignUpPage() {
 						</TouchableOpacity>
 					</View>
 
-					<View style={styles.fieldGroup}>
-						<Text style={styles.label}>First name</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Your first name"
-							placeholderTextColor="#94a3b8"
-							autoCapitalize="words"
-							value={firstName}
-							onChangeText={setFirstName}
-						/>
-					</View>
+					<View style={styles.nameRow}>
+						<View style={[styles.fieldGroup, styles.halfField]}>
+							<Text style={styles.label}>First name</Text>
+							<TextInput
+								style={styles.input}
+								placeholder="Your first name"
+								placeholderTextColor="#94a3b8"
+								autoCapitalize="words"
+								value={firstName}
+								onChangeText={setFirstName}
+							/>
+						</View>
 
-					<View style={styles.fieldGroup}>
-						<Text style={styles.label}>Last Name</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Your last name"
-							placeholderTextColor="#94a3b8"
-							autoCapitalize="words"
-							value={lastName}
-							onChangeText={setLastName}
-						/>
+						<View style={[styles.fieldGroup, styles.halfField]}>
+							<Text style={styles.label}>Last Name</Text>
+							<TextInput
+								style={styles.input}
+								placeholder="Your last name"
+								placeholderTextColor="#94a3b8"
+								autoCapitalize="words"
+								value={lastName}
+								onChangeText={setLastName}
+							/>
+						</View>
 					</View>
 
 					<View style={styles.fieldGroup}>
@@ -208,6 +210,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#ffffff',
+
 	},
 	scrollView: {
 		flex: 1,
@@ -256,37 +259,41 @@ const styles = StyleSheet.create({
 		backgroundColor: '#FFFFFF',
 		paddingHorizontal: 16,
 		paddingTop: 24,
-		paddingBottom: 20,
+		paddingBottom:20,
 	},
 	roleTabsContainer: {
 		flexDirection: 'row',
-		gap: 12,
-		marginBottom: 20,
+		backgroundColor: '#E8EDF5',
+		borderRadius: 18,
+		padding: 4,
+		marginBottom: 22,
 	},
 	roleTab: {
 		flex: 1,
-		paddingVertical: 11,
-		paddingHorizontal: 16,
-		borderRadius: 18,
-		borderWidth: 1,
-		borderColor: '#D0DAE8',
-		backgroundColor: '#ffffff',
+		borderRadius: 14,
+		paddingVertical: 9,
 		alignItems: 'center',
 	},
 	roleTabActive: {
 		backgroundColor: '#2D72D1',
-		borderColor: '#2D72D1',
 	},
 	roleTabText: {
-		color: '#64748b',
+		color: '#3F3F3F',
 		fontSize: 13,
 		fontWeight: '700',
 	},
 	roleTabTextActive: {
-		color: '#ffffff',
+		color: '#F7FBFF',
+	},
+	nameRow: {
+		flexDirection: 'row',
+		gap: 10,
 	},
 	fieldGroup: {
 		marginBottom: 14,
+	},
+	halfField: {
+		flex: 1,
 	},
 	label: {
 		color: '#8A99AE',

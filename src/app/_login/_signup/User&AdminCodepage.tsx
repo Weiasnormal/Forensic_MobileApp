@@ -22,7 +22,7 @@ const ROLE_CONFIG = {
 		noCodeText: 'No code yet? Ask your organization admin',
 	},
 	admin: {
-		title: 'Join Your Organization',
+		title: 'Activate Your Account',
 		subtitle: 'Enter the code your Super Admin gave you',
 		noCodeText: 'No code yet? Reach out to your Super Admin',
 	},
@@ -70,7 +70,7 @@ export default function UserAndAdminCodePage() {
 	return (
 		<KeyboardAvoidingView
 			style={styles.container}
-			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
 		>
 			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
 
