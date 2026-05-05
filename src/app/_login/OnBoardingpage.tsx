@@ -44,11 +44,11 @@ export default function OnBoardingPage() {
 			return;
 		}
 
-		router.push('/_login/SignInPage');
+		router.push('/_login/_signup/SignUppage');
 	};
 
 	const handleSkip = () => {
-		router.push('/_login/SignInPage');
+		router.push('/_login/_signup/SignUppage');
 	};
 
 	const progressSegments = useMemo(

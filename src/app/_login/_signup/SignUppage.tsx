@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -14,51 +13,112 @@ import {
 	View,
 } from 'react-native';
 
-export default function CreateAccountPage() {
+type SignupRole = 'analyst' | 'admin';
+
+const ROLE_CONFIG = {
+	analyst: {
+		roleLabel: 'Forensic Analyst',
+		subtitle: 'Almost there. Joining as a Forensic Analyst',
+		emailPlaceholder: 'user@institution.gov.ph',
+	},
+	admin: {
+		roleLabel: 'Org Admin',
+		subtitle: 'Almost there. Joining as an Admin',
+		emailPlaceholder: 'admin@institution.gov.ph',
+	},
+} as const;
+
+export default function SignUpPage() {
 	const router = useRouter();
+	const [activeRole, setActiveRole] = useState<SignupRole>('analyst');
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [firstName, setFirstName] = useState('');
+	const [lastName, setLastName] = useState('');
+	const [email, setEmail] = useState('');
+	const [password, setPassword] = useState('');
+	const [confirmPassword, setConfirmPassword] = useState('');
+
+	const roleConfig = ROLE_CONFIG[activeRole];
+
+	const handleContinue = () => {
+		router.push({
+			pathname: '/_login/_signup/User&AdminCodepage',
+			params: { role: activeRole },
+		});
+	};
 
 	return (
 		<KeyboardAvoidingView
 			style={styles.container}
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 		>
-			<StatusBar style="light" />
+			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
 
-			<ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
+			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={20} color="#ffffff" />
+						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
 					</TouchableOpacity>
 
-					<Text style={styles.title}>Create account</Text>
-					<Text style={styles.subtitle}>Join as a forensic analyst</Text>
+					<Text style={styles.title}>Set Up Your Account</Text>
+					<Text style={styles.subtitle}>{roleConfig.subtitle}</Text>
 				</View>
 
 				<View style={styles.formArea}>
-					<TouchableOpacity style={styles.googleButton} activeOpacity={0.85}>
-						<Image
-							source={require('../../../assets/googleIcon.webp')}
-							style={styles.googleIcon}
-							contentFit="contain"
-						/>
-						<Text style={styles.googleButtonText}>Sign up with Google</Text>
-					</TouchableOpacity>
+					<View style={styles.roleTabsContainer}>
+						<TouchableOpacity
+							style={[styles.roleTab, activeRole === 'analyst' && styles.roleTabActive]}
+							activeOpacity={0.8}
+							onPress={() => setActiveRole('analyst')}
+						>
+							<Text
+								style={[
+									styles.roleTabText,
+									activeRole === 'analyst' && styles.roleTabTextActive,
+								]}
+							>
+								Forensic Analyst
+							</Text>
+						</TouchableOpacity>
 
-					<View style={styles.dividerRow}>
-						<View style={styles.dividerLine} />
-						<Text style={styles.dividerText}>or</Text>
-						<View style={styles.dividerLine} />
+						<TouchableOpacity
+							style={[styles.roleTab, activeRole === 'admin' && styles.roleTabActive]}
+							activeOpacity={0.8}
+							onPress={() => setActiveRole('admin')}
+						>
+							<Text
+								style={[
+									styles.roleTabText,
+									activeRole === 'admin' && styles.roleTabTextActive,
+								]}
+							>
+								Org Admin
+							</Text>
+						</TouchableOpacity>
 					</View>
 
 					<View style={styles.fieldGroup}>
-						<Text style={styles.label}>Full name</Text>
+						<Text style={styles.label}>First name</Text>
 						<TextInput
 							style={styles.input}
-							placeholder="Your full name"
+							placeholder="Your first name"
 							placeholderTextColor="#94a3b8"
 							autoCapitalize="words"
+							value={firstName}
+							onChangeText={setFirstName}
+						/>
+					</View>
+
+					<View style={styles.fieldGroup}>
+						<Text style={styles.label}>Last Name</Text>
+						<TextInput
+							style={styles.input}
+							placeholder="Your last name"
+							placeholderTextColor="#94a3b8"
+							autoCapitalize="words"
+							value={lastName}
+							onChangeText={setLastName}
 						/>
 					</View>
 
@@ -66,11 +126,13 @@ export default function CreateAccountPage() {
 						<Text style={styles.label}>Email</Text>
 						<TextInput
 							style={styles.input}
-							placeholder="you@institution.gov.ph"
+							placeholder={roleConfig.emailPlaceholder}
 							placeholderTextColor="#94a3b8"
 							keyboardType="email-address"
 							autoCapitalize="none"
 							autoCorrect={false}
+							value={email}
+							onChangeText={setEmail}
 						/>
 					</View>
 
@@ -83,6 +145,8 @@ export default function CreateAccountPage() {
 								placeholderTextColor="#94a3b8"
 								secureTextEntry={!showPassword}
 								autoCapitalize="none"
+								value={password}
+								onChangeText={setPassword}
 							/>
 							<TouchableOpacity
 								style={styles.eyeButton}
@@ -103,6 +167,8 @@ export default function CreateAccountPage() {
 								placeholderTextColor="#94a3b8"
 								secureTextEntry={!showConfirmPassword}
 								autoCapitalize="none"
+								value={confirmPassword}
+								onChangeText={setConfirmPassword}
 							/>
 							<TouchableOpacity
 								style={styles.eyeButton}
@@ -121,18 +187,9 @@ export default function CreateAccountPage() {
 					<TouchableOpacity
 						style={styles.primaryButton}
 						activeOpacity={0.85}
-						onPress={() => router.push('/User/user_dashboard')}
+						onPress={handleContinue}
 					>
-						<Text style={styles.primaryButtonText}>Create account</Text>
-					</TouchableOpacity>
-
-					<TouchableOpacity
-						style={styles.adminButton}
-						activeOpacity={0.85}
-						onPress={() => router.push('/Admin/admin_dashboard')}
-					>
-						<Ionicons name="lock-closed-outline" size={16} color="#1e3a5f" />
-						<Text style={styles.adminButtonText}>Sign up as Admin</Text>
+						<Text style={styles.primaryButtonText}>Continue</Text>
 					</TouchableOpacity>
 
 					<View style={styles.footerRow}>
@@ -150,26 +207,34 @@ export default function CreateAccountPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#f8fafc',
+		backgroundColor: '#ffffff',
+	},
+	scrollView: {
+		flex: 1,
+		backgroundColor: '#ffffff',
 	},
 	scrollContent: {
 		flexGrow: 1,
-		backgroundColor: '#f8fafc',
+		paddingBottom: 10,
+		backgroundColor: '#ffffff',
 	},
 	hero: {
-		backgroundColor: '#0f4c8a',
-		paddingHorizontal: 24,
-		paddingTop: 42,
-		paddingBottom: 26,
+		backgroundColor: '#2D72D1',
+		paddingHorizontal: 16,
+		paddingTop: 38,
+		paddingBottom: 20,
+		borderBottomLeftRadius: 25,
+		borderBottomRightRadius: 25,
 	},
 	backButton: {
-		width: 34,
-		height: 34,
+		width: 36,
+		height: 36,
 		borderRadius: 10,
-		backgroundColor: 'rgba(255,255,255,0.12)',
+		borderWidth: 1,
+		borderColor: 'rgba(233, 243, 255, 0.9)',
+		backgroundColor: 'rgba(47, 112, 200, 0.35)',
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginBottom: 20,
 	},
 	title: {
 		color: '#ffffff',
@@ -177,73 +242,66 @@ const styles = StyleSheet.create({
 		lineHeight: 40,
 		fontWeight: '800',
 		letterSpacing: -0.6,
+		marginTop: 18,
 	},
 	subtitle: {
-		color: 'rgba(255,255,255,0.65)',
+		color: 'rgba(233, 241, 255, 0.9)',
 		fontSize: 14,
+		lineHeight: 20,
 		marginTop: 4,
 		fontWeight: '500',
 	},
 	formArea: {
 		flex: 1,
-		paddingHorizontal: 24,
+		backgroundColor: '#FFFFFF',
+		paddingHorizontal: 16,
 		paddingTop: 24,
-		paddingBottom: 30,
+		paddingBottom: 20,
 	},
-	googleButton: {
+	roleTabsContainer: {
 		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 10,
-		backgroundColor: '#ffffff',
+		gap: 12,
+		marginBottom: 20,
+	},
+	roleTab: {
+		flex: 1,
+		paddingVertical: 11,
+		paddingHorizontal: 16,
+		borderRadius: 18,
 		borderWidth: 1,
-		borderColor: '#d8e1ee',
-		borderRadius: 14,
-		paddingVertical: 14,
+		borderColor: '#D0DAE8',
+		backgroundColor: '#ffffff',
+		alignItems: 'center',
 	},
-	googleIcon: {
-		width: 18,
-		height: 18,
+	roleTabActive: {
+		backgroundColor: '#2D72D1',
+		borderColor: '#2D72D1',
 	},
-	googleButtonText: {
-		color: '#334155',
-		fontSize: 14,
+	roleTabText: {
+		color: '#64748b',
+		fontSize: 13,
 		fontWeight: '700',
 	},
-	dividerRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		marginVertical: 18,
-	},
-	dividerLine: {
-		flex: 1,
-		height: 1,
-		backgroundColor: '#e2e8f0',
-	},
-	dividerText: {
-		color: '#94a3b8',
-		fontSize: 12,
-		marginHorizontal: 12,
-		fontWeight: '600',
+	roleTabTextActive: {
+		color: '#ffffff',
 	},
 	fieldGroup: {
 		marginBottom: 14,
 	},
 	label: {
-		color: '#64748b',
+		color: '#8A99AE',
 		fontSize: 11,
 		fontWeight: '700',
-		letterSpacing: 0.4,
-		textTransform: 'uppercase',
-		marginBottom: 7,
+		letterSpacing: 0,
+		marginBottom: 8,
 	},
 	input: {
-		height: 50,
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: '#cfd8e3',
-		backgroundColor: '#f8fafc',
+		borderColor: '#D0DAE8',
+		backgroundColor: '#E9EEF5',
 		paddingHorizontal: 14,
+		paddingVertical: 12,
 		color: '#0f172a',
 		fontSize: 14,
 	},
@@ -252,69 +310,48 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: '#cfd8e3',
-		backgroundColor: '#f8fafc',
-		height: 50,
+		borderColor: '#D0DAE8',
+		backgroundColor: '#E9EEF5',
 	},
 	passwordInput: {
 		flex: 1,
 		paddingHorizontal: 14,
+		paddingVertical: 12,
 		color: '#0f172a',
 		fontSize: 14,
 	},
 	eyeButton: {
 		paddingHorizontal: 14,
-		height: '100%',
+		paddingVertical: 9,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	primaryButton: {
-		marginTop: 4,
-		backgroundColor: '#185fa5',
+		backgroundColor: '#2D72D1',
 		borderRadius: 12,
-		height: 50,
+		paddingVertical: 13,
 		alignItems: 'center',
 		justifyContent: 'center',
-		shadowColor: '#185fa5',
-		shadowOpacity: 0.25,
-		shadowRadius: 10,
-		shadowOffset: { width: 0, height: 4 },
-		elevation: 2,
+		marginTop: 10,
+		marginBottom: 12,
 	},
 	primaryButtonText: {
 		color: '#ffffff',
 		fontSize: 15,
 		fontWeight: '800',
 	},
-	adminButton: {
-		marginTop: 10,
-		borderRadius: 12,
-		height: 48,
-		borderWidth: 1,
-		borderColor: '#c8d5e6',
-		backgroundColor: '#eef4fb',
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 8,
-	},
-	adminButtonText: {
-		color: '#1e3a5f',
-		fontSize: 14,
-		fontWeight: '700',
-	},
 	footerRow: {
-		marginTop: 14,
 		flexDirection: 'row',
 		justifyContent: 'center',
 		alignItems: 'center',
+		marginTop: 14,
 	},
 	footerPrompt: {
-		color: '#64748b',
+		color: '#8A99AE',
 		fontSize: 13,
 	},
 	footerLink: {
-		color: '#185fa5',
+		color: '#1E63CA',
 		fontSize: 13,
 		fontWeight: '800',
 	},
