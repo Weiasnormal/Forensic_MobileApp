@@ -36,10 +36,11 @@ export default function CaseCard({ id, type, name, status, onPress }: CaseCardPr
 
 	return (
 		<TouchableOpacity
-			style={[styles.card, { borderLeftColor: style.borderColor }]}
+			style={styles.card}
 			activeOpacity={0.75}
 			onPress={onPress}
 		>
+			<View style={[styles.accentLine, { backgroundColor: style.borderColor }]} />
 			<View style={styles.header}>
 				<View style={{ flex: 1 }}>
 					<Text style={styles.id}>{id}</Text>
@@ -58,46 +59,61 @@ const styles = StyleSheet.create({
 	card: {
 		backgroundColor: '#FFFFFF',
 		borderRadius: 16,
-		borderLeftWidth: 6,
-		paddingHorizontal: 16,
-		paddingVertical: 14,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+		paddingLeft: 24,
+		minHeight: 72,
 		marginHorizontal: 16,
 		marginBottom: 12,
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 8,
-		elevation: 3,
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.06,
+		shadowRadius: 4,
+		elevation: 2,
+	},
+	accentLine: {
+		position: 'absolute',
+		left: 13,
+		top: 12,
+		bottom: 12,
+		width: 4,
+		borderRadius: 999,
 	},
 	header: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'flex-start',
-		marginBottom: 8,
-	},
-	id: {
-		fontSize: 16,
-		fontWeight: '800',
-		color: '#1F2B3E',
 		marginBottom: 4,
 	},
+	id: {
+		fontSize: 14,
+		fontWeight: '800',
+		color: '#1F2B3E',
+		marginBottom: 2,
+        left: 6,
+	},
 	typeLabel: {
-		fontSize: 12,
+		fontSize: 10,
 		color: '#8A99AE',
 		fontWeight: '600',
+        left: 6,
 	},
 	badge: {
 		paddingHorizontal: 10,
 		paddingVertical: 6,
-		borderRadius: 8,
+		borderRadius: 999,
+		alignSelf: 'center',
+        right: 4,
+        top: 8,
 	},
 	badgeText: {
-		fontSize: 12,
+		fontSize: 10,
 		fontWeight: '700',
 	},
 	nameLabel: {
-		fontSize: 13,
+		fontSize: 12,
 		color: '#8A99AE',
 		fontWeight: '500',
+        left: 6,
 	},
 });

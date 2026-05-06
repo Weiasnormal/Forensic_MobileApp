@@ -12,24 +12,24 @@ interface PendingCardProps {
 
 const statusStyles: Record<PendingCardStatus, { icon: number; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }> = {
 	'result-ready': {
-		icon: require('../../../../assets/expo.icon/Assets/pendingCards/resultready.webp') as number,
+		icon: require('../../../assets/expo.icon/Assets/pendingCards/resultready.webp') as number,
 		statusText: 'RESULT READY',
 		statusColor: '#2E9F5C',
-		bgColor: '#F0F9F6',
+		bgColor: '#ffffff',
 		iconBgColor: 'rgba(46, 159, 92, 0.1)',
 	},
 	draft: {
-		icon: require('../../../../assets/expo.icon/Assets/pendingCards/draft.webp') as number,
+		icon: require('../../../assets/expo.icon/Assets/pendingCards/draft.webp') as number,
 		statusText: 'DRAFT',
 		statusColor: '#94A3B8',
-		bgColor: '#F8F9FA',
+		bgColor: '#ffffff',
 		iconBgColor: 'rgba(148, 163, 184, 0.1)',
 	},
 	processing: {
-		icon: require('../../../../assets/expo.icon/Assets/pendingCards/processing.webp') as number,
+		icon: require('../../../assets/expo.icon/Assets/pendingCards/processing.webp') as number,
 		statusText: 'PROCESSING',
 		statusColor: '#2D72D1',
-		bgColor: '#F0F6FF',
+		bgColor: '#ffffff',
 		iconBgColor: 'rgba(45, 114, 209, 0.1)',
 	},
 };
@@ -88,8 +88,8 @@ const styles = StyleSheet.create({
 		marginRight: 12,
 	},
 	icon: {
-		width: 24,
-		height: 24,
+		width: 34,
+		height: 34,
 	},
 	content: {
 		flex: 1,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
 	},
 	chevronIcon: {
 		fontSize: 24,
-		color: '#2D72D1',
+		color: '#64748B',
 		fontWeight: '300',
 	},
 });
