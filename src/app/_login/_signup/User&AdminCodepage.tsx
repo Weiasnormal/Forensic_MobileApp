@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
 	KeyboardAvoidingView,
 	Platform,
@@ -14,6 +16,7 @@ import {
 } from 'react-native';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+import { type InviteCodeFormValues, inviteCodeSchema } from '../../../utils/validation';
 
 export default function UserAndAdminCodePage() {
 	const router = useRouter();
@@ -23,6 +26,16 @@ export default function UserAndAdminCodePage() {
 
 	const [codeValues, setCodeValues] = useState(Array(7).fill(''));
 	const inputRefs = useRef<(TextInput | null)[]>([]);
+	const {
+		setValue,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<InviteCodeFormValues>({
+		resolver: zodResolver(inviteCodeSchema),
+		defaultValues: {
+			code: '',
+		},
+	});
 
 	const handleCodeChange = (index: number, value: string) => {
 		if (value.length > 1) {
@@ -32,6 +45,7 @@ export default function UserAndAdminCodePage() {
 		const newValues = [...codeValues];
 		newValues[index] = value;
 		setCodeValues(newValues);
+		setValue('code', newValues.join(''), { shouldValidate: true, shouldDirty: true });
 
 		if (value && index < 6) {
 			inputRefs.current[index + 1]?.focus();
@@ -44,9 +58,8 @@ export default function UserAndAdminCodePage() {
 		}
 	};
 
-	const handleVerify = () => {
-		const code = codeValues.join('');
-		if (code.length === 7) {
+	const handleVerify = (_values: InviteCodeFormValues) => {
+		if (codeValues.join('').length === 7) {
 			router.push({
 				pathname: '/_login/_signup/PendingUser&Admin',
 				params: { role: activeRole },
@@ -95,12 +108,14 @@ export default function UserAndAdminCodePage() {
 						))}
 					</View>
 
+					{errors.code?.message ? <Text style={styles.errorText}>{errors.code.message}</Text> : null}
+
 					<Text style={styles.helperText}>{roleConfig.noCodeText}</Text>
 
 					<TouchableOpacity
 						style={[styles.primaryButton, codeValues.join('').length !== 7 && styles.primaryButtonDisabled]}
 						activeOpacity={0.85}
-						onPress={handleVerify}
+						onPress={handleSubmit(handleVerify)}
 						disabled={codeValues.join('').length !== 7}
 					>
 						<Text style={styles.primaryButtonText}>Verify & continue</Text>
@@ -205,6 +220,13 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		textAlign: 'center',
 		marginBottom: 24,
+	},
+	errorText: {
+		color: '#E24B4A',
+		fontSize: 12,
+		fontWeight: '600',
+		textAlign: 'center',
+		marginBottom: 10,
 	},
 	primaryButton: {
 		backgroundColor: '#2D72D1',

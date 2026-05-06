@@ -1,16 +1,47 @@
 import { Ionicons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+import { type VerificationCodeFormValues, verificationCodeSchema } from '../../../utils/validation';
 
 export default function VerifyPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
+	const [codeValues, setCodeValues] = useState(Array(6).fill(''));
+	const [codeRefs] = useState<(TextInput | null)[]>([]);
+	const {
+		setValue,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<VerificationCodeFormValues>({
+		resolver: zodResolver(verificationCodeSchema),
+		defaultValues: {
+			code: '',
+		},
+	});
+
+	const handleCodeChange = (index: number, value: string) => {
+		const nextValue = value.replace(/\D/g, '').slice(-1);
+		const nextValues = [...codeValues];
+		nextValues[index] = nextValue;
+		setCodeValues(nextValues);
+		setValue('code', nextValues.join(''), { shouldValidate: true, shouldDirty: true });
+
+		if (nextValue && index < 5) {
+			codeRefs[index + 1]?.focus();
+		}
+	};
+
+	const handleVerify = (_values: VerificationCodeFormValues) => {
+		router.push({ pathname: '/_login/forgot_password/reset', params: { role: activeRole } });
+	};
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -32,18 +63,27 @@ export default function VerifyPage() {
 					<Text allowFontScaling={false} style={styles.sectionLabel}>Enter verification code</Text>
 
 					<View style={styles.codeRow}>
-						{Array.from({ length: 6 }).map((_, index) => (
+						{codeValues.map((value, index) => (
 							<View key={index} style={styles.codeBox}>
 								<TextInput
+									ref={(ref): void => {
+										codeRefs[index] = ref;
+									}}
 									style={styles.codeInput}
 									keyboardType="number-pad"
 									maxLength={1}
+ 									textContentType="oneTimeCode"
+ 									autoComplete="one-time-code"
+ 									value={value}
+ 									onChangeText={(text) => handleCodeChange(index, text)}
 									placeholder=""
 									placeholderTextColor="#8FA0B7"
 								/>
 							</View>
 						))}
 					</View>
+
+					{errors.code?.message ? <Text style={styles.errorText}>{errors.code.message}</Text> : null}
 
 					<View style={styles.metaRow}>
 						<Text allowFontScaling={false} style={styles.metaText}>Code expires in: 4:30</Text>
@@ -56,7 +96,7 @@ export default function VerifyPage() {
 						<TouchableOpacity
 							style={styles.primaryButton}
 							activeOpacity={0.9}
-							onPress={() => router.push({ pathname: '/_login/forgot_password/reset', params: { role: activeRole } })}
+							onPress={handleSubmit(handleVerify)}
 						>
 							<Text allowFontScaling={false} style={styles.primaryButtonText}>Verify</Text>
 						</TouchableOpacity>
@@ -160,6 +200,13 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		color: '#1F2B3E',
 		paddingVertical: 0,
+	},
+	errorText: {
+		marginTop: 10,
+		color: '#E24B4A',
+		fontSize: 12,
+		fontWeight: '600',
+		textAlign: 'center',
 	},
 	metaRow: {
 		flexDirection: 'row',

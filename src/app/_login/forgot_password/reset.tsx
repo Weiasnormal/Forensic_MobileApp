@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { resolveRole } from '../../../constants/roles';
+import { type ResetPasswordFormValues, resetPasswordSchema } from '../../../utils/validation';
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
@@ -12,6 +15,49 @@ export default function ResetPasswordPage() {
 	const activeRole = resolveRole(params.role);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const {
+		control,
+		handleSubmit,
+		watch,
+		formState: { errors },
+	} = useForm<ResetPasswordFormValues>({
+		resolver: zodResolver(resetPasswordSchema),
+		defaultValues: {
+			password: '',
+			confirmPassword: '',
+		},
+	});
+
+	const passwordValue = watch('password') ?? '';
+	const passwordChecks = {
+		minLength: passwordValue.trim().length >= 8,
+		upper: /[A-Z]/.test(passwordValue),
+		lower: /[a-z]/.test(passwordValue),
+		number: /[0-9]/.test(passwordValue),
+		special: /[^a-zA-Z0-9]/.test(passwordValue),
+	};
+	const metChecks = Object.values(passwordChecks).filter(Boolean).length;
+	const strengthLabel =
+		metChecks <= 1 ? 'Very weak' : metChecks === 2 ? 'Weak' : metChecks === 3 ? 'Fair' : metChecks === 4 ? 'Good' : 'Strong';
+	const strengthColor =
+		metChecks <= 1 ? '#F05B57' : metChecks === 2 ? '#F2903D' : metChecks === 3 ? '#F2C94C' : metChecks === 4 ? '#82C365' : '#2E9F5C';
+	const missingRules = [
+		!passwordChecks.minLength ? 'at least 8 characters' : null,
+		!passwordChecks.upper ? 'an uppercase letter' : null,
+		!passwordChecks.lower ? 'a lowercase letter' : null,
+		!passwordChecks.number ? 'a number' : null,
+		!passwordChecks.special ? 'a special character' : null,
+	].filter(Boolean) as string[];
+
+	const handleReset = async (_values: ResetPasswordFormValues) => {
+		setIsSubmitting(true);
+		try {
+			router.push({ pathname: '/_login/forgot_password/success', params: { role: activeRole } });
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -33,52 +79,90 @@ export default function ResetPasswordPage() {
 					<View style={styles.inputGroup}>
 						<Text allowFontScaling={false} style={styles.label}>New password</Text>
 						<View style={styles.passwordInputWrap}>
-							<TextInput
-								style={styles.passwordInput}
-								placeholder="Create a password"
-								placeholderTextColor="#8FA0B7"
-								secureTextEntry={!showPassword}
-								autoCapitalize="none"
-								defaultValue=""
+							<Controller
+								control={control}
+								name="password"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										style={[styles.passwordInput, errors.password && styles.inputError]}
+										placeholder="Create a password"
+										placeholderTextColor="#8FA0B7"
+										secureTextEntry={!showPassword}
+										autoCapitalize="none"
+										autoCorrect={false}
+										textContentType="newPassword"
+										autoComplete="new-password"
+										value={value}
+										onBlur={onBlur}
+										onChangeText={onChange}
+									/>
+								)}
 							/>
 							<TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
 								<Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
 							</TouchableOpacity>
 						</View>
+						{errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
 
 						<View style={styles.strengthRow}>
-							<View style={[styles.strengthBar, styles.strengthBarWeak]} />
-							<View style={styles.strengthBar} />
-							<View style={styles.strengthBar} />
-							<View style={styles.strengthBar} />
+							<View style={[styles.strengthBar, metChecks >= 1 && { backgroundColor: strengthColor }]} />
+							<View style={[styles.strengthBar, metChecks >= 2 && { backgroundColor: strengthColor }]} />
+							<View style={[styles.strengthBar, metChecks >= 3 && { backgroundColor: strengthColor }]} />
+							<View style={[styles.strengthBar, metChecks >= 4 && { backgroundColor: strengthColor }]} />
 						</View>
-						<Text allowFontScaling={false} style={styles.strengthLabel}>Poor password</Text>
+						<Text allowFontScaling={false} style={[styles.strengthLabel, { color: strengthColor }]}>{strengthLabel}</Text>
+						{missingRules.length > 0 ? (
+							<Text allowFontScaling={false} style={styles.strengthHint}>
+								Missing: {missingRules.join(', ')}
+							</Text>
+						) : (
+							<Text allowFontScaling={false} style={styles.strengthHintSuccess}>
+								All password requirements met.
+							</Text>
+						)}
 					</View>
 
 					<View style={styles.inputGroup}>
 						<Text allowFontScaling={false} style={styles.label}>Confirm new password</Text>
 						<View style={styles.passwordInputWrap}>
-							<TextInput
-								style={styles.passwordInput}
-								placeholder="Repeat password"
-								placeholderTextColor="#8FA0B7"
-								secureTextEntry={!showConfirmPassword}
-								autoCapitalize="none"
-								defaultValue=""
+							<Controller
+								control={control}
+								name="confirmPassword"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										style={[styles.passwordInput, errors.confirmPassword && styles.inputError]}
+										placeholder="Repeat password"
+										placeholderTextColor="#8FA0B7"
+										secureTextEntry={!showConfirmPassword}
+										autoCapitalize="none"
+										autoCorrect={false}
+										textContentType="newPassword"
+										autoComplete="password"
+										value={value}
+										onBlur={onBlur}
+										onChangeText={onChange}
+									/>
+								)}
 							/>
 							<TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowConfirmPassword((v) => !v)}>
 								<Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
 							</TouchableOpacity>
 						</View>
+						{errors.confirmPassword?.message ? <Text style={styles.errorText}>{errors.confirmPassword.message}</Text> : null}
 					</View>
 
 					<View style={styles.bottomActions}>
 						<TouchableOpacity
-							style={styles.primaryButton}
+							style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}
 							activeOpacity={0.9}
-							onPress={() => router.push({ pathname: '/_login/forgot_password/success', params: { role: activeRole } })}
+							disabled={isSubmitting}
+							onPress={handleSubmit(handleReset)}
 						>
-							<Text allowFontScaling={false} style={styles.primaryButtonText}>Reset password</Text>
+							{isSubmitting ? (
+								<ActivityIndicator color="#ffffff" size="small" />
+							) : (
+								<Text allowFontScaling={false} style={styles.primaryButtonText}>Reset password</Text>
+							)}
 						</TouchableOpacity>
 
 						<View style={styles.footerRow}>
@@ -176,6 +260,9 @@ const styles = StyleSheet.create({
 		color: '#1F2B3E',
 		fontSize: 14,
 	},
+	inputError: {
+		borderColor: '#E24B4A',
+	},
 	eyeButton: {
 		paddingHorizontal: 12,
 		paddingVertical: 9,
@@ -191,14 +278,28 @@ const styles = StyleSheet.create({
 		borderRadius: 999,
 		backgroundColor: '#D5DCE8',
 	},
-	strengthBarWeak: {
-		backgroundColor: '#F05B57',
-	},
 	strengthLabel: {
 		marginTop: 8,
-		color: '#F05B57',
 		fontSize: 12,
 		fontWeight: '700',
+	},
+	strengthHint: {
+		marginTop: 6,
+		color: '#8A99AE',
+		fontSize: 12,
+		fontWeight: '600',
+	},
+	strengthHintSuccess: {
+		marginTop: 6,
+		color: '#2E9F5C',
+		fontSize: 12,
+		fontWeight: '700',
+	},
+	errorText: {
+		marginTop: 6,
+		color: '#E24B4A',
+		fontSize: 12,
+		fontWeight: '600',
 	},
 	bottomActions: {
 		marginTop: 'auto',
@@ -208,8 +309,13 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingVertical: 13,
 		alignItems: 'center',
+		justifyContent: 'center',
+		minHeight: 48,
 		marginTop: 10,
 		marginBottom: 12,
+	},
+	primaryButtonDisabled: {
+		opacity: 0.7,
 	},
 	primaryButtonText: {
 		color: '#ffffff',

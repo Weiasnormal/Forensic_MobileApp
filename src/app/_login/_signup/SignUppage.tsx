@@ -1,34 +1,44 @@
 import { Ionicons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
+import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
 
 export default function SignUpPage() {
 	const router = useRouter();
 	const [activeRole, setActiveRole] = useState<AppRole>('analyst');
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-	const [firstName, setFirstName] = useState('');
-	const [lastName, setLastName] = useState('');
-	const [email, setEmail] = useState('');
-	const [password, setPassword] = useState('');
-	const [confirmPassword, setConfirmPassword] = useState('');
 
 	const roleConfig = ROLE_SETTINGS[activeRole].signUp;
+	const {
+		control,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<SignUpFormValues>({
+		resolver: zodResolver(signUpSchema),
+		defaultValues: {
+			firstName: '',
+			lastName: '',
+			email: '',
+			password: '',
+			confirmPassword: '',
+		},
+	});
 
-	const handleContinue = () => {
+	const handleContinue = (_values: SignUpFormValues) => {
 		router.push({
 			pathname: '/_login/_signup/User&AdminCodepage',
 			params: { role: activeRole },
@@ -36,13 +46,17 @@ export default function SignUpPage() {
 	};
 
 	return (
-		<KeyboardAvoidingView
-			style={styles.container}
-			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-		>
+		<View style={styles.container}>
 			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+			<KeyboardAwareScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
+				bounces={false}
+				keyboardShouldPersistTaps="handled"
+				enableOnAndroid={true}
+				extraScrollHeight={24}
+			>
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.back()}>
 						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
@@ -88,54 +102,94 @@ export default function SignUpPage() {
 					<View style={styles.nameRow}>
 						<View style={[styles.fieldGroup, styles.halfField]}>
 							<Text style={styles.label}>First name</Text>
-							<TextInput
-								style={styles.input}
-								placeholder="Your first name"
-								placeholderTextColor="#94a3b8"
-								autoCapitalize="words"
-								value={firstName}
-								onChangeText={setFirstName}
+							<Controller
+								control={control}
+								name="firstName"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										style={[styles.input, errors.firstName && styles.inputError]}
+										placeholder="Your first name"
+										placeholderTextColor="#94a3b8"
+										autoCapitalize="words"
+										textContentType="givenName"
+										autoComplete="name-given"
+										value={value}
+										onBlur={onBlur}
+										onChangeText={onChange}
+									/>
+								)}
 							/>
+							{errors.firstName?.message ? <Text style={styles.errorText}>{errors.firstName.message}</Text> : null}
 						</View>
 
 						<View style={[styles.fieldGroup, styles.halfField]}>
 							<Text style={styles.label}>Last Name</Text>
-							<TextInput
-								style={styles.input}
-								placeholder="Your last name"
-								placeholderTextColor="#94a3b8"
-								autoCapitalize="words"
-								value={lastName}
-								onChangeText={setLastName}
+							<Controller
+								control={control}
+								name="lastName"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										style={[styles.input, errors.lastName && styles.inputError]}
+										placeholder="Your last name"
+										placeholderTextColor="#94a3b8"
+										autoCapitalize="words"
+										textContentType="familyName"
+										autoComplete="name-family"
+										value={value}
+										onBlur={onBlur}
+										onChangeText={onChange}
+									/>
+								)}
 							/>
+							{errors.lastName?.message ? <Text style={styles.errorText}>{errors.lastName.message}</Text> : null}
 						</View>
 					</View>
 
 					<View style={styles.fieldGroup}>
 						<Text style={styles.label}>Email</Text>
-						<TextInput
-							style={styles.input}
-							placeholder={roleConfig.emailPlaceholder}
-							placeholderTextColor="#94a3b8"
-							keyboardType="email-address"
-							autoCapitalize="none"
-							autoCorrect={false}
-							value={email}
-							onChangeText={setEmail}
+						<Controller
+							control={control}
+							name="email"
+							render={({ field: { onChange, onBlur, value } }) => (
+								<TextInput
+									style={[styles.input, errors.email && styles.inputError]}
+									placeholder={roleConfig.emailPlaceholder}
+									placeholderTextColor="#94a3b8"
+									keyboardType="email-address"
+									autoCapitalize="none"
+									autoCorrect={false}
+									textContentType="emailAddress"
+									autoComplete="email"
+									value={value}
+									onBlur={onBlur}
+									onChangeText={onChange}
+								/>
+							)}
 						/>
+						{errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
 					</View>
 
 					<View style={styles.fieldGroup}>
 						<Text style={styles.label}>Password</Text>
 						<View style={styles.passwordWrap}>
-							<TextInput
-								style={styles.passwordInput}
-								placeholder="Create a password"
-								placeholderTextColor="#94a3b8"
-								secureTextEntry={!showPassword}
-								autoCapitalize="none"
-								value={password}
-								onChangeText={setPassword}
+							<Controller
+								control={control}
+								name="password"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										style={[styles.passwordInput, errors.password && styles.inputError]}
+										placeholder="Create a password"
+										placeholderTextColor="#94a3b8"
+										secureTextEntry={!showPassword}
+										autoCapitalize="none"
+										autoCorrect={false}
+										textContentType="newPassword"
+										autoComplete="new-password"
+										value={value}
+										onBlur={onBlur}
+										onChangeText={onChange}
+									/>
+								)}
 							/>
 							<TouchableOpacity
 								style={styles.eyeButton}
@@ -145,19 +199,30 @@ export default function SignUpPage() {
 								<Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#8a99af" />
 							</TouchableOpacity>
 						</View>
+						{errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
 					</View>
 
 					<View style={styles.fieldGroup}>
 						<Text style={styles.label}>Confirm password</Text>
 						<View style={styles.passwordWrap}>
-							<TextInput
-								style={styles.passwordInput}
-								placeholder="Repeat password"
-								placeholderTextColor="#94a3b8"
-								secureTextEntry={!showConfirmPassword}
-								autoCapitalize="none"
-								value={confirmPassword}
-								onChangeText={setConfirmPassword}
+							<Controller
+								control={control}
+								name="confirmPassword"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										style={[styles.passwordInput, errors.confirmPassword && styles.inputError]}
+										placeholder="Repeat password"
+										placeholderTextColor="#94a3b8"
+										secureTextEntry={!showConfirmPassword}
+										autoCapitalize="none"
+										autoCorrect={false}
+										textContentType="newPassword"
+										autoComplete="password"
+										value={value}
+										onBlur={onBlur}
+										onChangeText={onChange}
+									/>
+								)}
 							/>
 							<TouchableOpacity
 								style={styles.eyeButton}
@@ -171,12 +236,13 @@ export default function SignUpPage() {
 								/>
 							</TouchableOpacity>
 						</View>
+						{errors.confirmPassword?.message ? <Text style={styles.errorText}>{errors.confirmPassword.message}</Text> : null}
 					</View>
 
 					<TouchableOpacity
 						style={styles.primaryButton}
 						activeOpacity={0.85}
-						onPress={handleContinue}
+						onPress={handleSubmit(handleContinue)}
 					>
 						<Text style={styles.primaryButtonText}>Continue</Text>
 					</TouchableOpacity>
@@ -188,8 +254,8 @@ export default function SignUpPage() {
 						</TouchableOpacity>
 					</View>
 				</View>
-			</ScrollView>
-		</KeyboardAvoidingView>
+			</KeyboardAwareScrollView>
+		</View>
 	);
 }
 
@@ -205,7 +271,6 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		paddingBottom: 10,
 		backgroundColor: '#ffffff',
 	},
 	hero: {
@@ -314,6 +379,9 @@ const styles = StyleSheet.create({
 		color: '#0f172a',
 		fontSize: 14,
 	},
+	inputError: {
+		borderColor: '#E24B4A',
+	},
 	eyeButton: {
 		paddingHorizontal: 14,
 		paddingVertical: 9,
@@ -348,5 +416,11 @@ const styles = StyleSheet.create({
 		color: '#1E63CA',
 		fontSize: 13,
 		fontWeight: '800',
+	},
+	errorText: {
+		marginTop: 6,
+		color: '#E24B4A',
+		fontSize: 12,
+		fontWeight: '600',
 	},
 });

@@ -1,16 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+import { type ForgotPasswordFormValues, forgotPasswordSchema } from '../../../utils/validation';
 
 export default function EnterEmailPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
+	const {
+		control,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<ForgotPasswordFormValues>({
+		resolver: zodResolver(forgotPasswordSchema),
+		defaultValues: {
+			email: '',
+		},
+	});
+
+	const handleSendCode = (_values: ForgotPasswordFormValues) => {
+		router.push({ pathname: '/_login/forgot_password/verify', params: { role: activeRole } });
+	};
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -31,15 +48,26 @@ export default function EnterEmailPage() {
 				<View style={styles.content}>
 					<View style={styles.inputGroup}>
 						<Text allowFontScaling={false} style={styles.label}>Email</Text>
-						<TextInput
-							style={styles.input}
-							placeholder={roleConfig.emailPlaceholder}
-							placeholderTextColor="#8FA0B7"
-							keyboardType="email-address"
-							autoCapitalize="none"
-							autoCorrect={false}
-							defaultValue=""
+						<Controller
+							control={control}
+							name="email"
+							render={({ field: { onChange, onBlur, value } }) => (
+								<TextInput
+									style={[styles.input, errors.email && styles.inputError]}
+									placeholder={roleConfig.emailPlaceholder}
+									placeholderTextColor="#8FA0B7"
+									keyboardType="email-address"
+									autoCapitalize="none"
+									autoCorrect={false}
+									textContentType="emailAddress"
+									autoComplete="email"
+									value={value}
+									onBlur={onBlur}
+									onChangeText={onChange}
+								/>
+							)}
 						/>
+						{errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
 						<Text allowFontScaling={false} style={styles.helperText}>We&apos;ll send a 6-digit code to {roleConfig.verificationEmail}.</Text>
 					</View>
 
@@ -47,7 +75,7 @@ export default function EnterEmailPage() {
 						<TouchableOpacity
 							style={styles.primaryButton}
 							activeOpacity={0.9}
-							onPress={() => router.push({ pathname: '/_login/forgot_password/verify', params: { role: activeRole } })}
+							onPress={handleSubmit(handleSendCode)}
 						>
 							<Text allowFontScaling={false} style={styles.primaryButtonText}>Send code</Text>
 						</TouchableOpacity>
@@ -142,9 +170,18 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: '#D0DAE8',
 	},
+	inputError: {
+		borderColor: '#E24B4A',
+	},
 	helperText: {
 		marginTop: 10,
 		color: '#8A99AE',
+		fontSize: 12,
+		fontWeight: '600',
+	},
+	errorText: {
+		marginTop: 6,
+		color: '#E24B4A',
 		fontSize: 12,
 		fontWeight: '600',
 	},

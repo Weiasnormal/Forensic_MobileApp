@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
+import { type SignInFormValues, signInSchema } from '../../utils/validation';
 
 export default function LogInPage() {
   const router = useRouter();
@@ -12,6 +15,17 @@ export default function LogInPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const roleConfig = ROLE_SETTINGS[activeRole].signIn;
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
   const emailPlaceholder = roleConfig.emailPlaceholder;
   const forgotPasswordRoute = {
@@ -19,14 +33,14 @@ export default function LogInPage() {
     params: { role: activeRole },
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = (_values: SignInFormValues) => {
     router.push(roleConfig.redirectTo);
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
     >
       <StatusBar style="light" translucent backgroundColor="#2D72D1" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
@@ -62,31 +76,55 @@ export default function LogInPage() {
           <View style={styles.formFields}>
             <View style={styles.inputGroup}>
               <Text allowFontScaling={false} style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={emailPlaceholder}
-                placeholderTextColor="#8FA0B7"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                defaultValue=""
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={[styles.input, errors.email && styles.inputError]}
+                    placeholder={emailPlaceholder}
+                    placeholderTextColor="#8FA0B7"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    textContentType="emailAddress"
+                    autoComplete="email"
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                  />
+                )}
               />
+              {errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
             </View>
 
             <View style={styles.inputGroup}>
               <Text allowFontScaling={false} style={styles.label}>Password</Text>
               <View style={styles.passwordInputWrap}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Create a password"
-                  placeholderTextColor="#8FA0B7"
-                  secureTextEntry={!showPassword}
-                  defaultValue=""
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[styles.passwordInput, errors.password && styles.passwordInputError]}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#8FA0B7"
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="password"
+                      autoComplete="password"
+                      value={value}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                    />
+                  )}
                 />
                 <TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
                 </TouchableOpacity>
               </View>
+              {errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
 
               <TouchableOpacity
                 style={styles.forgotPasswordWrap}
@@ -102,14 +140,14 @@ export default function LogInPage() {
             <TouchableOpacity
               style={styles.primaryButton}
               activeOpacity={0.9}
-              onPress={handleSignIn}
+              onPress={handleSubmit(handleSignIn)}
             >
               <Text allowFontScaling={false} style={styles.primaryButtonText}>Sign In</Text>
             </TouchableOpacity>
 
             <View style={styles.footerRow}>
               <Text allowFontScaling={false} style={styles.footerPrompt}>Don't have an account?</Text>
-              <TouchableOpacity activeOpacity={0.7}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/_signup/SignUppage')}>
                 <Text allowFontScaling={false} style={styles.footerAction}>Create account</Text>
               </TouchableOpacity>
             </View>
@@ -221,6 +259,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D0DAE8',
   },
+  inputError: {
+    borderColor: '#E24B4A',
+  },
   passwordInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,6 +276,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: '#1F2B3E',
     fontSize: 14,
+  },
+  passwordInputError: {
+    borderColor: '#E24B4A',
   },
   eyeButton: {
     paddingHorizontal: 12,
@@ -283,5 +327,11 @@ const styles = StyleSheet.create({
     color: '#1E63CA',
     fontSize: 13,
     fontWeight: '800',
+  },
+  errorText: {
+    marginTop: 6,
+    color: '#E24B4A',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
