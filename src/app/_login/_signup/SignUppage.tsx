@@ -13,24 +13,11 @@ import {
 	View,
 } from 'react-native';
 
-type SignupRole = 'analyst' | 'admin';
-
-const ROLE_CONFIG = {
-	analyst: {
-		roleLabel: 'Forensic Analyst',
-		subtitle: 'Almost there. Joining as a Forensic Analyst',
-		emailPlaceholder: 'user@institution.gov.ph',
-	},
-	admin: {
-		roleLabel: 'Org Admin',
-		subtitle: 'Almost there. Joining as an Admin',
-		emailPlaceholder: 'admin@institution.gov.ph',
-	},
-} as const;
+import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
 
 export default function SignUpPage() {
 	const router = useRouter();
-	const [activeRole, setActiveRole] = useState<SignupRole>('analyst');
+	const [activeRole, setActiveRole] = useState<AppRole>('analyst');
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [firstName, setFirstName] = useState('');
@@ -39,7 +26,7 @@ export default function SignUpPage() {
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 
-	const roleConfig = ROLE_CONFIG[activeRole];
+	const roleConfig = ROLE_SETTINGS[activeRole].signUp;
 
 	const handleContinue = () => {
 		router.push({
@@ -78,7 +65,7 @@ export default function SignUpPage() {
 									activeRole === 'analyst' && styles.roleTabTextActive,
 								]}
 							>
-								Forensic Analyst
+								{ROLE_LABEL.analyst}
 							</Text>
 						</TouchableOpacity>
 
@@ -93,7 +80,7 @@ export default function SignUpPage() {
 									activeRole === 'admin' && styles.roleTabTextActive,
 								]}
 							>
-								Org Admin
+								{ROLE_LABEL.admin}
 							</Text>
 						</TouchableOpacity>
 					</View>

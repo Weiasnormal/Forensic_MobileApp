@@ -4,24 +4,15 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+
 const successIllustration = require('../../../../assets/expo.icon/Assets/success.webp');
-
-type LoginRole = 'analyst' | 'admin';
-
-const ROLE_CONFIG = {
-	analyst: {
-		message: 'Your password has been updated successfully.',
-	},
-	admin: {
-		message: 'Your password has been updated successfully.',
-	},
-} as const;
 
 export default function SuccessPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
-	const activeRole = params.role === 'admin' ? 'admin' : 'analyst';
-	const roleConfig = ROLE_CONFIG[activeRole as LoginRole];
+	const activeRole = resolveRole(params.role);
+	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -36,7 +27,7 @@ export default function SuccessPage() {
 					</View>
 
 					<Text allowFontScaling={false} style={styles.title}>Password Reset</Text>
-						<Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.message}{"\n"}Sign in with your new password.</Text>
+						<Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.successMessage}{"\n"}Sign in with your new password.</Text>
 					</View>
 
 					<View style={styles.bottomActions}>

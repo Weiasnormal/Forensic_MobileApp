@@ -4,22 +4,12 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-type LoginRole = 'analyst' | 'admin';
-
-const ROLE_CONFIG = {
-	analyst: {
-		emailPlaceholder: 'admin@institution.gov.ph',
-	},
-	admin: {
-		emailPlaceholder: 'user@institution.gov.ph',
-	},
-} as const;
+import { resolveRole } from '../../../constants/roles';
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
-	const activeRole = params.role === 'admin' ? 'admin' : 'analyst';
-	const roleConfig = ROLE_CONFIG[activeRole as LoginRole];
+	const activeRole = resolveRole(params.role);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -93,7 +83,7 @@ export default function ResetPasswordPage() {
 
 						<View style={styles.footerRow}>
 							<Text allowFontScaling={false} style={styles.footerPrompt}>Don&apos;t have an account? </Text>
-							<TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/CreateAccountpage')}>
+							<TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/_signup/SignUppage')}>
 								<Text allowFontScaling={false} style={styles.footerAction}>Create account</Text>
 							</TouchableOpacity>
 						</View>

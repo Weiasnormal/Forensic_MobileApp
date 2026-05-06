@@ -3,36 +3,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+	KeyboardAvoidingView,
+	Platform,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from 'react-native';
 
-type SignupRole = 'analyst' | 'admin';
-
-const ROLE_CONFIG = {
-	analyst: {
-		title: 'Join Your Organization',
-		subtitle: 'Enter the code your admin gave you',
-		noCodeText: 'No code yet? Ask your organization admin',
-	},
-	admin: {
-		title: 'Activate Your Account',
-		subtitle: 'Enter the code your Super Admin gave you',
-		noCodeText: 'No code yet? Reach out to your Super Admin',
-	},
-} as const;
+import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 
 export default function UserAndAdminCodePage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
-	const activeRole = params.role === 'admin' ? 'admin' : 'analyst';
-	const roleConfig = ROLE_CONFIG[activeRole as SignupRole];
+	const activeRole = resolveRole(params.role);
+	const roleConfig = ROLE_SETTINGS[activeRole].signUpCode;
 
 	const [codeValues, setCodeValues] = useState(Array(7).fill(''));
 	const inputRefs = useRef<(TextInput | null)[]>([]);

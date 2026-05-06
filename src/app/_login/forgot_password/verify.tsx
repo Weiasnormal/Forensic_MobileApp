@@ -4,22 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-type LoginRole = 'analyst' | 'admin';
-
-const ROLE_CONFIG = {
-	analyst: {
-		verificationEmail: 'admin@institution.gov.ph',
-	},
-	admin: {
-		verificationEmail: 'user@institution.gov.ph',
-	},
-} as const;
+import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 
 export default function VerifyPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
-	const activeRole = params.role === 'admin' ? 'admin' : 'analyst';
-	const roleConfig = ROLE_CONFIG[activeRole as LoginRole];
+	const activeRole = resolveRole(params.role);
+	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

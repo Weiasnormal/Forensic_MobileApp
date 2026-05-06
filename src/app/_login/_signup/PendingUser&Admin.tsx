@@ -4,24 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-type SignupRole = 'analyst' | 'admin';
-
-const ROLE_CONFIG = {
-	analyst: {
-		description: 'Your registration is under review.\nYou\'ll receive an email once approved by your Admin.',
-		steps: ['Admin reviews your request', 'You receive an approval email', 'Sign in to access your dashboard'],
-	},
-	admin: {
-		description: 'Your registration is under review.\nYou\'ll receive an email once approved by your Super Admin.',
-		steps: ['Super Admin reviews your request', 'You receive an approval email', 'Sign in to access your dashboard'],
-	},
-} as const;
+import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 
 export default function PendingUserAndAdminPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
-	const activeRole = params.role === 'admin' ? 'admin' : 'analyst';
-	const roleConfig = ROLE_CONFIG[activeRole as SignupRole];
+	const activeRole = resolveRole(params.role);
+	const roleConfig = ROLE_SETTINGS[activeRole].pendingApproval;
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

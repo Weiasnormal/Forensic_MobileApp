@@ -4,30 +4,23 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
+
 export default function LogInPage() {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState<'analyst' | 'admin'>('analyst');
+  const [activeRole, setActiveRole] = useState<AppRole>('analyst');
   const [showPassword, setShowPassword] = useState(false);
 
-  const roleConfig = {
-    analyst: {
-      emailPlaceholder: 'admin@institution.gov.ph',
-      redirectTo: '/User/user_dashboard' as const,
-    },
-    admin: {
-      emailPlaceholder: 'user@institution.gov.ph',
-      redirectTo: '/Admin/admin_dashboard' as const,
-    },
-  };
+  const roleConfig = ROLE_SETTINGS[activeRole].signIn;
 
-  const emailPlaceholder = roleConfig[activeRole].emailPlaceholder;
+  const emailPlaceholder = roleConfig.emailPlaceholder;
   const forgotPasswordRoute = {
     pathname: '/_login/forgot_password/enterEmail' as const,
     params: { role: activeRole },
   };
 
   const handleSignIn = () => {
-    router.push(roleConfig[activeRole].redirectTo);
+    router.push(roleConfig.redirectTo);
   };
 
   return (
@@ -55,14 +48,14 @@ export default function LogInPage() {
               activeOpacity={0.85}
               onPress={() => setActiveRole('analyst')}
             >
-              <Text allowFontScaling={false} style={[styles.roleTabText, activeRole === 'analyst' && styles.roleTabTextActive]}>Forensic Analyst</Text>
+              <Text allowFontScaling={false} style={[styles.roleTabText, activeRole === 'analyst' && styles.roleTabTextActive]}>{ROLE_LABEL.analyst}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.roleTab, activeRole === 'admin' && styles.roleTabActive]}
               activeOpacity={0.85}
               onPress={() => setActiveRole('admin')}
             >
-              <Text allowFontScaling={false} style={[styles.roleTabText, activeRole === 'admin' && styles.roleTabTextActive]}>Org Admin</Text>
+              <Text allowFontScaling={false} style={[styles.roleTabText, activeRole === 'admin' && styles.roleTabTextActive]}>{ROLE_LABEL.admin}</Text>
             </TouchableOpacity>
           </View>
 

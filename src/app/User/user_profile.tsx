@@ -3,6 +3,8 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ROLE_LABEL } from '../../constants/roles';
+
 export default function UserProfileScreen() {
 	return (
 		<SafeAreaView style={styles.screen}>
@@ -18,7 +20,7 @@ export default function UserProfileScreen() {
 					<Text style={styles.profileEmail}>juan.delacruz@pnp.gov.ph</Text>
 					<View style={styles.roleChip}>
 						<Ionicons name="shield-checkmark" size={12} color="#EAF3FF" />
-						<Text style={styles.roleChipText}>Forensic Analyst</Text>
+						<Text style={styles.roleChipText}>{ROLE_LABEL.analyst}</Text>
 					</View>
 				</View>
 
