@@ -6,7 +6,9 @@ import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { resolveRole } from '../../../constants/roles';
+import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type ResetPasswordFormValues, resetPasswordSchema } from '../../../utils/validation';
 
 export default function ResetPasswordPage() {
@@ -15,6 +17,8 @@ export default function ResetPasswordPage() {
 	const activeRole = resolveRole(params.role);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+	const [wasPasswordBlurred, setWasPasswordBlurred] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const {
 		control,
@@ -30,25 +34,9 @@ export default function ResetPasswordPage() {
 	});
 
 	const passwordValue = watch('password') ?? '';
-	const passwordChecks = {
-		minLength: passwordValue.trim().length >= 8,
-		upper: /[A-Z]/.test(passwordValue),
-		lower: /[a-z]/.test(passwordValue),
-		number: /[0-9]/.test(passwordValue),
-		special: /[^a-zA-Z0-9]/.test(passwordValue),
-	};
-	const metChecks = Object.values(passwordChecks).filter(Boolean).length;
-	const strengthLabel =
-		metChecks <= 1 ? 'Very weak' : metChecks === 2 ? 'Weak' : metChecks === 3 ? 'Fair' : metChecks === 4 ? 'Good' : 'Strong';
-	const strengthColor =
-		metChecks <= 1 ? '#F05B57' : metChecks === 2 ? '#F2903D' : metChecks === 3 ? '#F2C94C' : metChecks === 4 ? '#82C365' : '#2E9F5C';
-	const missingRules = [
-		!passwordChecks.minLength ? 'at least 8 characters' : null,
-		!passwordChecks.upper ? 'an uppercase letter' : null,
-		!passwordChecks.lower ? 'a lowercase letter' : null,
-		!passwordChecks.number ? 'a number' : null,
-		!passwordChecks.special ? 'a special character' : null,
-	].filter(Boolean) as string[];
+	const passwordStrength = usePasswordStrength(passwordValue);
+	const showPasswordGuidance = isPasswordFocused;
+	const showPasswordError = wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
 
 	const handleReset = async (_values: ResetPasswordFormValues) => {
 		setIsSubmitting(true);
@@ -78,13 +66,13 @@ export default function ResetPasswordPage() {
 				<View style={styles.content}>
 					<View style={styles.inputGroup}>
 						<Text allowFontScaling={false} style={styles.label}>New password</Text>
-						<View style={styles.passwordInputWrap}>
+						<View style={[styles.passwordInputWrap, isPasswordFocused && styles.passwordInputWrapFocused, showPasswordError && styles.passwordInputWrapError]}>
 							<Controller
 								control={control}
 								name="password"
 								render={({ field: { onChange, onBlur, value } }) => (
 									<TextInput
-										style={[styles.passwordInput, errors.password && styles.inputError]}
+										style={styles.passwordInput}
 										placeholder="Create a password"
 										placeholderTextColor="#8FA0B7"
 										secureTextEntry={!showPassword}
@@ -93,7 +81,15 @@ export default function ResetPasswordPage() {
 										textContentType="newPassword"
 										autoComplete="new-password"
 										value={value}
-										onBlur={onBlur}
+										onFocus={() => {
+											setIsPasswordFocused(true);
+											setWasPasswordBlurred(false);
+										}}
+										onBlur={() => {
+											onBlur();
+											setIsPasswordFocused(false);
+											setWasPasswordBlurred(true);
+										}}
 										onChangeText={onChange}
 									/>
 								)}
@@ -102,24 +98,7 @@ export default function ResetPasswordPage() {
 								<Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
 							</TouchableOpacity>
 						</View>
-						{errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
-
-						<View style={styles.strengthRow}>
-							<View style={[styles.strengthBar, metChecks >= 1 && { backgroundColor: strengthColor }]} />
-							<View style={[styles.strengthBar, metChecks >= 2 && { backgroundColor: strengthColor }]} />
-							<View style={[styles.strengthBar, metChecks >= 3 && { backgroundColor: strengthColor }]} />
-							<View style={[styles.strengthBar, metChecks >= 4 && { backgroundColor: strengthColor }]} />
-						</View>
-						<Text allowFontScaling={false} style={[styles.strengthLabel, { color: strengthColor }]}>{strengthLabel}</Text>
-						{missingRules.length > 0 ? (
-							<Text allowFontScaling={false} style={styles.strengthHint}>
-								Missing: {missingRules.join(', ')}
-							</Text>
-						) : (
-							<Text allowFontScaling={false} style={styles.strengthHintSuccess}>
-								All password requirements met.
-							</Text>
-						)}
+						<PasswordStrengthGuide password={passwordValue} isVisible={showPasswordGuidance} showError={showPasswordError} errorMessage="Password does not meet requirements" />
 					</View>
 
 					<View style={styles.inputGroup}>
@@ -253,6 +232,14 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: '#D0DAE8',
 	},
+	passwordInputWrapFocused: {
+		borderColor: '#2D72D1',
+		backgroundColor: '#F5F9FF',
+	},
+	passwordInputWrapError: {
+		borderColor: '#E24B4A',
+		backgroundColor: '#FFF6F6',
+	},
 	passwordInput: {
 		flex: 1,
 		paddingHorizontal: 14,
@@ -266,34 +253,6 @@ const styles = StyleSheet.create({
 	eyeButton: {
 		paddingHorizontal: 12,
 		paddingVertical: 9,
-	},
-	strengthRow: {
-		flexDirection: 'row',
-		gap: 8,
-		marginTop: 10,
-	},
-	strengthBar: {
-		flex: 1,
-		height: 4,
-		borderRadius: 999,
-		backgroundColor: '#D5DCE8',
-	},
-	strengthLabel: {
-		marginTop: 8,
-		fontSize: 12,
-		fontWeight: '700',
-	},
-	strengthHint: {
-		marginTop: 6,
-		color: '#8A99AE',
-		fontSize: 12,
-		fontWeight: '600',
-	},
-	strengthHintSuccess: {
-		marginTop: 6,
-		color: '#2E9F5C',
-		fontSize: 12,
-		fontWeight: '700',
 	},
 	errorText: {
 		marginTop: 6,

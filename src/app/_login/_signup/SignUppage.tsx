@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
+import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
+import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
 
 export default function SignUpPage() {
@@ -21,11 +23,14 @@ export default function SignUpPage() {
 	const [activeRole, setActiveRole] = useState<AppRole>('analyst');
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+	const [wasPasswordBlurred, setWasPasswordBlurred] = useState(false);
 
 	const roleConfig = ROLE_SETTINGS[activeRole].signUp;
 	const {
 		control,
 		handleSubmit,
+		watch,
 		formState: { errors },
 	} = useForm<SignUpFormValues>({
 		resolver: zodResolver(signUpSchema),
@@ -37,6 +42,11 @@ export default function SignUpPage() {
 			confirmPassword: '',
 		},
 	});
+
+	const passwordValue = watch('password') ?? '';
+	const passwordStrength = usePasswordStrength(passwordValue);
+	const showPasswordGuidance = isPasswordFocused;
+	const showPasswordError = wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
 
 	const handleContinue = (_values: SignUpFormValues) => {
 		router.push({
@@ -171,13 +181,13 @@ export default function SignUpPage() {
 
 					<View style={styles.fieldGroup}>
 						<Text style={styles.label}>Password</Text>
-						<View style={styles.passwordWrap}>
+						<View style={[styles.passwordWrap, isPasswordFocused && styles.passwordWrapFocused, showPasswordError && styles.passwordWrapError]}>
 							<Controller
 								control={control}
 								name="password"
 								render={({ field: { onChange, onBlur, value } }) => (
 									<TextInput
-										style={[styles.passwordInput, errors.password && styles.inputError]}
+										style={styles.passwordInput}
 										placeholder="Create a password"
 										placeholderTextColor="#94a3b8"
 										secureTextEntry={!showPassword}
@@ -186,7 +196,15 @@ export default function SignUpPage() {
 										textContentType="newPassword"
 										autoComplete="new-password"
 										value={value}
-										onBlur={onBlur}
+										onFocus={() => {
+											setIsPasswordFocused(true);
+											setWasPasswordBlurred(false);
+										}}
+										onBlur={() => {
+											onBlur();
+											setIsPasswordFocused(false);
+											setWasPasswordBlurred(true);
+										}}
 										onChangeText={onChange}
 									/>
 								)}
@@ -199,7 +217,12 @@ export default function SignUpPage() {
 								<Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#8a99af" />
 							</TouchableOpacity>
 						</View>
-						{errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
+						<PasswordStrengthGuide
+							password={passwordValue}
+							isVisible={showPasswordGuidance}
+							showError={showPasswordError}
+							errorMessage="Password does not meet requirements"
+						/>
 					</View>
 
 					<View style={styles.fieldGroup}>
@@ -372,6 +395,14 @@ const styles = StyleSheet.create({
 		borderColor: '#D0DAE8',
 		backgroundColor: '#E9EEF5',
 	},
+	passwordWrapFocused: {
+		borderColor: '#2D72D1',
+		backgroundColor: '#F5F9FF',
+	},
+	passwordWrapError: {
+		borderColor: '#E24B4A',
+		backgroundColor: '#FFF6F6',
+	},
 	passwordInput: {
 		flex: 1,
 		paddingHorizontal: 14,
@@ -419,6 +450,7 @@ const styles = StyleSheet.create({
 	},
 	errorText: {
 		marginTop: 6,
+		left: 6,
 		color: '#E24B4A',
 		fontSize: 12,
 		fontWeight: '600',
