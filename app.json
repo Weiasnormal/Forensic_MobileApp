@@ -36,7 +36,14 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Forensic to access your camera for signature analysis.",
+          "microphonePermission": "Allow Forensic to access your microphone."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

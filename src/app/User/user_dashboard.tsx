@@ -64,7 +64,7 @@ export default function UserDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" backgroundColor="#F8FAFC" />
+      <StatusBar style="dark" backgroundColor="#ffffff" />
 
       {activeTab === 'home' ? (
         <View style={styles.homeHeader}>
@@ -115,9 +115,6 @@ function HomeTab({ onStartAnalysis }: { onStartAnalysis: () => void }) {
 
       <View style={styles.sectionDivider} />
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Pending cases</Text>
-      </View>
 
       <View style={styles.pendingList}>
         {pendingCases.map((item) => (
@@ -151,8 +148,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   homeHeader: {
-    backgroundColor: '#F8FAFC',
-    paddingTop: Platform.OS === 'android' ? 20 : 20,
+    backgroundColor: '#ffffff',
+    paddingTop: Platform.OS === 'android' ? 18 : 20,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,

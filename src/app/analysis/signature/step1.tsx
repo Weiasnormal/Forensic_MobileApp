@@ -1,7 +1,320 @@
-import React from 'react';
+import { useAnalysisFlowStore, type AnalysisPriority } from '@/store/analysisFlowStore';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SignatureCaseDetailsScreen } from '@/_components/modals/signature_analysis';
+const ACCENT = '#1F5DA8';
+const SCREEN_BG = '#FFFFFF';
+const documentOptions = ['Bank cheque', 'Legal contract', 'Government form', 'Insurance document', 'Payroll statement'];
+const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
 
 export default function SignatureStep1Route() {
-  return <SignatureCaseDetailsScreen />;
+  const router = useRouter();
+  const nav = router as any;
+  const flow = useAnalysisFlowStore((state) => state.signature);
+  const setSubjectName = useAnalysisFlowStore((state) => state.setSubjectName);
+  const setExaminerName = useAnalysisFlowStore((state) => state.setExaminerName);
+  const setDocumentType = useAnalysisFlowStore((state) => state.setDocumentType);
+  const setPriority = useAnalysisFlowStore((state) => state.setPriority);
+  const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
+  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.examinerName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
+  const caseIdParts = flow.caseDetails.caseId.split('-');
+  const month = caseIdParts[0];
+  const year = caseIdParts[1];
+  const caseNo = caseIdParts[2];
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <TopBar title="New Analysis" step="1 / 2" onBackPress={() => nav.back()} />
+      <View style={styles.progressWrap}>
+        <View style={styles.progressBar} />
+        <View style={[styles.progressFill, { width: '50%' }]} />
+      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerSection}>
+          <Text style={styles.sectionHeading}>Case Details</Text>
+          <Text style={styles.sectionSubheading}>Basic information for this forensic case</Text>
+        </View>
+        <View style={styles.formGroup}>
+          <FieldLabel label="Case ID" />
+          <View style={styles.caseIdBox}>
+            <Text style={styles.caseIdDisplay}>{flow.caseDetails.caseId}</Text>
+          </View>
+          <View style={styles.caseIdHelper}>
+            <Ionicons name="information-circle" size={14} color="#94A3B8" />
+            <Text style={styles.helperText}>{month} · Month  {caseNo} · Day  {year} · Year  {caseNo} · Case no.</Text>
+          </View>
+        </View>
+        <View style={styles.formGroup}>
+          <FieldLabel label="Subject name" />
+          <TextInput value={flow.caseDetails.subjectName} onChangeText={(value) => setSubjectName('signature', value)} placeholder="Enter subject name" placeholderTextColor="#CBD5E1" style={styles.textInput} />
+        </View>
+        <View style={styles.formGroup}>
+          <FieldLabel label="Examiner" />
+          <TextInput value={flow.caseDetails.examinerName} onChangeText={(value) => setExaminerName('signature', value)} placeholder="Enter examiner name" placeholderTextColor="#CBD5E1" style={styles.textInput} />
+        </View>
+        <View style={styles.formGroup}>
+          <FieldLabel label="Document Type" />
+          <Pressable onPress={() => setShowDocumentDropdown(!showDocumentDropdown)} style={styles.dropdownButton}>
+            <Text style={styles.dropdownText}>{flow.caseDetails.documentType || 'Bank cheque'}</Text>
+            <Ionicons name={showDocumentDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#0F172A" />
+          </Pressable>
+          {showDocumentDropdown && (
+            <View style={styles.dropdownMenu}>
+              {documentOptions.map((option) => (
+                <Pressable key={option} onPress={() => { setDocumentType('signature', option); setShowDocumentDropdown(false); }} style={styles.dropdownItem}>
+                  <Text style={styles.dropdownItemText}>{option}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+        <View style={styles.formGroup}>
+          <FieldLabel label="Priority" />
+          <View style={styles.priorityRow}>
+            {priorities.map((priority) => {
+              const selected = flow.caseDetails.priority === priority;
+              return (
+                <Pressable key={priority} onPress={() => setPriority('signature', priority)} style={[styles.priorityChip, selected && { backgroundColor: ACCENT, borderColor: ACCENT }]}>
+                  <Text style={[styles.priorityText, selected && { color: '#FFFFFF' }]}>{priority}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </ScrollView>
+      <View style={styles.buttonContainer}>
+        <Pressable onPress={() => nav.push('/analysis/signature/uploads')} disabled={!canContinue} style={[styles.primaryButton, !canContinue && styles.disabledButton]}>
+          <Text style={styles.primaryButtonText}>Continue</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
 }
+
+function TopBar({ title, step, onBackPress }: { title: string; step: string; onBackPress: () => void }) {
+  return (
+    <View style={styles.topBarWrapper}>
+      <View style={styles.topBar}>
+        <Pressable onPress={onBackPress} style={styles.backButton}>
+          <View style={styles.backButtonBox}>
+            <Ionicons name="chevron-back" size={20} color="#0F172A" />
+          </View>
+        </Pressable>
+        <Text style={styles.topBarTitle}>{title}</Text>
+        <Text style={styles.stepCounter}>{step}</Text>
+      </View>
+    </View>
+  );
+}
+
+function FieldLabel({ label }: { label: string }) {
+  return <Text style={styles.fieldLabel}>{label}</Text>;
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: SCREEN_BG,
+  },
+  topBarWrapper: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    padding: 4,
+  },
+  backButtonBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topBarTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  stepCounter: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  progressBar: {
+    height: 3,
+    backgroundColor: '#E8EBF0',
+    width: '100%',
+  },
+  progressWrap: {
+    position: 'relative',
+  },
+  progressFill: {
+    height: 3,
+    backgroundColor: ACCENT,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 100,
+    gap: 16,
+  },
+  headerSection: {
+    marginBottom: 8,
+  },
+  sectionHeading: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  sectionSubheading: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  formGroup: {
+    gap: 8,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  caseIdBox: {
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: '#FFFFFF',
+  },
+  caseIdDisplay: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  caseIdHelper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 0,
+    marginTop: 4,
+  },
+  helperText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    lineHeight: 14,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: '#FFFFFF',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EBF0',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  priorityRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  priorityChip: {
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    backgroundColor: '#FFFFFF',
+  },
+  priorityText: {
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  primaryButton: {
+    borderRadius: 12,
+    backgroundColor: ACCENT,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#CBD5E1',
+    opacity: 1,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E8EBF0',
+  },
+});

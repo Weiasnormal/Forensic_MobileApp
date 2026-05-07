@@ -1,37 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-    hasCompleteUploads,
-    useAnalysisFlowStore,
-    type AnalysisPriority,
-} from '../../store/analysisFlowStore';
+import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
-import UploadSlot from '../analysis/UploadSlot';
 
 const ACCENT = '#1F5DA8';
-const SCREEN_BG = '#F5FAFF';
+const SCREEN_BG = '#ffffff';
 
-const documentOptions = [
-  'Bank cheque',
-  'Legal contract',
-  'Government form',
-  'Insurance document',
-  'Payroll statement',
-];
-
-const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const viewModes = ['Heatmap', 'Bounding box', 'Stroke diff'] as const;
 type ViewMode = (typeof viewModes)[number];
 
@@ -72,195 +50,16 @@ const findings = [
   { metric: 'CRAFT regions', value: 'Anomalies concentrated in initials', status: 'ok' },
 ] as const;
 
-function mockImageUri(seed: string) {
-  return `https://picsum.photos/seed/${seed}/800/460`;
-}
-
 function statusColors(status: 'ok' | 'warning' | 'bad') {
   if (status === 'ok') {
     return { bg: '#ECFDF3', text: '#15803D', border: '#BBF7D0' };
   }
+
   if (status === 'warning') {
     return { bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' };
   }
+
   return { bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' };
-}
-
-export function SignatureCaseDetailsScreen() {
-  const router = useRouter();
-  const nav = router as any;
-  const flow = useAnalysisFlowStore((state) => state.signature);
-  const setSubjectName = useAnalysisFlowStore((state) => state.setSubjectName);
-  const setExaminerName = useAnalysisFlowStore((state) => state.setExaminerName);
-  const setDocumentType = useAnalysisFlowStore((state) => state.setDocumentType);
-  const setPriority = useAnalysisFlowStore((state) => state.setPriority);
-  const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
-  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.examinerName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
-
-  return (
-        <SafeAreaView style={styles.screen}>
-           
-      <TopBar title="Case details" step="1 / 3" onBackPress={() => nav.back()} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        <View style={styles.card}>
-          <FieldLabel label="Case ID" />
-          <View style={styles.caseIdRow}>
-            <Ionicons name="albums-outline" size={16} color="#334155" />
-            <Text style={styles.caseIdText}>{flow.caseDetails.caseId}</Text>
-          </View>
-
-          <FieldLabel label="Subject name" />
-          <TextInput
-            value={flow.caseDetails.subjectName}
-            onChangeText={(value) => setSubjectName('signature', value)}
-            placeholder="Enter subject name"
-            placeholderTextColor="#94A3B8"
-            style={styles.input}
-          />
-
-          <FieldLabel label="Examiner name" />
-          <TextInput
-            value={flow.caseDetails.examinerName}
-            onChangeText={(value) => setExaminerName('signature', value)}
-            placeholder="Enter examiner name"
-            placeholderTextColor="#94A3B8"
-            style={styles.input}
-          />
-
-          <FieldLabel label="Document type" />
-          <Pressable
-            onPress={() => setShowDocumentDropdown(!showDocumentDropdown)}
-            style={styles.dropdownButton}
-          >
-            <Text style={styles.dropdownButtonText}>
-              {flow.caseDetails.documentType || 'Select document type'}
-            </Text>
-            <Ionicons
-              name={showDocumentDropdown ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color="#0F172A"
-            />
-          </Pressable>
-          {showDocumentDropdown && (
-            <View style={styles.dropdownMenu}>
-              {documentOptions.map((option) => (
-                <Pressable
-                  key={option}
-                  onPress={() => {
-                    setDocumentType('signature', option);
-                    setShowDocumentDropdown(false);
-                  }}
-                  style={[styles.dropdownItem, flow.caseDetails.documentType === option && styles.dropdownItemSelected]}
-                >
-                  <Text style={[styles.dropdownItemText, flow.caseDetails.documentType === option && styles.dropdownItemTextSelected]}>
-                    {option}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          <FieldLabel label="Priority" />
-          <View style={styles.priorityRow}>
-            {priorities.map((priority) => {
-              const selected = flow.caseDetails.priority === priority;
-              return (
-                <Pressable
-                  key={priority}
-                  onPress={() => setPriority('signature', priority)}
-                  style={[
-                    styles.priorityChip,
-                    selected && { backgroundColor: ACCENT, borderColor: ACCENT },
-                  ]}
-                >
-                  <Text style={[styles.priorityText, selected && { color: '#FFFFFF' }]}>{priority}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <Pressable
-          onPress={() => nav.push('/analysis/signature/uploads')}
-          disabled={!canContinue}
-          style={[styles.primaryButton, !canContinue && styles.disabledButton]}
-        >
-          <Text style={styles.primaryButtonText}>Continue to uploads</Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-export function SignatureUploadsScreen() {
-  const router = useRouter();
-  const nav = router as any;
-  const uploads = useAnalysisFlowStore((state) => state.signature.uploads);
-  const setReference = useAnalysisFlowStore((state) => state.setReference);
-  const setSuspect = useAnalysisFlowStore((state) => state.setSuspect);
-  const canRun = hasCompleteUploads(uploads);
-
-  return (
-    <SafeAreaView style={styles.screen}>
-      <TopBar title="Upload signatures" step="2 / 3" onBackPress={() => nav.back()} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Reference signatures</Text>
-          <Text style={styles.sectionDescription}>Upload 4 known genuine signatures from the same person.</Text>
-          <View style={styles.grid}>
-            {uploads.references.map((uri, index) => {
-              const refLabel = `REF ${String(81 + index)}`;
-              return (
-                <View key={`sig-ref-${index}`} style={styles.gridItem}>
-                  <Text style={styles.refLabel}>{refLabel}</Text>
-                  <UploadSlot
-                    label="Add photo"
-                    uri={uri}
-                    accentColor={ACCENT}
-                    onPress={() =>
-                      setReference('signature', index, mockImageUri(`signature-ref-${index + 1}-${Date.now()}`))
-                    }
-                    onClear={() => setReference('signature', index, null)}
-                  />
-                </View>
-              );
-            })}
-          </View>
-
-          <View style={styles.suspectSectionHeader}>
-            <Text style={styles.suspectBadge}>UNDER SCRUTINY</Text>
-          </View>
-          <Text style={styles.sectionTitle}>Suspected signature</Text>
-          <Text style={styles.sectionDescription}>Upload the signature to be verified.</Text>
-          <UploadSlot
-            label="Add suspected signature"
-            uri={uploads.suspect}
-            accentColor="#D97706"
-            onPress={() => setSuspect('signature', mockImageUri(`signature-sus-${Date.now()}`))}  
-            onClear={() => setSuspect('signature', null)}
-          />
-
-          <View style={styles.tipsBox}>
-            <View style={styles.tipsHeader}>
-              <Ionicons name="information-circle" size={16} color="#0F172A" />
-              <Text style={styles.tipsTitle}>Tips for best accuracy</Text>
-            </View>
-            <Text style={styles.tipItem}>• Flat surface · high-contrast ink · no shadows</Text>
-            <Text style={styles.tipItem}>• Crop tightly around the signature only</Text>
-          </View>
-        </View>
-
-        <Pressable
-          onPress={() => nav.push('/analysis/signature/processing')}
-          disabled={!canRun}
-          style={[styles.primaryButton, !canRun && styles.disabledButton]}
-        >
-          <Text style={styles.primaryButtonText}>Run Analysis</Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
-  );
 }
 
 export function SignatureProcessingView() {
@@ -286,20 +85,18 @@ export function SignatureResultsScreen() {
     if (activeView === 'Heatmap') {
       return { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' };
     }
+
     if (activeView === 'Bounding box') {
       return { bg: '#E0F2FE', edge: '#38BDF8', badge: '#0369A1' };
     }
+
     return { bg: '#E2E8F0', edge: '#94A3B8', badge: '#334155' };
   }, [activeView]);
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <StepHeader
-          title="Signature Results"
-          subtitle="Step 4 of 4 - Forensic output"
-          accentColor={ACCENT}
-        />
+        <StepHeader title="Signature Results" subtitle="Step 4 of 4 - Forensic output" accentColor={ACCENT} />
 
         <View style={[styles.card, styles.resultHeroCard]}>
           <View style={styles.resultTitleRow}>
@@ -317,6 +114,7 @@ export function SignatureResultsScreen() {
         <View style={styles.toggleRow}>
           {viewModes.map((mode) => {
             const selected = mode === activeView;
+
             return (
               <Pressable
                 key={mode}
@@ -334,9 +132,7 @@ export function SignatureResultsScreen() {
             <Text style={styles.previewBadgeText}>{activeView}</Text>
           </View>
           <View style={styles.previewCanvas}>
-            <Text style={styles.previewText}>
-              {suspectUri ? 'Suspect signature visualization loaded' : 'No suspect image uploaded'}
-            </Text>
+            <Text style={styles.previewText}>{suspectUri ? 'Suspect signature visualization loaded' : 'No suspect image uploaded'}</Text>
             <View style={styles.previewMarkWrap}>
               <View style={[styles.previewMark, styles.previewMarkHot]} />
               <View style={[styles.previewMark, styles.previewMarkWarm]} />
@@ -349,18 +145,14 @@ export function SignatureResultsScreen() {
           <Text style={styles.sectionTitle}>Key findings</Text>
           {findings.map((item) => {
             const colors = statusColors(item.status);
+
             return (
               <View key={item.metric} style={styles.findingRow}>
                 <View style={styles.findingTextWrap}>
                   <Text style={styles.findingMetric}>{item.metric}</Text>
                   <Text style={styles.findingValue}>{item.value}</Text>
                 </View>
-                <View
-                  style={[
-                    styles.statusTag,
-                    { backgroundColor: colors.bg, borderColor: colors.border },
-                  ]}
-                >
+                <View style={[styles.statusTag, { backgroundColor: colors.bg, borderColor: colors.border }]}>
                   <Text style={[styles.statusTagText, { color: colors.text }]}>{item.status.toUpperCase()}</Text>
                 </View>
               </View>
@@ -368,34 +160,11 @@ export function SignatureResultsScreen() {
           })}
         </View>
 
-        <Pressable
-          onPress={() => Alert.alert('Export started', 'PDF report generation has started.')}
-          style={styles.primaryButton}
-        >
+        <Pressable onPress={() => Alert.alert('Export started', 'PDF report generation has started.')} style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Export PDF report</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function TopBar({
-  title,
-  step,
-  onBackPress,
-}: {
-  title: string;
-  step: string;
-  onBackPress: () => void;
-}) {
-  return (
-    <View style={styles.topBar}>
-      <Pressable onPress={onBackPress} style={styles.backButton}>
-        <Ionicons name="chevron-back" size={24} color="#0F172A" />
-      </Pressable>
-      <Text style={styles.topBarTitle}>{title}</Text>
-      <Text style={styles.stepCounter}>{step}</Text>
-    </View>
   );
 }
 
@@ -417,59 +186,41 @@ function StepHeader({
   );
 }
 
-function FieldLabel({ label }: { label: string }) {
-  return <Text style={styles.fieldLabel}>{label}</Text>;
-}
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: SCREEN_BG,
   },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    paddingTop: 35,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  topBarTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-    textAlign: 'center',
-    marginHorizontal: 12,
-  },
-  stepCounter: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 28,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DBE5F1',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: 14,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   headerWrap: {
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#DCEAFE',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 23,
+    fontSize: 20,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: -0.5,
@@ -477,174 +228,14 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     marginTop: 4,
     color: '#64748B',
-    fontSize: 12,
-  },
-  headerBar: {
-    marginTop: 10,
-    width: 110,
-    height: 4,
-    borderRadius: 999,
-  },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#DBE5F1',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  caseIdRow: {
-    marginTop: -2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#D8E3EF',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F8FBFF',
-  },
-  caseIdText: {
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D8E3EF',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#0F172A',
-    backgroundColor: '#FFFFFF',
-  },
-  optionWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  selectChip: {
-    borderWidth: 1,
-    borderColor: '#D5E2EF',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  selectChipText: {
-    fontSize: 12,
-    color: '#334155',
-    fontWeight: '600',
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  priorityChip: {
-    borderWidth: 1,
-    borderColor: '#CFDCEC',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  priorityText: {
-    color: '#475569',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  sectionDescription: {
-    marginTop: 4,
     fontSize: 13,
-    color: '#64748B',
     lineHeight: 18,
   },
-  refLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 10,
-  },
-  gridItem: {
-    width: '48.2%',
-  },
-  suspectSectionHeader: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  suspectBadge: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#B45309',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    letterSpacing: 0.5,
-  },
-  tipsBox: {
+  headerBar: {
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#D9E2EE',
-    borderRadius: 12,
-    backgroundColor: '#F8FBFF',
-    padding: 12,
-    gap: 8,
-  },
-  tipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  tipsTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  tipItem: {
-    fontSize: 11,
-    color: '#475569',
-    lineHeight: 16,
-  },
-  primaryButton: {
-    borderRadius: 13,
-    backgroundColor: ACCENT,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  disabledButton: {
-    opacity: 0.45,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
+    width: 60,
+    height: 4,
+    borderRadius: 999,
   },
   resultHeroCard: {
     borderColor: '#BFDBFE',
@@ -780,46 +371,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.3,
   },
-  dropdownButton: {
-    flexDirection: 'row',
+  primaryButton: {
+    borderRadius: 12,
+    backgroundColor: ACCENT,
+    paddingVertical: 14,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#D8E3EF',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
   },
-  dropdownButtonText: {
+  primaryButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '500',
-  },
-  dropdownMenu: {
-    borderWidth: 1,
-    borderColor: '#D8E3EF',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    marginTop: 4,
-    overflow: 'hidden',
-  },
-  dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  dropdownItemSelected: {
-    backgroundColor: '#DBEAFE',
-  },
-  dropdownItemText: {
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '500',
-  },
-  dropdownItemTextSelected: {
-    color: '#1D4ED8',
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

@@ -330,6 +330,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 6,
+    left: 6,
     color: '#E24B4A',
     fontSize: 12,
     fontWeight: '600',

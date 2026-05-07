@@ -16,21 +16,21 @@ const statusStyles: Record<PendingCardStatus, { icon: number; statusText: string
 		statusText: 'RESULT READY',
 		statusColor: '#2E9F5C',
 		bgColor: '#ffffff',
-		iconBgColor: 'rgba(46, 159, 92, 0.1)',
+		iconBgColor: '#F1FAF4',
 	},
 	draft: {
 		icon: require('../../../assets/expo.icon/Assets/pendingCards/draft.webp') as number,
 		statusText: 'DRAFT',
 		statusColor: '#94A3B8',
 		bgColor: '#ffffff',
-		iconBgColor: 'rgba(148, 163, 184, 0.1)',
+		iconBgColor: '#EFEFEF',
 	},
 	processing: {
 		icon: require('../../../assets/expo.icon/Assets/pendingCards/processing.webp') as number,
 		statusText: 'PROCESSING',
 		statusColor: '#2D72D1',
 		bgColor: '#ffffff',
-		iconBgColor: 'rgba(45, 114, 209, 0.1)',
+		iconBgColor: '#EBF3FF',
 	},
 };
 
@@ -88,8 +88,8 @@ const styles = StyleSheet.create({
 		marginRight: 12,
 	},
 	icon: {
-		width: 34,
-		height: 34,
+		width: 42,
+		height: 42,
 	},
 	content: {
 		flex: 1,
