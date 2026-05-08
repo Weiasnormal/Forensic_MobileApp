@@ -55,29 +55,6 @@ Forensic Analysis Platform is a mobile application built with React Native and E
 - **Analysis Metrics**: View personal analysis statistics
 - **Performance Tracking**: Track analysis history and progress
 
----
-
-## Usage Guide
-
-### Getting Started
-
-#### Installation
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npx expo start
-   ```
-
-4. Run on your desired platform:
-   - iOS: Press `i`
-   - Android: Press `a`
-   - Web: Press `w`
-
 ### User Workflow
 
 #### 1. Authentication
