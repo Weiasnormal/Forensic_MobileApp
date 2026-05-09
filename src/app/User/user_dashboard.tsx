@@ -1,4 +1,5 @@
 import CasesScreen from '@/app/User/user_cases';
+import StatsScreen from '@/app/User/user_stats';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -10,7 +11,6 @@ import PendingCard from '../../_components/pendingCards';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
-import StatsScreen from './user_stats';
 const signattureIcon = require('../../../assets/expo.icon/Assets/signature_icon.webp');
 const pendingCases = [
   {
