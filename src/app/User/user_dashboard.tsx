@@ -1,10 +1,11 @@
 import CasesScreen from '@/app/User/user_cases';
 import StatsScreen from '@/app/User/user_stats';
+import { useUser } from '@/store/userStore';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
+import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CaseCard from '../../_components/caseCards';
 import PendingCard from '../../_components/pendingCards';
@@ -56,6 +57,11 @@ export default function UserDashboardScreen() {
   const router = useRouter();
   const nav = router as any;
   const initializeFlow = useAnalysisFlowStore((state) => state.initializeFlow);
+  const { user, load } = useUser();
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
 
   const handleNewAnalysisPress = () => {
     initializeFlow('signature');
@@ -70,11 +76,15 @@ export default function UserDashboardScreen() {
         <View style={styles.homeHeader}>
           <View style={styles.homeHeaderTop}>
             <View>
-              <Text style={styles.homeOrgText}>PNP Crime Laboratory</Text>
-              <Text style={styles.homeGreeting}>Hello, Analyst Cruz</Text>
+              <Text style={styles.homeOrgText}>{user?.organization || 'PNP Crime Laboratory'}</Text>
+              <Text style={styles.homeGreeting}>Hello, Analyst {user?.lastName}</Text>
             </View>
             <View style={styles.homeAvatarCircle}>
-              <Text style={styles.homeAvatarText}>MC</Text>
+              {user && user.avatarUri ? (
+                <Image source={{ uri: user.avatarUri }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+              ) : (
+                <Text style={styles.homeAvatarText}>{getInitials(user?.firstName || '', user?.lastName || '')}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -145,6 +155,10 @@ function HomeTab({ onStartAnalysis }: { onStartAnalysis: () => void }) {
       </View>
     </>
   );
+}
+
+function getInitials(first = '', last = '') {
+  return ((first[0] || '') + (last[0] || '')).toUpperCase();
 }
 
 const styles = StyleSheet.create({

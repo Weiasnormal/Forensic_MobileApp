@@ -1,10 +1,21 @@
+import { useUser } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function UserProfileScreen() {
+	const router = useRouter();
+	const { user, load } = useUser();
+
+	useFocusEffect(
+		useCallback(() => {
+			load();
+		}, [load])
+	);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 
@@ -12,16 +23,19 @@ export default function UserProfileScreen() {
 		<SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
 			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
 
-			{/* Hero — fixed at top, not inside the scrollable content */}
 			<View style={styles.heroCard}>
 				<View style={styles.heroTopRow}>
+{user.avatarUri ? (
+					<Image source={{ uri: user.avatarUri }} style={styles.avatarCircle} />
+				) : (
 					<View style={styles.avatarCircle}>
-						<Text style={styles.avatarText}>MC</Text>
+						<Text style={styles.avatarText}>{getInitials(user.firstName, user.lastName)}</Text>
 					</View>
+				)}
 
 					<View style={styles.heroCopy}>
-						<Text style={styles.name}>Maria Cruz</Text>
-						<Text style={styles.subtitle}>Forensic Analyst • PNP Crime Laboratory</Text>
+						<Text style={styles.name}>{user.firstName} {user.lastName}</Text>
+						<Text style={styles.subtitle}>{user.role} • {user.organization}</Text>
 					</View>
 				</View>
 
@@ -35,7 +49,7 @@ export default function UserProfileScreen() {
 			<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 				<SectionLabel title="Account" />
 				<CardShell>
-					<ActionRow icon="person-outline" label="Edit Profile" />
+					<ActionRow icon="person-outline" label="Edit Profile" onPress={() => router.push('/User/pages/setupAccount')} />
 					<ActionRow icon="lock-closed-outline" label="Change Password" />
 				</CardShell>
 
@@ -70,6 +84,10 @@ export default function UserProfileScreen() {
 	);
 }
 
+function getInitials(first = '', last = '') {
+	return ((first[0] || '') + (last[0] || '')).toUpperCase();
+}
+
 function HeroStat({ value, label, last }: { value: string; label: string; last?: boolean }) {
 	return (
 		<View style={[styles.heroStat, last && styles.heroStatLast]}>
@@ -92,14 +110,16 @@ function ActionRow({
 	label,
 	value,
 	showChevron = true,
+	onPress,
 }: {
 	icon: keyof typeof Ionicons.glyphMap;
 	label: string;
 	value?: string;
 	showChevron?: boolean;
+	onPress?: () => void;
 }) {
 	return (
-		<TouchableOpacity style={styles.row} activeOpacity={0.86}>
+		<TouchableOpacity style={styles.row} activeOpacity={0.86} onPress={onPress}>
 			<View style={styles.rowLeft}>
 				<Ionicons name={icon} size={20} color="#111827" />
 				<Text style={styles.rowLabel}>{label}</Text>
