@@ -1,220 +1,316 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ROLE_LABEL } from '../../constants/roles';
-
 export default function UserProfileScreen() {
+	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
+
 	return (
-		<SafeAreaView style={styles.screen}>
+		<SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
+			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
+
+			{/* Hero — fixed at top, not inside the scrollable content */}
+			<View style={styles.heroCard}>
+				<View style={styles.heroTopRow}>
+					<View style={styles.avatarCircle}>
+						<Text style={styles.avatarText}>MC</Text>
+					</View>
+
+					<View style={styles.heroCopy}>
+						<Text style={styles.name}>Maria Cruz</Text>
+						<Text style={styles.subtitle}>Forensic Analyst • PNP Crime Laboratory</Text>
+					</View>
+				</View>
+
+				<View style={styles.heroStats}>
+					<HeroStat value="48" label="CASES" />
+					<HeroStat value="32" label="GENUINE" />
+					<HeroStat value="16" label="SUSPECTED" last />
+				</View>
+			</View>
+
 			<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-				<Text style={styles.pageTitle}>Profile</Text>
-				<Text style={styles.pageSubtitle}>Manage account and app settings</Text>
+				<SectionLabel title="Account" />
+				<CardShell>
+					<ActionRow icon="person-outline" label="Edit Profile" />
+					<ActionRow icon="lock-closed-outline" label="Change Password" />
+				</CardShell>
 
-				<View style={styles.profileHero}>
-					<View style={styles.avatarLarge}>
-						<Text style={styles.avatarLargeText}>JD</Text>
-					</View>
-					<Text style={styles.profileName}>Juan Dela Cruz</Text>
-					<Text style={styles.profileEmail}>juan.delacruz@pnp.gov.ph</Text>
-					<View style={styles.roleChip}>
-						<Ionicons name="shield-checkmark" size={12} color="#EAF3FF" />
-						<Text style={styles.roleChipText}>{ROLE_LABEL.analyst}</Text>
-					</View>
-				</View>
+				<SectionLabel title="Preferences" />
+				<CardShell>
+					<ToggleRow
+						icon="notifications-outline"
+						label="Notifications"
+						value={notificationsEnabled}
+						onToggle={() => setNotificationsEnabled((value) => !value)}
+					/>
+					<ActionRow icon="grid-outline" label="Default Result View" value="Heatmap" />
+					<ToggleRow
+						icon="share-outline"
+						label="Auto-Export Reports"
+						value={autoExportEnabled}
+						onToggle={() => setAutoExportEnabled((value) => !value)}
+					/>
+				</CardShell>
 
-				<View style={styles.statsRow}>
-					<MiniStat value="42" label="Open scans" />
-					<MiniStat value="91%" label="Accuracy" />
-				</View>
+				<SectionLabel title="About" />
+				<CardShell>
+					<ActionRow icon="information-circle-outline" label="Help & Support" />
+					<ActionRow icon="document-text-outline" label="App Version" value="v1.0.0" showChevron={false} />
+				</CardShell>
 
-				<View style={styles.settingsCard}>
-					<SettingRow icon="person-outline" iconColor="#185FA5" iconBg={styles.settingIconBlue} label="Edit profile" />
-					<SettingRow icon="document-text-outline" iconColor="#16A34A" iconBg={styles.settingIconGreen} label="Scan history" />
-					<SettingRow icon="notifications-outline" iconColor="#D97706" iconBg={styles.settingIconAmber} label="Notifications" />
-					<SettingRow icon="log-out-outline" iconColor="#E24B4A" iconBg={styles.settingIconRed} label="Sign out" last />
-				</View>
+				<TouchableOpacity style={styles.signOutButton} activeOpacity={0.88}>
+					<Text style={styles.signOutText}>Sign out</Text>
+				</TouchableOpacity>
 			</ScrollView>
 		</SafeAreaView>
 	);
 }
 
-function MiniStat({ value, label }: { value: string; label: string }) {
+function HeroStat({ value, label, last }: { value: string; label: string; last?: boolean }) {
 	return (
-		<View style={styles.miniStatCard}>
-			<Text style={styles.miniStatValue}>{value}</Text>
-			<Text style={styles.miniStatLabel}>{label}</Text>
+		<View style={[styles.heroStat, last && styles.heroStatLast]}>
+			<Text style={styles.heroStatValue}>{value}</Text>
+			<Text style={styles.heroStatLabel}>{label}</Text>
 		</View>
 	);
 }
 
-function SettingRow({
+function SectionLabel({ title }: { title: string }) {
+	return <Text style={styles.sectionLabel}>{title}</Text>;
+}
+
+function CardShell({ children }: { children: React.ReactNode }) {
+	return <View style={styles.card}>{children}</View>;
+}
+
+function ActionRow({
 	icon,
-	iconColor,
-	iconBg,
 	label,
-	last,
+	value,
+	showChevron = true,
 }: {
 	icon: keyof typeof Ionicons.glyphMap;
-	iconColor: string;
-	iconBg: object;
 	label: string;
-	last?: boolean;
+	value?: string;
+	showChevron?: boolean;
 }) {
 	return (
-		<TouchableOpacity style={[styles.settingRow, last && styles.settingRowLast]} activeOpacity={0.76}>
-			<View style={[styles.settingIcon, iconBg]}>
-				<Ionicons name={icon} size={18} color={iconColor} />
+		<TouchableOpacity style={styles.row} activeOpacity={0.86}>
+			<View style={styles.rowLeft}>
+				<Ionicons name={icon} size={20} color="#111827" />
+				<Text style={styles.rowLabel}>{label}</Text>
 			</View>
-			<Text style={styles.settingLabel}>{label}</Text>
-			<Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+
+			<View style={styles.rowRight}>
+				{value ? <Text style={styles.rowValue}>{value}</Text> : null}
+				{showChevron ? <Ionicons name="chevron-forward" size={18} color="#94A3B8" /> : null}
+			</View>
 		</TouchableOpacity>
+	);
+}
+
+function ToggleRow({
+	icon,
+	label,
+	value,
+	onToggle,
+}: {
+	icon: keyof typeof Ionicons.glyphMap;
+	label: string;
+	value: boolean;
+	onToggle: () => void;
+}) {
+	return (
+		<View style={styles.row}>
+			<View style={styles.rowLeft}>
+				<Ionicons name={icon} size={20} color="#111827" />
+				<Text style={styles.rowLabel}>{label}</Text>
+			</View>
+
+			<TouchableOpacity
+				style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
+				onPress={onToggle}
+				activeOpacity={0.9}
+			>
+				<View style={[styles.toggleKnob, value ? styles.toggleKnobOn : styles.toggleKnobOff]} />
+			</TouchableOpacity>
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: '#F4F7FB',
 	},
 	content: {
-		padding: 16,
-		paddingBottom: 18,
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		paddingBottom: 28,
 	},
-	pageTitle: {
-		color: '#0F172A',
-		fontSize: 25,
-		fontWeight: '900',
-		letterSpacing: -0.6,
-		marginTop: 15,
-		marginBottom: 2,
-		paddingHorizontal: 2,
-	},
-	pageSubtitle: {
-		color: '#64748B',
-		fontSize: 12,
-		fontWeight: '600',
-		marginBottom: 12,
-		paddingHorizontal: 2,
-	},
-	profileHero: {
-		backgroundColor: '#0C447C',
-		borderRadius: 20,
-		paddingVertical: 20,
-		paddingHorizontal: 18,
+ 	heroCard: {
+ 		backgroundColor: '#2D72D1',
+ 		paddingHorizontal: 16,
+ 		paddingTop: 20,
+ 		paddingBottom: 20,
+ 		borderBottomLeftRadius: 25,
+ 		borderBottomRightRadius: 25,
+ 		overflow: 'hidden',
+ 	},
+	heroTopRow: {
+		flexDirection: 'row',
 		alignItems: 'center',
-		marginBottom: 14,
-		borderWidth: 1,
-		borderColor: '#2B68A4',
+		gap: 14,
 	},
-	avatarLarge: {
-		width: 72,
-		height: 72,
-		borderRadius: 36,
-		backgroundColor: 'rgba(255,255,255,0.14)',
+	avatarCircle: {
+		width: 64,
+		height: 64,
+		borderRadius: 32,
 		borderWidth: 2,
-		borderColor: 'rgba(255,255,255,0.22)',
+		borderColor: 'rgba(255,255,255,0.35)',
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginBottom: 10,
+		backgroundColor: 'rgba(255,255,255,0.12)',
 	},
-	avatarLargeText: {
-		color: '#FFFFFF',
-		fontSize: 20,
-		fontWeight: '900',
-	},
-	profileName: {
+	avatarText: {
 		color: '#FFFFFF',
 		fontSize: 18,
 		fontWeight: '900',
-		marginBottom: 3,
+		letterSpacing: 0.2,
 	},
-	profileEmail: {
-		color: 'rgba(255,255,255,0.62)',
-		fontSize: 12,
+	heroCopy: {
+		flex: 1,
+	},
+	name: {
+		color: '#FFFFFF',
+		fontSize: 22,
+		fontWeight: '900',
+		letterSpacing: -0.5,
+	},
+ 	subtitle: {
+ 		marginTop: 2,
+ 		color: 'rgba(233, 241, 255, 0.9)',
+ 		fontSize: 11,
+ 		fontWeight: '600',
+ 	},
+	heroStats: {
+		flexDirection: 'row',
+		marginTop: 18,
+		borderRadius: 14,
+		overflow: 'hidden',
+		borderWidth: 1,
+		borderColor: 'rgba(255,255,255,0.16)',
+		backgroundColor: 'rgba(255,255,255,0.08)',
+	},
+	heroStat: {
+		flex: 1,
+		paddingVertical: 14,
+		alignItems: 'center',
+		borderRightWidth: 1,
+		borderRightColor: 'rgba(255,255,255,0.16)',
+	},
+	heroStatLast: {
+		borderRightWidth: 0,
+	},
+	heroStatValue: {
+		color: '#FFFFFF',
+		fontSize: 19,
+		fontWeight: '900',
+		letterSpacing: -0.3,
+	},
+	heroStatLabel: {
+		marginTop: 3,
+		color: 'rgba(255,255,255,0.64)',
+		fontSize: 10,
+		fontWeight: '700',
+		letterSpacing: 0.5,
+	},
+	sectionLabel: {
+		color: '#A3B0C4',
+		fontSize: 14,
+		fontWeight: '800',
+		marginTop: 2,
 		marginBottom: 10,
 	},
-	roleChip: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 6,
-		backgroundColor: 'rgba(255,255,255,0.12)',
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		borderRadius: 999,
-	},
-	roleChipText: {
-		color: '#EAF3FF',
-		fontSize: 11,
-		fontWeight: '800',
-	},
-	statsRow: {
-		flexDirection: 'row',
-		gap: 10,
-		marginBottom: 12,
-	},
-	miniStatCard: {
-		flex: 1,
-		backgroundColor: '#FFFFFF',
-		borderRadius: 16,
-		borderWidth: 1,
-		borderColor: '#D9E3EF',
-		padding: 14,
-	},
-	miniStatValue: {
-		color: '#0F172A',
-		fontSize: 17,
-		fontWeight: '900',
-	},
-	miniStatLabel: {
-		marginTop: 4,
-		color: '#64748B',
-		fontSize: 11,
-		fontWeight: '600',
-	},
-	settingsCard: {
+	card: {
 		backgroundColor: '#FFFFFF',
 		borderRadius: 18,
 		borderWidth: 1,
-		borderColor: '#D9E3EF',
+		borderColor: '#E3EAF3',
 		overflow: 'hidden',
+		marginBottom: 20,
 	},
-	settingRow: {
+	row: {
+		minHeight: 56,
+		paddingHorizontal: 16,
 		flexDirection: 'row',
 		alignItems: 'center',
-		paddingHorizontal: 14,
-		paddingVertical: 13,
+		justifyContent: 'space-between',
 		borderBottomWidth: 1,
-		borderBottomColor: '#E2E8F0',
-		gap: 12,
+		borderBottomColor: '#E9EEF5',
 	},
-	settingRowLast: {
-		borderBottomWidth: 0,
-	},
-	settingIcon: {
-		width: 34,
-		height: 34,
-		borderRadius: 10,
+	rowLeft: {
+		flexDirection: 'row',
 		alignItems: 'center',
+		gap: 12,
+		flex: 1,
+	},
+	rowLabel: {
+		color: '#111827',
+		fontSize: 14,
+		fontWeight: '700',
+	},
+	rowRight: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 10,
+	},
+	rowValue: {
+		color: '#64748B',
+		fontSize: 13,
+		fontWeight: '700',
+	},
+	toggle: {
+		width: 36,
+		height: 22,
+		borderRadius: 999,
+		padding: 2,
 		justifyContent: 'center',
 	},
-	settingIconBlue: {
-		backgroundColor: '#EAF3FF',
+	toggleOn: {
+		backgroundColor: '#1F6FE5',
 	},
-	settingIconGreen: {
-		backgroundColor: '#F0FDF4',
+	toggleOff: {
+		backgroundColor: '#D7DEE9',
 	},
-	settingIconAmber: {
-		backgroundColor: '#FFFBEB',
+	toggleKnob: {
+		width: 18,
+		height: 18,
+		borderRadius: 9,
+		backgroundColor: '#FFFFFF',
 	},
-	settingIconRed: {
-		backgroundColor: '#FEF2F2',
+	toggleKnobOn: {
+		alignSelf: 'flex-end',
 	},
-	settingLabel: {
-		flex: 1,
-		color: '#0F172A',
-		fontSize: 12,
-		fontWeight: '700',
+	toggleKnobOff: {
+		alignSelf: 'flex-start',
+	},
+	signOutButton: {
+		marginTop: 4,
+		borderWidth: 1,
+		borderColor: '#FFB5B5',
+		backgroundColor: '#FFF5F5',
+		borderRadius: 16,
+		paddingVertical: 15,
+		alignItems: 'center',
+	},
+	signOutText: {
+		color: '#EF4444',
+		fontSize: 15,
+		fontWeight: '900',
 	},
 });
