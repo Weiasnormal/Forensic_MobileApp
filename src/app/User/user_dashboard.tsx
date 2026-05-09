@@ -1,3 +1,4 @@
+import CasesScreen from '@/app/User/user_cases';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,7 +9,6 @@ import CaseCard from '../../_components/caseCards';
 import PendingCard from '../../_components/pendingCards';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
-import CasesScreen from './user_cases';
 import ProfileScreen from './user_profile';
 import StatsScreen from './user_stats';
 const signattureIcon = require('../../../assets/expo.icon/Assets/signature_icon.webp');
@@ -80,16 +80,21 @@ export default function UserDashboardScreen() {
         </View>
       ) : null}
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollArea, activeTab === 'home' && styles.homeScrollArea]}
-        showsVerticalScrollIndicator={false}
-      >
-        {activeTab === 'home' && <HomeTab onStartAnalysis={handleNewAnalysisPress} />}
-        {activeTab === 'cases' && <CasesScreen />}
-        {activeTab === 'stats' && <StatsScreen />}
-        {activeTab === 'profile' && <ProfileScreen />}
-      </ScrollView>
+      {activeTab === 'home' ? (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollArea, styles.homeScrollArea]}
+          showsVerticalScrollIndicator={false}
+        >
+          <HomeTab onStartAnalysis={handleNewAnalysisPress} />
+        </ScrollView>
+      ) : activeTab === 'cases' ? (
+        <CasesScreen />
+      ) : activeTab === 'stats' ? (
+        <StatsScreen />
+      ) : (
+        <ProfileScreen />
+      )}
 
       <Navbar
         activeTab={activeTab}
