@@ -104,11 +104,5 @@ The app uses a bottom tab navigation system:
 - **Profile**: User account and settings
 - **Admin**: Administrative console (admin users only)
 
-### Tips & Best Practices
-- Ensure high-quality image uploads for accurate analysis
-- Complete all required fields in case information
-- Monitor the processing status for time estimates
-- Save results and reports for your records
-- Keep your profile information up to date
 
 ---
