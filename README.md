@@ -104,5 +104,3 @@ The app uses a bottom tab navigation system:
 - **Profile**: User account and settings
 - **Admin**: Administrative console (admin users only)
 
-
----
