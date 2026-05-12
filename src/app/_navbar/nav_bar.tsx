@@ -96,22 +96,17 @@ const styles = StyleSheet.create({
 		width: 50,
 		height: 50,
 		borderRadius: 25,
-		backgroundColor: '#185FA5',
+		backgroundColor: '#2D72D1',
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginTop: -24,
 		borderWidth: 2,
 		borderColor: '#EAF3FF',
-		shadowColor: '#0F172A',
-		shadowOffset: { width: 0, height: 6 },
-		shadowOpacity: 0.18,
-		shadowRadius: 10,
-		elevation: 8,
 	},
 	newLabel: {
 		marginTop: 3,
 		fontSize: 10,
-		color: '#185FA5',
+		color: '#2D72D1',
 		fontWeight: '700',
 	},
 	navItemActive: {
@@ -124,6 +119,6 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 	},
 	navLabelActive: {
-		color: '#185FA5',
+		color: '#2D72D1',
 	},
 });

@@ -4,15 +4,8 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import {
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
 import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
@@ -68,7 +61,7 @@ export default function SignUpPage() {
 				extraScrollHeight={24}
 			>
 				<View style={styles.hero}>
-					<TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.back()}>
+					<TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.push('/_login/GetStarted')}>
 						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
 					</TouchableOpacity>
 
