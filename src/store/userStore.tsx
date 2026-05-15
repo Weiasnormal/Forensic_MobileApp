@@ -31,10 +31,7 @@ const KEY = 'wincel_pogi_key_user_profile';
 
 // Debug helper for better logging
 const log = {
-  info: (tag: string, message: string, data?: any) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] ${tag} | ${message}`, data ? data : '');
-  },
+  info: (_tag: string, _message: string, _data?: any) => {},
   error: (tag: string, message: string, error?: any) => {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] ${tag} | ❌ ${message}`, error ? { error: error.message, stack: error.stack } : '');
@@ -126,7 +123,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const documentsRoot = (FileSystem as any).documentDirectory;
 
     if (!documentsRoot) {
-      log.error('UserStore:Image', 'Document directory not available - cannot copy image');
+      log.warn('UserStore:Image', 'Document directory not available - using original URI', { uri });
       return uri;
     }
 
@@ -202,7 +199,6 @@ export const useUser = () => {
     log.error('UserStore:Hook', 'useUser called outside UserProvider');
     throw new Error('useUser must be used within UserProvider');
   }
-  log.info('UserStore:Hook', 'useUser hook accessed successfully');
   return ctx;
 };
 

@@ -109,12 +109,17 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
   return (
     <>
       <TouchableOpacity style={styles.analysisBanner} activeOpacity={0.9} onPress={onStartAnalysis}>
-        <View>
+        <View style={styles.analysisBannerIcon}>
+          <ExpoImage source={signattureIcon} style={styles.icon} resizeMode="contain" />
+        </View>
+
+        <View style={styles.analysisBannerCopy}>
           <Text style={styles.analysisBannerLabel}>START ANALYSIS</Text>
           <Text style={styles.analysisBannerTitle}>Signature</Text>
         </View>
-        <View style={styles.analysisBannerIcon}>
-          <ExpoImage source={signattureIcon} style={styles.icon} resizeMode="contain" />
+
+        <View style={styles.analysisBannerChevron}>
+          <Text style={styles.analysisBannerChevronText}>›</Text>
         </View>
       </TouchableOpacity>
 
@@ -229,7 +234,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#2D72D1',
     shadowOpacity: 0.25,
@@ -244,6 +248,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
     marginBottom: 2,
   },
+  analysisBannerCopy: {
+    flex: 1,
+    marginLeft: 12,
+  },
   analysisBannerTitle: {
     color: '#FFFFFF',
     fontSize: 22,
@@ -257,6 +265,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  analysisBannerChevron: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analysisBannerChevronText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '300',
+    lineHeight: 24,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   sectionDivider: {
     height: 1,

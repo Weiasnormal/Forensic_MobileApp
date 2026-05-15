@@ -17,7 +17,7 @@ try {
 
 export default function SetupAccount() {
   const router = useRouter();
-  const { user, setUser, copyImageToDocuments } = useUser();
+  const { user, setUser } = useUser();
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
   const [email, setEmail] = useState(user.email);
@@ -27,15 +27,8 @@ export default function SetupAccount() {
 
   const pickImage = async () => {
     try {
-      console.log('[SetupAccount] pickImage:start', {
-        hasImagePicker: !!ImagePicker,
-        currentAvatarUri: avatarUri,
-      });
-
       if (!ImagePicker) return;
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('[SetupAccount] pickImage:permission', permissionResult);
-
       if (permissionResult.status !== 'granted') return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -44,52 +37,28 @@ export default function SetupAccount() {
         allowsEditing: true,
         aspect: [1, 1],
       });
-      console.log('[SetupAccount] pickImage:result', result);
 
       const canceled = result.canceled ?? result.cancelled;
       if (!canceled) {
         const uri = result.assets?.[0]?.uri ?? result.uri;
-        console.log('[SetupAccount] pickImage:selectedUri', uri);
         if (!uri) {
-          console.warn('[SetupAccount] pickImage:missingUri - no uri returned from picker');
           return;
         }
         // Store the URI directly - Expo's image picker provides persistent cache URIs in most cases
         setAvatarUri(uri);
       }
     } catch (e) {
-      console.warn('[SetupAccount] pickImage:failed', e);
     }
   };
 
   const handleSave = async () => {
-    console.log('[SetupAccount] handleSave:before', {
-      firstName,
-      lastName,
-      email,
-      role,
-      organization,
-      avatarUri,
-      user,
-    });
-
-    const documentUri = avatarUri ? await copyImageToDocuments(avatarUri) : undefined;
-    console.log('[SetupAccount] handleSave:avatarCopyResult', {
-      sourceUri: avatarUri,
-      documentUri,
-    });
-
     await setUser({
       firstName,
       lastName,
       email,
       role,
       organization,
-      avatarUri: documentUri || avatarUri || undefined,
-    });
-
-    console.log('[SetupAccount] handleSave:after setUser', {
-      nextAvatarUri: documentUri || avatarUri || undefined,
+      avatarUri: avatarUri || undefined,
     });
 
     router.back();
@@ -99,13 +68,6 @@ export default function SetupAccount() {
   const canContinue = firstName.trim().length > 1 && lastName.trim().length > 1 && email.trim().length > 3;
 
   const insets = useSafeAreaInsets();
-
-  console.log('[SetupAccount] render', {
-    userAvatarUri: user.avatarUri,
-    localAvatarUri: avatarUri,
-    canContinue,
-    insets,
-  });
 
   return (
     <SafeAreaView style={styles.screen}>
