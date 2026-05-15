@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 let ImagePicker: any;
 try {
   // dynamically require to avoid TS errors when dependency is not installed in CI/editor
@@ -27,40 +27,85 @@ export default function SetupAccount() {
 
   const pickImage = async () => {
     try {
+      console.log('[SetupAccount] pickImage:start', {
+        hasImagePicker: !!ImagePicker,
+        currentAvatarUri: avatarUri,
+      });
+
       if (!ImagePicker) return;
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[SetupAccount] pickImage:permission', permissionResult);
+
       if (permissionResult.status !== 'granted') return;
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
         allowsEditing: true,
         aspect: [1, 1],
       });
-      if (!result.cancelled) {
-        // @ts-ignore
-        const uri = result.uri;
-        // Store the URI directly - Expo's image picker provides persistent cache URIs
+      console.log('[SetupAccount] pickImage:result', result);
+
+      const canceled = result.canceled ?? result.cancelled;
+      if (!canceled) {
+        const uri = result.assets?.[0]?.uri ?? result.uri;
+        console.log('[SetupAccount] pickImage:selectedUri', uri);
+        if (!uri) {
+          console.warn('[SetupAccount] pickImage:missingUri - no uri returned from picker');
+          return;
+        }
+        // Store the URI directly - Expo's image picker provides persistent cache URIs in most cases
         setAvatarUri(uri);
       }
     } catch (e) {
-      console.warn('Failed to pick image:', e);
+      console.warn('[SetupAccount] pickImage:failed', e);
     }
   };
 
   const handleSave = async () => {
+    console.log('[SetupAccount] handleSave:before', {
+      firstName,
+      lastName,
+      email,
+      role,
+      organization,
+      avatarUri,
+      user,
+    });
+
+    const documentUri = avatarUri ? await copyImageToDocuments(avatarUri) : undefined;
+    console.log('[SetupAccount] handleSave:avatarCopyResult', {
+      sourceUri: avatarUri,
+      documentUri,
+    });
+
     await setUser({
       firstName,
       lastName,
       email,
       role,
       organization,
-      avatarUri: avatarUri || undefined,
+      avatarUri: documentUri || avatarUri || undefined,
     });
+
+    console.log('[SetupAccount] handleSave:after setUser', {
+      nextAvatarUri: documentUri || avatarUri || undefined,
+    });
+
     router.back();
   };
 
   const nav = router as any;
   const canContinue = firstName.trim().length > 1 && lastName.trim().length > 1 && email.trim().length > 3;
+
+  const insets = useSafeAreaInsets();
+
+  console.log('[SetupAccount] render', {
+    userAvatarUri: user.avatarUri,
+    localAvatarUri: avatarUri,
+    canContinue,
+    insets,
+  });
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -68,18 +113,18 @@ export default function SetupAccount() {
 
       <TopBar title="Set Up Your Account" onBackPress={() => nav.back()} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(140, insets.bottom + 120) }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Pressable style={styles.avatarWrap} onPress={pickImage}>
           {avatarUri ? (
             <Image source={{ uri: avatarUri }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarInitials}>{getInitials(firstName, lastName)}</Text>
-              <View style={styles.editBadge}>
-                <Ionicons name="pencil" size={14} color="#FFFFFF" />
-              </View>
             </View>
           )}
+          <View style={styles.editBadge}>
+            <Ionicons name="pencil" size={14} color="#FFFFFF" />
+          </View>
         </Pressable>
 
         <View style={styles.field}>
@@ -109,7 +154,7 @@ export default function SetupAccount() {
 
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}> 
         <Pressable onPress={handleSave} disabled={!canContinue} style={[styles.primaryButton, !canContinue && styles.disabledButton]}>
           <Text style={styles.primaryButtonText}>Save</Text>
         </Pressable>
@@ -214,6 +259,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#E8EBF0',
+  },
+  shadowOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   primaryButton: {
     borderRadius: 12,

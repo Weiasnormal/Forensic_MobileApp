@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
@@ -20,10 +19,10 @@ export default function UserProfileScreen() {
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 
 	return (
-		<SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
+		<View style={styles.screen}>
 			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
 
-			<View style={styles.heroCard}>
+		<View style={styles.heroCard}>
 				<View style={styles.heroTopRow}>
 {user.avatarUri ? (
 					<Image source={{ uri: user.avatarUri }} style={styles.avatarCircle} />
@@ -80,7 +79,7 @@ export default function UserProfileScreen() {
 					<Text style={styles.signOutText}>Sign out</Text>
 				</TouchableOpacity>
 			</ScrollView>
-		</SafeAreaView>
+		</View>
 	);
 }
 

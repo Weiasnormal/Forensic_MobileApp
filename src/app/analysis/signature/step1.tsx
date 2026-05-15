@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ACCENT = '#1F5DA8';
 const SCREEN_BG = '#FFFFFF';
@@ -25,6 +25,8 @@ export default function SignatureStep1Route() {
   const year = caseIdParts[1];
   const caseNo = caseIdParts[2];
 
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar title="New Analysis" step="1 / 2" onBackPress={() => nav.back()} />
@@ -32,7 +34,7 @@ export default function SignatureStep1Route() {
         <View style={styles.progressBar} />
         <View style={[styles.progressFill, { width: '50%' }]} />
       </View>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 96) }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.headerSection}>
           <Text style={styles.sectionHeading}>Case Details</Text>
           <Text style={styles.sectionSubheading}>Basic information for this forensic case</Text>
@@ -85,7 +87,7 @@ export default function SignatureStep1Route() {
           </View>
         </View>
       </ScrollView>
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}>
         <Pressable onPress={() => nav.push('/analysis/signature/uploads')} disabled={!canContinue} style={[styles.primaryButton, !canContinue && styles.disabledButton]}>
           <Text style={styles.primaryButtonText}>Continue</Text>
         </Pressable>

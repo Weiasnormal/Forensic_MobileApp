@@ -1,6 +1,5 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const monthlyBars = [
   { month: 'Nov', genuine: 36, suspected: 18 },
@@ -20,8 +19,9 @@ const documentTypes = [
 ];
 
 export default function UserStatsScreen() {
+
   return (
-    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
+    <View style={styles.screen}>
       <View style={styles.header}>
         <Text style={styles.title}>Statistics</Text>
       </View>
@@ -101,7 +101,7 @@ export default function UserStatsScreen() {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

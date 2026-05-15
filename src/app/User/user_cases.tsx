@@ -10,7 +10,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
 
@@ -79,7 +78,7 @@ export default function UserCasesScreen() {
   }, [activeFilter, query]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
+    <View style={styles.screen}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <View
@@ -152,7 +151,7 @@ export default function UserCasesScreen() {
           console.log('applied filters', { sortBy, verdict, analysisType });
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
