@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 120,
+    paddingBottom: 10,
   },
   title: {
     color: '#1E293B',

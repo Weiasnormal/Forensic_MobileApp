@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type TabKey = 'home' | 'cases' | 'stats' | 'profile';
 
@@ -25,10 +26,12 @@ const tabs: Array<{
 export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarProps) {
 	const leftTabs = tabs.slice(0, 2);
 	const rightTabs = tabs.slice(2);
+	const insets = useSafeAreaInsets();
 
 	return (
-		<View style={styles.bottomNav}>
-			{leftTabs.map((tab) => {
+		<View style={[styles.bottomNavShell, { paddingBottom: insets.bottom }]}>
+			<View style={styles.bottomNav}>
+				{leftTabs.map((tab) => {
 				const active = activeTab === tab.key;
 
 				return (
@@ -44,33 +47,37 @@ export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarPro
 				);
 			})}
 
-			<View style={styles.centerSlot}>
-				<TouchableOpacity style={styles.newButton} activeOpacity={0.84} onPress={onNewPress}>
-					<Ionicons name="add" size={26} color="#FFFFFF" />
-				</TouchableOpacity>
-				<Text style={styles.newLabel}>New</Text>
+				<View style={styles.centerSlot}>
+					<TouchableOpacity style={styles.newButton} activeOpacity={0.84} onPress={onNewPress}>
+						<Ionicons name="add" size={26} color="#FFFFFF" />
+					</TouchableOpacity>
+					<Text style={styles.newLabel}>New</Text>
+				</View>
+
+				{rightTabs.map((tab) => {
+				const active = activeTab === tab.key;
+
+				return (
+					<TouchableOpacity
+						key={tab.key}
+						style={[styles.navItem, active && styles.navItemActive]}
+						onPress={() => onTabChange(tab.key)}
+						activeOpacity={0.82}
+					>
+						<Ionicons name={active ? tab.activeIcon : tab.inactiveIcon} size={22} color={active ? '#185FA5' : '#94A3B8'} />
+						<Text style={[styles.navLabel, active && styles.navLabelActive]}>{tab.label}</Text>
+					</TouchableOpacity>
+				);
+			})}
 			</View>
-
-			{rightTabs.map((tab) => {
-				const active = activeTab === tab.key;
-
-				return (
-					<TouchableOpacity
-						key={tab.key}
-						style={[styles.navItem, active && styles.navItemActive]}
-						onPress={() => onTabChange(tab.key)}
-						activeOpacity={0.82}
-					>
-						<Ionicons name={active ? tab.activeIcon : tab.inactiveIcon} size={22} color={active ? '#185FA5' : '#94A3B8'} />
-						<Text style={[styles.navLabel, active && styles.navLabelActive]}>{tab.label}</Text>
-					</TouchableOpacity>
-				);
-			})}
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
+	bottomNavShell: {
+		backgroundColor: '#FFFFFF',
+	},
 	bottomNav: {
 		flexDirection: 'row',
 		alignItems: 'flex-end',

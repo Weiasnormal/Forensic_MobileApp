@@ -2,9 +2,10 @@ import CasesScreen from '@/app/User/user_cases';
 import StatsScreen from '@/app/User/user_stats';
 import { useUser } from '@/store/userStore';
 import { Image as ExpoImage } from 'expo-image';
+import * as NavigationBar from 'expo-navigation-bar';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CaseCard from '../../_components/caseCards';
@@ -62,6 +63,13 @@ export default function UserDashboardScreen() {
   React.useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    NavigationBar.setBackgroundColorAsync('#FFFFFF').catch(() => {});
+    NavigationBar.setButtonStyleAsync('dark').catch(() => {});
+  }, [activeTab]);
 
   const handleNewAnalysisPress = () => {
     initializeFlow('signature');
