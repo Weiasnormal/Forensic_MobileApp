@@ -1,9 +1,10 @@
 import { hasCompleteUploads, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { Alert, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ACCENT = '#1F5DA8';
@@ -22,6 +23,17 @@ export default function SignatureUploadsRoute() {
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
   const isSubmitting = useCaseStore((state) => state.isSubmitting);
   const canRun = hasCompleteUploads(uploads);
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        nav.back();
+        return true;
+      });
+
+      return () => subscription.remove();
+    }, [nav])
+  );
 
   const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
     if (!permission?.granted) {
@@ -58,7 +70,7 @@ export default function SignatureUploadsRoute() {
   const handleSubmit = async () => {
     try {
       await submitNewCase();
-      nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'cases' } });
+      nav.replace('/analysis/signature/processing');
     } catch (error) {
       console.warn('Unable to submit new case:', error);
       Alert.alert('Submit failed', 'Please complete the case details and try again.');

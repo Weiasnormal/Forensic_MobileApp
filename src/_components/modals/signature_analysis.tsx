@@ -67,13 +67,29 @@ export function SignatureProcessingView() {
   const nav = router as any;
 
   return (
-    <ProcessingScreen
-      title="Processing Signature"
-      subtitle="AI forensic engine is running multi-stage comparison"
-      accentColor={ACCENT}
-      steps={processingSteps}
-      onComplete={() => nav.replace('/analysis/signature/results')}
-    />
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <ProcessingScreen
+        title="Processing Signature"
+        subtitle="AI forensic engine is running multi-stage comparison"
+        accentColor={ACCENT}
+        steps={processingSteps}
+        onComplete={() => nav.replace('/analysis/signature/results')}
+      />
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+        <Pressable
+          style={{
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            backgroundColor: '#1F5DA8',
+            borderRadius: 14,
+            alignItems: 'center',
+          }}
+          onPress={() => nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } })}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>Back to Home</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,9 +1,12 @@
 import { type AnalysisPriority, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { BackHandler, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import DraftSavedModal from '@/_components/modals/draft_saved';
 
 const ACCENT = '#1F5DA8';
 const SCREEN_BG = '#FFFFFF';
@@ -16,6 +19,7 @@ export default function SignatureStep1Route() {
   const draftCase = useCaseStore((state) => state.draftSignatureCase);
   const updateDraftCase = useCaseStore((state) => state.updateDraftCase);
   const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
+  const [showDraftSavedModal, setShowDraftSavedModal] = useState(false);
   const canContinue = draftCase.subjectName.trim().length > 1 && draftCase.examiner.trim().length > 1;
   const caseIdParts = draftCase.caseId.split('-');
   const month = caseIdParts[0];
@@ -25,9 +29,20 @@ export default function SignatureStep1Route() {
 
   const insets = useSafeAreaInsets();
 
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        setShowDraftSavedModal(true);
+        return true;
+      });
+
+      return () => subscription.remove();
+    }, [])
+  );
+
   return (
     <SafeAreaView style={styles.screen}>
-      <TopBar title="New Analysis" step="1 / 2" onBackPress={() => nav.back()} />
+      <TopBar title="New Analysis" step="1 / 2" onBackPress={() => setShowDraftSavedModal(true)} />
       <View style={styles.progressWrap}>
         <View style={styles.progressBar} />
         <View style={[styles.progressFill, { width: '50%' }]} />
@@ -90,6 +105,14 @@ export default function SignatureStep1Route() {
           <Text style={styles.primaryButtonText}>Continue</Text>
         </Pressable>
       </View>
+
+      <DraftSavedModal
+        visible={showDraftSavedModal}
+        onContinue={() => {
+          setShowDraftSavedModal(false);
+          nav.back();
+        }}
+      />
     </SafeAreaView>
   );
 }

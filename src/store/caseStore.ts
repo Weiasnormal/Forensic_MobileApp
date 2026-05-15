@@ -22,6 +22,7 @@ export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type AnalysisType = 'SIG' | 'HW' | 'DOC';
 export type CaseStatus = 'Processing' | 'Completed' | 'Suspect' | 'Genuine';
 export type DraftUploadType = 'reference' | 'suspect';
+export type PendingCardStatus = 'draft' | 'processing' | 'result-ready';
 
 export interface DraftUploads {
   references: Array<string | null>;
@@ -41,6 +42,7 @@ export interface SavedCase extends DraftCase {
   createdAt: string;
   status: CaseStatus;
   analysisType: AnalysisType;
+  resultViewed?: boolean;
 }
 
 type DraftEditableField = 'subjectName' | 'examiner' | 'documentType' | 'priority';
@@ -50,6 +52,7 @@ interface CaseStore {
   draftSignatureCase: DraftCase;
   isSubmitting: boolean;
   nextCaseNumber: number;
+  markCaseResultViewed: (caseId: string) => void;
   startNewSignatureDraft: () => void;
   updateDraftCase: <K extends DraftEditableField>(field: K, value: DraftCase[K]) => void;
   setDraftUpload: (type: DraftUploadType, index: number, uri: string | null) => void;
@@ -123,6 +126,7 @@ const INITIAL_CASES: SavedCase[] = [
     createdAt: '2026-04-29T17:45:00.000Z',
     status: 'Processing',
     analysisType: 'SIG',
+    resultViewed: false,
   }),
   createSavedCase({
     caseId: '04-30-2026-004',
@@ -133,6 +137,7 @@ const INITIAL_CASES: SavedCase[] = [
     createdAt: '2026-04-30T08:20:00.000Z',
     status: 'Completed',
     analysisType: 'HW',
+    resultViewed: false,
   }),
   createSavedCase({
     caseId: '05-01-2026-005',
@@ -165,6 +170,14 @@ export const useCaseStore = create<CaseStore>()(
         draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
         isSubmitting: false,
         nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
+
+        markCaseResultViewed: (caseId) => {
+          set((state) => ({
+            cases: state.cases.map((item) =>
+              item.caseId === caseId ? { ...item, resultViewed: true } : item,
+            ),
+          }));
+        },
 
         startNewSignatureDraft: () => {
           caseLog.info('CaseStore:Action', 'Starting new signature draft');
@@ -243,6 +256,7 @@ export const useCaseStore = create<CaseStore>()(
               createdAt: new Date().toISOString(),
               status: 'Processing',
               analysisType: 'SIG',
+              resultViewed: false,
             };
 
             caseLog.info('CaseStore:Submit', 'Case created, updating store');
@@ -346,4 +360,61 @@ export function getCaseSummary(cases: SavedCase[]) {
     genuineCount,
     suspectCount,
   };
+}
+
+export interface PendingCardEntry {
+  id: string;
+  name: string;
+  status: PendingCardStatus;
+}
+
+const MAX_PENDING_CARDS = 3;
+
+function hasDraftProgress(draft: DraftCase) {
+  return Boolean(
+    draft.subjectName.trim() ||
+      draft.examiner.trim() ||
+      draft.documentType.trim() !== DEFAULT_DOCUMENT_TYPE ||
+      draft.priority !== DEFAULT_PRIORITY ||
+      draft.uploads.references.some(Boolean) ||
+      draft.uploads.suspect,
+  );
+}
+
+export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCardEntry[] {
+  const pendingCards: PendingCardEntry[] = [];
+
+  if (hasDraftProgress(draft)) {
+    pendingCards.push({
+      id: draft.caseId,
+      name: draft.subjectName.trim() || 'Draft in progress',
+      status: 'draft',
+    });
+  }
+
+  cases.forEach((item) => {
+    if (item.status === 'Processing') {
+      pendingCards.push({
+        id: item.caseId,
+        name: item.subjectName,
+        status: 'processing',
+      });
+    }
+
+    if (item.status === 'Completed' && !item.resultViewed) {
+      pendingCards.push({
+        id: item.caseId,
+        name: item.subjectName,
+        status: 'result-ready',
+      });
+    }
+  });
+
+  const statusOrder: Record<PendingCardStatus, number> = {
+    draft: 0,
+    processing: 1,
+    'result-ready': 2,
+  };
+
+  return pendingCards.sort((left, right) => statusOrder[left.status] - statusOrder[right.status]).slice(0, MAX_PENDING_CARDS);
 }

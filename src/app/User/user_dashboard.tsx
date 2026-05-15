@@ -9,9 +9,11 @@ import React, { useEffect, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CaseCard from '../../_components/caseCards';
-import { formatAnalysisTypeLabel, type SavedCase, useCaseStore } from '../../store/caseStore';
+import PendingCard from '../../_components/pendingCards';
+import { formatAnalysisTypeLabel, getPendingCards, type SavedCase, useCaseStore } from '../../store/caseStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
+const useRouter2 = useRouter;
 const signattureIcon = require('../../../assets/expo.icon/Assets/signature_icon.webp');
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
@@ -31,6 +33,7 @@ export default function UserDashboardScreen() {
   const router = useRouter();
   const nav = router as any;
   const cases = useCaseStore((state) => state.cases);
+  const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
   const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
   const { user, load } = useUser();
 
@@ -102,6 +105,10 @@ export default function UserDashboardScreen() {
 }
 
 function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: () => void; cases: SavedCase[]; onViewAllPress: () => void }) {
+  const router = useRouter();
+  const nav = router as any;
+  const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
+  const pendingCards = getPendingCards(cases, draftSignatureCase);
   const latestCases = [...cases]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 5);
@@ -124,6 +131,26 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
       </TouchableOpacity>
 
       <View style={styles.sectionDivider} />
+
+      {pendingCards.length > 0 ? (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Pending Cases</Text>
+          </View>
+
+          <View style={styles.pendingList}>
+            {pendingCards.map((item) => (
+              <PendingCard
+                key={`${item.id}-${item.status}`}
+                id={item.id}
+                name={item.name}
+                status={item.status}
+                onPress={item.status === 'draft' ? () => nav.push('/analysis/signature/step1') : undefined}
+              />
+            ))}
+          </View>
+        </>
+      ) : null}
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Cases</Text>
