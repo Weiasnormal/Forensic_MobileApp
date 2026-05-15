@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 let ImagePicker: any;
 try {
@@ -59,18 +59,16 @@ export default function SetupAccount() {
     router.back();
   };
 
+  const nav = router as any;
+  const canContinue = firstName.trim().length > 1 && lastName.trim().length > 1 && email.trim().length > 3;
+
   return (
-    <SafeAreaView style={styles.screen} edges={[ 'left', 'right', 'bottom' ]}>
+    <SafeAreaView style={styles.screen}>
       <StatusBar style="dark" translucent backgroundColor="transparent" />
 
-      <View style={styles.headerRow}>
-        <Pressable style={styles.back} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={20} color="#0F172A" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Set Up Your Account</Text>
-      </View>
+      <TopBar title="Set Up Your Account" onBackPress={() => nav.back()} />
 
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable style={styles.avatarWrap} onPress={pickImage}>
           {avatarUri ? (
             <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -85,33 +83,36 @@ export default function SetupAccount() {
         </Pressable>
 
         <View style={styles.field}>
-          <Text style={styles.label}>First name</Text>
-          <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
+          <FieldLabel label="First name" />
+          <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="First name" placeholderTextColor="#CBD5E1" />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Last name</Text>
-          <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
+          <FieldLabel label="Last name" />
+          <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Last name" placeholderTextColor="#CBD5E1" />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <FieldLabel label="Email" />
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor="#CBD5E1" />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Role</Text>
-          <TextInput style={styles.input} value={role} onChangeText={setRole} />
+          <FieldLabel label="Role" />
+          <TextInput style={styles.input} value={role} onChangeText={setRole} placeholder="Role (e.g., Examiner)" placeholderTextColor="#CBD5E1" />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Organization</Text>
-          <TextInput style={styles.input} value={organization} onChangeText={setOrganization} />
+          <FieldLabel label="Organization" />
+          <TextInput style={styles.input} value={organization} onChangeText={setOrganization} placeholder="Organization" placeholderTextColor="#CBD5E1" />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.9}>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
+      </ScrollView>
+
+      <View style={styles.buttonContainer}>
+        <Pressable onPress={handleSave} disabled={!canContinue} style={[styles.primaryButton, !canContinue && styles.disabledButton]}>
+          <Text style={styles.primaryButtonText}>Save</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -123,26 +124,51 @@ function getInitials(first = '', last = '') {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#FFFFFF' },
-  headerRow: {
-    height: 64,
-    alignItems: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#EEF2F7',
+  topBarWrapper: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  back: {
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    padding: 4,
+  },
+  backButtonBox: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    marginRight: 12,
   },
-  headerTitle: { flex: 1, textAlign: 'center', fontWeight: '800', fontSize: 16, color: '#0F172A' },
-  container: { paddingHorizontal: 20, paddingTop: 24 },
-  avatarWrap: { alignSelf: 'center', marginBottom: 18 },
+  topBarTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  stepCounter: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  /* progress styles removed */
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 36,
+    paddingBottom: 140,
+    gap: 16,
+  },
+  avatarWrap: { alignSelf: 'center', marginBottom: 8 },
   avatarPlaceholder: {
     width: 96,
     height: 96,
@@ -155,32 +181,74 @@ const styles = StyleSheet.create({
   avatarInitials: { color: '#FFFFFF', fontWeight: '900', fontSize: 28 },
   editBadge: {
     position: 'absolute',
-    right: -6,
-    bottom: -6,
+    right: -1,
+    bottom: -1,
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+    borderColor: '#FFFFFF',
+    borderWidth: 2,
   },
   field: { marginBottom: 14 },
   label: { color: '#94A3B8', fontSize: 13, fontWeight: '700', marginBottom: 8 },
   input: {
-    height: 48,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#EEF2F7',
-  },
-  saveButton: {
-    marginTop: 18,
-    backgroundColor: '#1F6FE5',
-    height: 50,
+    borderColor: '#D8E3EF',
     borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E8EBF0',
+  },
+  primaryButton: {
+    borderRadius: 12,
+    backgroundColor: '#1F6FE5',
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveText: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
+  disabledButton: {
+    backgroundColor: '#CBD5E1',
+    opacity: 1,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
 });
+
+function TopBar({ title, step, onBackPress }: { title: string; step?: string; onBackPress: () => void }) {
+  return (
+    <View style={styles.topBarWrapper}>
+      <View style={styles.topBar}>
+        <Pressable onPress={onBackPress} style={styles.backButton}>
+          <View style={styles.backButtonBox}>
+            <Ionicons name="chevron-back" size={20} color="#0F172A" />
+          </View>
+        </Pressable>
+        <Text style={styles.topBarTitle}>{title}</Text>
+        {step ? <Text style={styles.stepCounter}>{step}</Text> : <View style={{ width: 48 }} />}
+      </View>
+    </View>
+  );
+}
+
+function FieldLabel({ label }: { label: string }) {
+  return <Text style={styles.label}>{label}</Text>;
+}
