@@ -12,39 +12,14 @@ import {
 } from 'react-native';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
-
-type CaseItem = {
-  id: string;
-  type: string;
-  name: string;
-  status: 'suspect' | 'genuine' | 'processing';
-};
+import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '../../store/caseStore';
 
 type CaseSection = {
   title: string;
-  data: CaseItem[];
+  data: SavedCase[];
 };
 
-const ALL_CASES: CaseSection[] = [
-  {
-    title: 'TODAY',
-    data: [
-      { id: '0429-2026-001', type: 'Signature', name: 'Juan dela Cruz · Bank Cheque', status: 'suspect' },
-      { id: '0429-2026-002', type: 'Processing', name: 'Juan dela Cruz · Property Contract', status: 'processing' },
-      { id: '0429-2026-003', type: 'Signature', name: 'Juan dela Cruz · Delivery Receipt', status: 'genuine' },
-    ],
-  },
-  {
-    title: 'YESTERDAY',
-    data: [
-      { id: '0429-2026-004', type: 'Processing', name: 'Maria Santos · Affidavit', status: 'genuine' },
-      { id: '0429-2026-005', type: 'Signature', name: 'Maria Santos · Loan Agreement', status: 'suspect' },
-      { id: '0429-2026-006', type: 'Signature', name: 'Maria Santos · Consent Form', status: 'processing' },
-    ],
-  },
-];
-
-const quickFilters = ['All', 'Signature', 'Genuine', 'Suspect', 'Processing'];
+const quickFilters = ['All', 'Genuine', 'Suspect', 'Processing', 'Completed'];
 const DEFAULT_HEADER_HEIGHT = 140;
 
 export default function UserCasesScreen() {
@@ -52,30 +27,53 @@ export default function UserCasesScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [showFilter, setShowFilter] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(DEFAULT_HEADER_HEIGHT);
+  const [advancedFilters, setAdvancedFilters] = useState<{
+    sortBy: string;
+    verdict: string | null;
+    analysisType: string | null;
+    filteredCases: SavedCase[];
+  } | null>(null);
+  const cases = useCaseStore((state) => state.cases);
+
+  // Use advanced filtered cases if applied, otherwise use all cases
+  const casesToUse = advancedFilters ? advancedFilters.filteredCases : cases;
 
   const sections = useMemo(() => {
     const trimmedQuery = query.trim().toLowerCase();
+    const sortedCases = [...casesToUse].sort((left, right) => {
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
 
-    return ALL_CASES
-      .map((section) => ({
-        ...section,
-        data: section.data.filter((item) => {
-          const matchesQuery =
-            !trimmedQuery ||
-            item.id.toLowerCase().includes(trimmedQuery) ||
-            item.name.toLowerCase().includes(trimmedQuery) ||
-            item.type.toLowerCase().includes(trimmedQuery);
+    const filteredCases = sortedCases.filter((item) => {
+      const matchesQuery =
+        !trimmedQuery ||
+        item.caseId.toLowerCase().includes(trimmedQuery) ||
+        item.subjectName.toLowerCase().includes(trimmedQuery) ||
+        item.examiner.toLowerCase().includes(trimmedQuery) ||
+        item.documentType.toLowerCase().includes(trimmedQuery);
 
-          const matchesFilter =
-            activeFilter === 'All' ||
-            item.type === activeFilter ||
-            item.status === activeFilter.toLowerCase();
+      const matchesFilter =
+        activeFilter === 'All' ||
+        item.status === activeFilter ||
+        formatAnalysisTypeLabel(item.analysisType) === activeFilter ||
+        item.priority === activeFilter;
 
-          return matchesQuery && matchesFilter;
-        }),
-      }))
-      .filter((section) => section.data.length > 0);
-  }, [activeFilter, query]);
+      return matchesQuery && matchesFilter;
+    });
+
+    const grouped = filteredCases.reduce<Record<string, SavedCase[]>>((accumulator, item) => {
+      const sectionTitle = formatCaseDateLabel(item.createdAt);
+      if (!accumulator[sectionTitle]) {
+        accumulator[sectionTitle] = [];
+      }
+
+      accumulator[sectionTitle].push(item);
+      return accumulator;
+    }, {});
+
+    return Object.entries(grouped).map(([title, data]) => ({ title, data }));
+  }, [activeFilter, casesToUse, query]);
+  const { totalCases } = getCaseSummary(cases);
 
   return (
     <View style={styles.screen}>
@@ -93,7 +91,7 @@ export default function UserCasesScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.pageTitle}>My cases</Text>
           <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>48</Text>
+            <Text style={styles.countBadgeText}>{totalCases}</Text>
           </View>
         </View>
 
@@ -134,9 +132,15 @@ export default function UserCasesScreen() {
 
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.caseId}
         renderItem={({ item }) => (
-          <CaseCard id={item.id} type={item.type} name={item.name} status={item.status} />
+          <CaseCard
+            id={item.caseId}
+            createdAt={item.createdAt}
+            type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
+            name={`${item.subjectName} · ${item.documentType}`}
+            status={item.status}
+          />
         )}
         renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
         showsVerticalScrollIndicator={false}
@@ -147,8 +151,11 @@ export default function UserCasesScreen() {
       <FilterCasesModal
         visible={showFilter}
         onClose={() => setShowFilter(false)}
-        onApply={({ sortBy, verdict, analysisType }) => {
-          console.log('applied filters', { sortBy, verdict, analysisType });
+        cases={cases}
+        onApply={(filters) => {
+          setAdvancedFilters(filters);
+          setActiveFilter('All'); // Reset quick filter when applying advanced filters
+          console.log('applied filters', filters);
         }}
       />
     </View>

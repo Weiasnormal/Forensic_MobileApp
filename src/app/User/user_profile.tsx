@@ -5,10 +5,13 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getCaseSummary, useCaseStore } from '../../store/caseStore';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
 	const { user, load } = useUser();
+	const cases = useCaseStore((state) => state.cases);
+	const { totalCases, genuineCount, suspectCount } = getCaseSummary(cases);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -39,9 +42,9 @@ export default function UserProfileScreen() {
 				</View>
 
 				<View style={styles.heroStats}>
-					<HeroStat value="48" label="CASES" />
-					<HeroStat value="32" label="GENUINE" />
-					<HeroStat value="16" label="SUSPECTED" last />
+					<HeroStat value={String(totalCases)} label="CASES" />
+					<HeroStat value={String(genuineCount)} label="GENUINE" />
+					<HeroStat value={String(suspectCount)} label="SUSPECTED" last />
 				</View>
 			</View>
 

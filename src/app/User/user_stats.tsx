@@ -1,4 +1,5 @@
-import React from 'react';
+import { useCaseStore } from '@/store/caseStore';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const monthlyBars = [
@@ -10,15 +11,47 @@ const monthlyBars = [
   { month: 'Apr', genuine: 82, suspected: 24 },
 ];
 
-const documentTypes = [
-  { label: 'Bank Cheque', count: 18, width: 0.58 },
-  { label: 'Property Deed', count: 13, width: 0.42 },
-  { label: 'Affidavit', count: 8, width: 0.31 },
-  { label: 'Will', count: 5, width: 0.22 },
-  { label: 'Other', count: 3, width: 0.15 },
-];
-
 export default function UserStatsScreen() {
+  const cases = useCaseStore((state) => state.cases);
+
+  const summary = useMemo(() => {
+    const totals = cases.reduce(
+      (accumulator, item) => {
+        accumulator.total += 1;
+        accumulator.genuine += item.status === 'Genuine' ? 1 : 0;
+        accumulator.suspect += item.status === 'Suspect' ? 1 : 0;
+        accumulator.processing += item.status === 'Processing' ? 1 : 0;
+        accumulator.completed += item.status === 'Completed' ? 1 : 0;
+        accumulator.documentTypeCounts[item.documentType] =
+          (accumulator.documentTypeCounts[item.documentType] || 0) + 1;
+        return accumulator;
+      },
+      {
+        total: 0,
+        genuine: 0,
+        suspect: 0,
+        processing: 0,
+        completed: 0,
+        documentTypeCounts: {} as Record<string, number>,
+      },
+    );
+
+    const largestDocumentCount = Math.max(...Object.values(totals.documentTypeCounts), 1);
+
+    const documentTypes = Object.entries(totals.documentTypeCounts)
+      .sort((left, right) => right[1] - left[1])
+      .map(([label, count]) => ({
+        label,
+        count,
+        width: Math.max(0.15, count / largestDocumentCount),
+      }));
+
+    return {
+      ...totals,
+      documentTypes,
+      genuinePercent: totals.total > 0 ? Math.round((totals.genuine / totals.total) * 100) : 0,
+    };
+  }, [cases]);
 
   return (
     <View style={styles.screen}>
@@ -30,14 +63,14 @@ export default function UserStatsScreen() {
 
         <View style={styles.heroCard}>
           <View style={styles.heroLeft}>
-            <Text style={styles.bigNumber}>48</Text>
+            <Text style={styles.bigNumber}>{summary.total}</Text>
             <Text style={styles.bigLabel}>TOTAL CASES</Text>
 
             <View style={styles.statPillGreen}>
-              <Text style={styles.statPillGreenText}>32 genuine</Text>
+              <Text style={styles.statPillGreenText}>{summary.genuine} genuine</Text>
             </View>
             <View style={styles.statPillRed}>
-              <Text style={styles.statPillRedText}>16 suspected</Text>
+              <Text style={styles.statPillRedText}>{summary.suspect} suspected</Text>
             </View>
           </View>
 
@@ -50,7 +83,7 @@ export default function UserStatsScreen() {
                 <View style={styles.donutRightArc} />
               </View>
               <View style={styles.donutCenter}>
-                <Text style={styles.donutPercent}>67%</Text>
+                <Text style={styles.donutPercent}>{summary.genuinePercent}%</Text>
                 <Text style={styles.donutCaption}>Genuine</Text>
               </View>
             </View>
@@ -88,7 +121,7 @@ export default function UserStatsScreen() {
         <Text style={styles.sectionHeader}>Document Types</Text>
 
         <View style={styles.chartCard}>
-          {documentTypes.map((item) => (
+          {summary.documentTypes.length > 0 ? summary.documentTypes.map((item) => (
             <View key={item.label} style={styles.docRow}>
               <Text style={styles.docLabel}>{item.label}</Text>
               <View style={styles.progressWrap}>
@@ -98,7 +131,7 @@ export default function UserStatsScreen() {
               </View>
               <Text style={styles.docCount}>{item.count}</Text>
             </View>
-          ))}
+          )) : <Text style={styles.emptyState}>No cases yet</Text>}
         </View>
       </ScrollView>
     </View>
@@ -404,5 +437,12 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontSize: 14,
     fontWeight: '700',
+  },
+  emptyState: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
 });

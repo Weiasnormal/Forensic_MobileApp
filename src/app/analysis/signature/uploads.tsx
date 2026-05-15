@@ -1,4 +1,4 @@
-import { hasCompleteUploads, useAnalysisFlowStore } from '@/store/analysisFlowStore';
+import { hasCompleteUploads, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
@@ -17,9 +17,10 @@ export default function SignatureUploadsRoute() {
   const [currentUploadTarget, setCurrentUploadTarget] = useState<'reference' | 'suspect' | null>(null);
   const [currentReferenceIndex, setCurrentReferenceIndex] = useState<number | null>(null);
   const cameraRef = useRef(null);
-  const uploads = useAnalysisFlowStore((state) => state.signature.uploads);
-  const setReference = useAnalysisFlowStore((state) => state.setReference);
-  const setSuspect = useAnalysisFlowStore((state) => state.setSuspect);
+  const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
+  const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
+  const submitNewCase = useCaseStore((state) => state.submitNewCase);
+  const isSubmitting = useCaseStore((state) => state.isSubmitting);
   const canRun = hasCompleteUploads(uploads);
 
   const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
@@ -40,9 +41,9 @@ export default function SignatureUploadsRoute() {
       const photo = await (cameraRef.current as any).takePictureAsync({ base64: true });
       if (photo?.uri) {
         if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-          setReference('signature', currentReferenceIndex, photo.uri);
+          setDraftUpload('reference', currentReferenceIndex, photo.uri);
         } else if (currentUploadTarget === 'suspect') {
-          setSuspect('signature', photo.uri);
+          setDraftUpload('suspect', 0, photo.uri);
         }
       }
       setCameraVisible(false);
@@ -51,6 +52,16 @@ export default function SignatureUploadsRoute() {
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to capture image. Please try again.');
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await submitNewCase();
+      nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'cases' } });
+    } catch (error) {
+      console.warn('Unable to submit new case:', error);
+      Alert.alert('Submit failed', 'Please complete the case details and try again.');
     }
   };
 
@@ -108,8 +119,8 @@ export default function SignatureUploadsRoute() {
         </Pressable>
       </ScrollView>
       <View style={styles.buttonContainer}>
-        <Pressable onPress={() => nav.push('/analysis/signature/processing')} disabled={!canRun} style={[styles.primaryButton, !canRun && styles.disabledButton]}>
-          <Text style={styles.primaryButtonText}>Run Analysis</Text>
+        <Pressable onPress={handleSubmit} disabled={!canRun || isSubmitting} style={[styles.primaryButton, (!canRun || isSubmitting) && styles.disabledButton]}>
+          <Text style={styles.primaryButtonText}>{isSubmitting ? 'Saving...' : 'Run Analysis'}</Text>
         </Pressable>
       </View>
       {cameraVisible && (

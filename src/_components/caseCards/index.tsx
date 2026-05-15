@@ -1,37 +1,44 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export type CaseStatus = 'suspect' | 'genuine' | 'processing';
+export type CaseStatus = 'Suspect' | 'Genuine' | 'Processing' | 'Completed';
 
 interface CaseCardProps {
 	id: string;
 	type: string;
 	name: string;
 	status: CaseStatus;
+	createdAt: string;
 	onPress?: () => void;
 }
 
 const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string; badgeText: string; badgeBgColor: string }> = {
-	suspect: {
+	Suspect: {
 		borderColor: '#E24B4A',
 		badgeColor: '#E24B4A',
 		badgeText: 'Suspect',
 		badgeBgColor: 'rgba(226, 75, 74, 0.1)',
 	},
-	genuine: {
+	Genuine: {
 		borderColor: '#2E9F5C',
 		badgeColor: '#2E9F5C',
 		badgeText: 'Genuine',
 		badgeBgColor: 'rgba(46, 159, 92, 0.1)',
 	},
-	processing: {
+	Processing: {
 		borderColor: '#2D72D1',
 		badgeColor: '#2D72D1',
 		badgeText: 'Processing',
 		badgeBgColor: 'rgba(45, 114, 209, 0.1)',
 	},
+	Completed: {
+		borderColor: '#64748B',
+		badgeColor: '#64748B',
+		badgeText: 'Completed',
+		badgeBgColor: 'rgba(100, 116, 139, 0.1)',
+	},
 };
 
-export default function CaseCard({ id, type, name, status, onPress }: CaseCardProps) {
+export default function CaseCard({ id, type, name, status, createdAt, onPress }: CaseCardProps) {
 	const style = statusStyles[status];
 
 	return (
@@ -45,6 +52,7 @@ export default function CaseCard({ id, type, name, status, onPress }: CaseCardPr
 				<View style={{ flex: 1 }}>
 					<Text style={styles.id}>{id}</Text>
 					<Text style={styles.typeLabel}>{type}</Text>
+
 				</View>
 				<View style={[styles.badge, { backgroundColor: style.badgeBgColor }]}>
 					<Text style={[styles.badgeText, { color: style.badgeColor }]}>{style.badgeText}</Text>
@@ -98,6 +106,7 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
         left: 6,
 	},
+
 	badge: {
 		paddingHorizontal: 10,
 		paddingVertical: 6,
@@ -117,3 +126,4 @@ const styles = StyleSheet.create({
         left: 6,
 	},
 });
+

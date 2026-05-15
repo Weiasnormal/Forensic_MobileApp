@@ -1,4 +1,4 @@
-import { useAnalysisFlowStore, type AnalysisPriority } from '@/store/analysisFlowStore';
+import { type AnalysisPriority, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -13,17 +13,15 @@ const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
 export default function SignatureStep1Route() {
   const router = useRouter();
   const nav = router as any;
-  const flow = useAnalysisFlowStore((state) => state.signature);
-  const setSubjectName = useAnalysisFlowStore((state) => state.setSubjectName);
-  const setExaminerName = useAnalysisFlowStore((state) => state.setExaminerName);
-  const setDocumentType = useAnalysisFlowStore((state) => state.setDocumentType);
-  const setPriority = useAnalysisFlowStore((state) => state.setPriority);
+  const draftCase = useCaseStore((state) => state.draftSignatureCase);
+  const updateDraftCase = useCaseStore((state) => state.updateDraftCase);
   const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
-  const canContinue = flow.caseDetails.subjectName.trim().length > 1 && flow.caseDetails.examinerName.trim().length > 1 && flow.caseDetails.documentType.length > 0;
-  const caseIdParts = flow.caseDetails.caseId.split('-');
+  const canContinue = draftCase.subjectName.trim().length > 1 && draftCase.examiner.trim().length > 1;
+  const caseIdParts = draftCase.caseId.split('-');
   const month = caseIdParts[0];
-  const year = caseIdParts[1];
-  const caseNo = caseIdParts[2];
+  const day = caseIdParts[1];
+  const year = caseIdParts[2];
+  const caseNo = caseIdParts[3];
 
   const insets = useSafeAreaInsets();
 
@@ -42,31 +40,31 @@ export default function SignatureStep1Route() {
         <View style={styles.formGroup}>
           <FieldLabel label="Case ID" />
           <View style={styles.caseIdBox}>
-            <Text style={styles.caseIdDisplay}>{flow.caseDetails.caseId}</Text>
+            <Text style={styles.caseIdDisplay}>{draftCase.caseId}</Text>
           </View>
           <View style={styles.caseIdHelper}>
             <Ionicons name="information-circle" size={14} color="#94A3B8" />
-            <Text style={styles.helperText}>{month} · Month  {caseNo} · Day  {year} · Year  {caseNo} · Case no.</Text>
+            <Text style={styles.helperText}>{month} · Month  {day} · Day  {year} · Year  {caseNo} · Case no.</Text>
           </View>
         </View>
         <View style={styles.formGroup}>
           <FieldLabel label="Subject name" />
-          <TextInput value={flow.caseDetails.subjectName} onChangeText={(value) => setSubjectName('signature', value)} placeholder="Enter subject name" placeholderTextColor="#CBD5E1" style={styles.textInput} />
+          <TextInput value={draftCase.subjectName} onChangeText={(value) => updateDraftCase('subjectName', value)} placeholder="Enter subject name" placeholderTextColor="#CBD5E1" style={styles.textInput} />
         </View>
         <View style={styles.formGroup}>
           <FieldLabel label="Examiner" />
-          <TextInput value={flow.caseDetails.examinerName} onChangeText={(value) => setExaminerName('signature', value)} placeholder="Enter examiner name" placeholderTextColor="#CBD5E1" style={styles.textInput} />
+          <TextInput value={draftCase.examiner} onChangeText={(value) => updateDraftCase('examiner', value)} placeholder="Enter examiner name" placeholderTextColor="#CBD5E1" style={styles.textInput} />
         </View>
         <View style={styles.formGroup}>
           <FieldLabel label="Document Type" />
           <Pressable onPress={() => setShowDocumentDropdown(!showDocumentDropdown)} style={styles.dropdownButton}>
-            <Text style={styles.dropdownText}>{flow.caseDetails.documentType || 'Bank cheque'}</Text>
+            <Text style={styles.dropdownText}>{draftCase.documentType || 'Bank cheque'}</Text>
             <Ionicons name={showDocumentDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#0F172A" />
           </Pressable>
           {showDocumentDropdown && (
             <View style={styles.dropdownMenu}>
               {documentOptions.map((option) => (
-                <Pressable key={option} onPress={() => { setDocumentType('signature', option); setShowDocumentDropdown(false); }} style={styles.dropdownItem}>
+                <Pressable key={option} onPress={() => { updateDraftCase('documentType', option); setShowDocumentDropdown(false); }} style={styles.dropdownItem}>
                   <Text style={styles.dropdownItemText}>{option}</Text>
                 </Pressable>
               ))}
@@ -77,9 +75,9 @@ export default function SignatureStep1Route() {
           <FieldLabel label="Priority" />
           <View style={styles.priorityRow}>
             {priorities.map((priority) => {
-              const selected = flow.caseDetails.priority === priority;
+              const selected = draftCase.priority === priority;
               return (
-                <Pressable key={priority} onPress={() => setPriority('signature', priority)} style={[styles.priorityChip, selected && { backgroundColor: ACCENT, borderColor: ACCENT }]}>
+                <Pressable key={priority} onPress={() => updateDraftCase('priority', priority)} style={[styles.priorityChip, selected && { backgroundColor: ACCENT, borderColor: ACCENT }]}>
                   <Text style={[styles.priorityText, selected && { color: '#FFFFFF' }]}>{priority}</Text>
                 </Pressable>
               );

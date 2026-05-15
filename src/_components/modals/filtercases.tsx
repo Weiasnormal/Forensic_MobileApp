@@ -1,31 +1,34 @@
 import React, { useState } from 'react';
 import {
-    Animated,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
+import { type SavedCase } from '../../store/caseStore';
 import { useBottomSheetTransition } from '../transition';
 
 interface FilterCasesModalProps {
   visible: boolean;
   onClose: () => void;
+  cases: SavedCase[];
   onApply?: (filters: {
     sortBy: string;
     verdict: string | null;
     analysisType: string | null;
+    filteredCases: SavedCase[];
   }) => void;
 }
 
-const sortOptions = ['Newest first', 'Oldest first', 'Suspected First', 'Genuine First'];
-const verdictOptions = ['All', 'Genuine', 'Suspected', 'Processing'];
-const analysisOptions = ['All', 'Signature', 'Handwriting'];
+const sortOptions = ['Newest first', 'Oldest first', 'Suspect first', 'Genuine first'];
+const verdictOptions = ['All', 'Genuine', 'Suspect', 'Processing', 'Completed'];
+const analysisOptions = ['All', 'Signature', 'Handwriting', 'Document'];
 
-export default function FilterCasesModal({ visible, onClose, onApply }: FilterCasesModalProps) {
+export default function FilterCasesModal({ visible, onClose, cases, onApply }: FilterCasesModalProps) {
   const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } = useBottomSheetTransition({
     visible,
     onClose,
@@ -33,12 +36,44 @@ export default function FilterCasesModal({ visible, onClose, onApply }: FilterCa
 
   const [sortBy, setSortBy] = useState<string>(sortOptions[0]);
   const [verdict, setVerdict] = useState<string | null>('All');
-  const [analysisType, setAnalysisType] = useState<string | null>('All');
+  // const [analysisType, setAnalysisType] = useState<string | null>('All');
 
   if (!isMounted) return null;
 
   const handleApply = () => {
-    onApply?.({ sortBy, verdict, analysisType });
+    // Apply filters to cases
+    let filteredCases = [...cases];
+
+    // Apply verdict filter
+    if (verdict && verdict !== 'All') {
+      filteredCases = filteredCases.filter((item) => item.status === verdict);
+    }
+
+    // Apply analysis type filter
+    // if (analysisType && analysisType !== 'All') {
+    //   filteredCases = filteredCases.filter((item) => formatAnalysisTypeLabel(item.analysisType) === analysisType);
+    // }
+
+    // Apply sort
+    if (sortBy === 'Newest first') {
+      filteredCases.sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+    } else if (sortBy === 'Oldest first') {
+      filteredCases.sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+    } else if (sortBy === 'Suspect first') {
+      filteredCases.sort((left, right) => {
+        if (left.status === 'Suspect' && right.status !== 'Suspect') return -1;
+        if (left.status !== 'Suspect' && right.status === 'Suspect') return 1;
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      });
+    } else if (sortBy === 'Genuine first') {
+      filteredCases.sort((left, right) => {
+        if (left.status === 'Genuine' && right.status !== 'Genuine') return -1;
+        if (left.status !== 'Genuine' && right.status === 'Genuine') return 1;
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      });
+    }
+
+    onApply?.({ sortBy, verdict, analysisType: null, filteredCases });
     onClose();
   };
 
@@ -72,14 +107,14 @@ export default function FilterCasesModal({ visible, onClose, onApply }: FilterCa
             ))}
           </View>
 
-          <View style={styles.sep} />
+          {/* <View style={styles.sep} />
 
           <Text style={styles.sectionLabel}>ANALYSIS TYPE</Text>
           <View style={styles.rowWrap}>
             {analysisOptions.map((opt) => (
               <Pill key={opt} label={opt} selected={analysisType === opt} onPress={() => setAnalysisType(opt)} />
             ))}
-          </View>
+          </View> */}
 
           <TouchableOpacity style={styles.applyButton} activeOpacity={0.9} onPress={handleApply}>
             <Text style={styles.applyText}>Apply</Text>

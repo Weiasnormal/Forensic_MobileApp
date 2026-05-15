@@ -29,52 +29,111 @@ const DEFAULT_USER: UserProfile = {
 
 const KEY = 'wincel_pogi_key_user_profile';
 
+// Debug helper for better logging
+const log = {
+  info: (tag: string, message: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${tag} | ${message}`, data ? data : '');
+  },
+  error: (tag: string, message: string, error?: any) => {
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] ${tag} | ❌ ${message}`, error ? { error: error.message, stack: error.stack } : '');
+  },
+  warn: (tag: string, message: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    console.warn(`[${timestamp}] ${tag} | ⚠️  ${message}`, data ? data : '');
+  },
+};
+
 const UserContext = createContext<UserStore | null>(null);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<UserProfile>(DEFAULT_USER);
 
   useEffect(() => {
-    console.log('[UserStore] provider mounted - loading profile');
+    log.info('UserProvider', '🚀 Provider mounted, checking AsyncStorage availability');
+    
+    // Verify AsyncStorage is available
+    if (!AsyncStorage) {
+      log.error('UserProvider', 'AsyncStorage is not available - native module may not be linked');
+      return;
+    }
+    
+    log.info('UserProvider', '✓ AsyncStorage available, loading user profile');
     load();
   }, []);
 
   const load = async () => {
+    const startTime = performance.now();
     try {
-      console.log('[UserStore] load:start');
+      log.info('UserStore', 'Starting load operation', { storageKey: KEY });
+      
+      // Check AsyncStorage availability
+      if (!AsyncStorage) {
+        throw new Error('AsyncStorage is null - native module not properly linked');
+      }
+      
       const raw = await AsyncStorage.getItem(KEY);
-      console.log('[UserStore] load:raw', raw);
+      const loadTime = (performance.now() - startTime).toFixed(2);
+      
+      log.info('UserStore', `Retrieved raw data from storage (${loadTime}ms)`, { rawLength: raw?.length, hasData: !!raw });
+      
       if (raw) {
-        const parsed = JSON.parse(raw);
-        console.log('[UserStore] load:parsed', parsed);
-        setUserState((s) => ({ ...s, ...parsed }));
+        try {
+          const parsed = JSON.parse(raw);
+          log.info('UserStore', `✓ Successfully parsed stored user profile`, { profile: parsed });
+          setUserState((s) => {
+            log.info('UserStore', 'Updating user state', { previous: s, new: parsed });
+            return { ...s, ...parsed };
+          });
+        } catch (parseError) {
+          log.error('UserStore', 'Failed to parse stored JSON', parseError);
+        }
+      } else {
+        log.info('UserStore', 'No stored profile found, using default user', { defaultUser: DEFAULT_USER });
       }
     } catch (e) {
-      console.warn('[UserStore] load:failed', e);
+      const error = e as Error;
+      log.error('UserStore', 'Failed to load user profile', error);
+      log.warn('UserStore', 'Using default user as fallback');
     }
   };
 
   const persist = async (next: UserProfile) => {
+    const startTime = performance.now();
     try {
-      console.log('[UserStore] persist:start', next);
-      await AsyncStorage.setItem(KEY, JSON.stringify(next));
-      console.log('[UserStore] persist:success');
+      log.info('UserStore', 'Starting persist operation', { user: next });
+      
+      if (!AsyncStorage) {
+        throw new Error('AsyncStorage is null - cannot persist data');
+      }
+      
+      const jsonString = JSON.stringify(next);
+      await AsyncStorage.setItem(KEY, jsonString);
+      
+      const persistTime = (performance.now() - startTime).toFixed(2);
+      log.info('UserStore', `✓ Profile persisted successfully (${persistTime}ms)`, { dataSize: jsonString.length });
     } catch (e) {
-      console.warn('[UserStore] persist:failed', e);
+      const error = e as Error;
+      log.error('UserStore', 'Failed to persist user profile', error);
     }
   };
 
   const copyImageToDocuments = async (uri: string): Promise<string> => {
-    console.log('[UserStore] copyImageToDocuments:start', { uri });
+    const startTime = performance.now();
+    log.info('UserStore:Image', 'Starting image copy operation', { sourceUri: uri });
+    
     const documentsRoot = (FileSystem as any).documentDirectory;
 
     if (!documentsRoot) {
-      console.warn('[UserStore] copyImageToDocuments:noDocumentDirectory');
+      log.error('UserStore:Image', 'Document directory not available - cannot copy image');
       return uri;
     }
 
+    log.info('UserStore:Image', 'Document root found', { documentsRoot });
+
     if (uri.startsWith(documentsRoot)) {
-      console.log('[UserStore] copyImageToDocuments:alreadyStable', { uri });
+      log.info('UserStore:Image', 'Image already in documents, skipping copy', { uri });
       return uri;
     }
 
@@ -83,38 +142,50 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const fileName = `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
     const targetUri = `${avatarDirectory}${fileName}`;
 
-    console.log('[UserStore] copyImageToDocuments:target', {
+    log.info('UserStore:Image', 'Prepared copy target', {
       avatarDirectory,
+      fileName,
       targetUri,
     });
 
     try {
+      log.info('UserStore:Image', 'Creating avatar directory');
       await (FileSystem as any).makeDirectoryAsync(avatarDirectory, { intermediates: true });
+      
       if (uri.startsWith('content://')) {
-        console.log('[UserStore] copyImageToDocuments:using downloadAsync for content URI');
+        log.info('UserStore:Image', 'Using downloadAsync for content:// URI (Android)');
         await (FileSystem as any).downloadAsync(uri, targetUri);
       } else {
+        log.info('UserStore:Image', 'Using copyAsync for file URI');
         await (FileSystem as any).copyAsync({ from: uri, to: targetUri });
       }
-      console.log('[UserStore] copyImageToDocuments:success', { targetUri });
+      
+      const copyTime = (performance.now() - startTime).toFixed(2);
+      log.info('UserStore:Image', `✓ Image copied successfully (${copyTime}ms)`, { targetUri });
       return targetUri;
     } catch (e) {
-      console.warn('[UserStore] copyImageToDocuments:failed', e);
+      const error = e as Error;
+      log.error('UserStore:Image', 'Failed to copy image', error);
+      log.warn('UserStore:Image', 'Returning original URI as fallback');
       return uri;
     }
   };
 
   const setUser = async (u: Partial<UserProfile>) => {
+    log.info('UserStore:SetUser', 'Setting user with partial data', { update: u });
+    
     const normalizedAvatarUri = u.avatarUri ? await copyImageToDocuments(u.avatarUri) : u.avatarUri;
     const next = { ...user, ...u, avatarUri: normalizedAvatarUri ?? null } as UserProfile;
-    console.log('[UserStore] setUser:next', {
+    
+    log.info('UserStore:SetUser', 'Avatar normalization complete', {
       previousAvatarUri: user.avatarUri,
       incomingAvatarUri: u.avatarUri,
       normalizedAvatarUri,
       nextAvatarUri: next.avatarUri,
-      next,
     });
+    
     setUserState(next);
+    log.info('UserStore:SetUser', 'State updated, persisting to storage');
     await persist(next);
   };
 
@@ -127,7 +198,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useUser = () => {
   const ctx = useContext(UserContext);
-  if (!ctx) throw new Error('useUser must be used within UserProvider');
+  if (!ctx) {
+    log.error('UserStore:Hook', 'useUser called outside UserProvider');
+    throw new Error('useUser must be used within UserProvider');
+  }
+  log.info('UserStore:Hook', 'useUser hook accessed successfully');
   return ctx;
 };
 

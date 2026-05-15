@@ -3,62 +3,40 @@ import StatsScreen from '@/app/User/user_stats';
 import { useUser } from '@/store/userStore';
 import { Image as ExpoImage } from 'expo-image';
 import * as NavigationBar from 'expo-navigation-bar';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CaseCard from '../../_components/caseCards';
-import PendingCard from '../../_components/pendingCards';
-import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
+import { formatAnalysisTypeLabel, type SavedCase, useCaseStore } from '../../store/caseStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
 const signattureIcon = require('../../../assets/expo.icon/Assets/signature_icon.webp');
-const pendingCases = [
-  {
-    id: '0429-2026-001',
-    name: 'Juan dela Cruz - Bank Cheque',
-    status: 'result-ready' as const,
-  },
-  {
-    id: '0429-2026-001',
-    name: 'Juan dela Cruz - Bank Cheque',
-    status: 'processing' as const,
-  },
-  {
-    id: '0429-2026-001',
-    name: 'Juan dela Cruz - Bank Cheque',
-    status: 'draft' as const,
-  },
-];
 
-const recentCases = [
-  {
-    id: '0429-2026-001',
-    type: 'Signature • Urgent',
-    name: 'Juan dela Cruz - Bank Cheque',
-    status: 'suspect' as const,
-  },
-  {
-    id: '0429-2026-002',
-    type: 'Signature',
-    name: 'Juan dela Cruz - Property Contract',
-    status: 'genuine' as const,
-  },
-  {
-    id: '0429-2026-003',
-    type: 'Handwriting • Urgent',
-    name: 'Juan dela Cruz - Bank Cheque',
-    status: 'processing' as const,
-  },
-];
+const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
+
+function resolveTabValue(value: string | string[] | undefined): TabKey {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (candidate && TAB_KEYS.includes(candidate as TabKey)) {
+    return candidate as TabKey;
+  }
+
+  return 'home';
+}
 
 export default function UserDashboardScreen() {
-  const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const params = useLocalSearchParams<{ tab?: string | string[] }>();
+  const [activeTab, setActiveTab] = useState<TabKey>(resolveTabValue(params.tab));
   const router = useRouter();
   const nav = router as any;
-  const initializeFlow = useAnalysisFlowStore((state) => state.initializeFlow);
+  const cases = useCaseStore((state) => state.cases);
+  const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
   const { user, load } = useUser();
+
+  React.useEffect(() => {
+    setActiveTab(resolveTabValue(params.tab));
+  }, [params.tab]);
 
   React.useEffect(() => {
     load();
@@ -72,7 +50,7 @@ export default function UserDashboardScreen() {
   }, [activeTab]);
 
   const handleNewAnalysisPress = () => {
-    initializeFlow('signature');
+    startNewSignatureDraft();
     nav.push('/analysis/signature/step1');
   };
 
@@ -104,7 +82,7 @@ export default function UserDashboardScreen() {
           contentContainerStyle={[styles.scrollArea, styles.homeScrollArea]}
           showsVerticalScrollIndicator={false}
         >
-          <HomeTab onStartAnalysis={handleNewAnalysisPress} />
+          <HomeTab onStartAnalysis={handleNewAnalysisPress} cases={cases} onViewAllPress={() => setActiveTab('cases')} />
         </ScrollView>
       ) : activeTab === 'cases' ? (
         <CasesScreen />
@@ -123,7 +101,11 @@ export default function UserDashboardScreen() {
   );
 }
 
-function HomeTab({ onStartAnalysis }: { onStartAnalysis: () => void }) {
+function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: () => void; cases: SavedCase[]; onViewAllPress: () => void }) {
+  const latestCases = [...cases]
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 5);
+
   return (
     <>
       <TouchableOpacity style={styles.analysisBanner} activeOpacity={0.9} onPress={onStartAnalysis}>
@@ -138,25 +120,21 @@ function HomeTab({ onStartAnalysis }: { onStartAnalysis: () => void }) {
 
       <View style={styles.sectionDivider} />
 
-
-      <View style={styles.pendingList}>
-        {pendingCases.map((item) => (
-          <PendingCard key={`${item.status}-${item.id}`} id={item.id} name={item.name} status={item.status} />
-        ))}
-      </View>
-
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Cases</Text>
-        <Text style={styles.sectionLink}>View all</Text>
+        <TouchableOpacity onPress={onViewAllPress}>
+          <Text style={styles.sectionLink}>View all</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.recentList}>
-        {recentCases.map((item) => (
+        {latestCases.map((item) => (
           <CaseCard
-            key={item.id}
-            id={item.id}
-            type={item.type}
-            name={item.name}
+            key={item.caseId}
+            id={item.caseId}
+            createdAt={item.createdAt}
+            type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
+            name={`${item.subjectName} · ${item.documentType}`}
             status={item.status}
           />
         ))}
