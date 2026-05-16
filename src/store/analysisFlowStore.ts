@@ -25,6 +25,7 @@ interface AnalysisFlowStore {
   signature: AnalysisFlowState;
   handwriting: AnalysisFlowState;
   nextCaseNumber: number;
+  currentAnalysisType: AnalysisFlowType | null;
   initializeFlow: (type: AnalysisFlowType) => void;
   setSubjectName: (type: AnalysisFlowType, value: string) => void;
   setExaminerName: (type: AnalysisFlowType, value: string) => void;
@@ -33,6 +34,7 @@ interface AnalysisFlowStore {
   setReference: (type: AnalysisFlowType, index: number, uri: string | null) => void;
   setSuspect: (type: AnalysisFlowType, uri: string | null) => void;
   resetUploads: (type: AnalysisFlowType) => void;
+  setCurrentAnalysisType: (type: AnalysisFlowType | null) => void;
 }
 
 const INITIAL_PRIORITY: AnalysisPriority = 'Medium';
@@ -80,6 +82,7 @@ export const useAnalysisFlowStore = create<AnalysisFlowStore>((set) => ({
   signature: createInitialFlow(initialSignatureId),
   handwriting: createInitialFlow(initialHandwritingId),
   nextCaseNumber: 3,
+  currentAnalysisType: null,
 
   initializeFlow: (type) =>
     set((state) => {
@@ -87,6 +90,7 @@ export const useAnalysisFlowStore = create<AnalysisFlowStore>((set) => ({
       return {
         ...withUpdatedFlow(state, type, () => createInitialFlow(caseId)),
         nextCaseNumber: state.nextCaseNumber + 1,
+        currentAnalysisType: type,
       };
     }),
 
@@ -168,6 +172,11 @@ export const useAnalysisFlowStore = create<AnalysisFlowStore>((set) => ({
         },
       })),
     ),
+
+  setCurrentAnalysisType: (type) =>
+    set({
+      currentAnalysisType: type,
+    }),
 }));
 
 export function hasCompleteUploads(uploads: AnalysisUploads) {

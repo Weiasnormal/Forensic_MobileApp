@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
+import { useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 
 const ACCENT = '#1F5DA8';
@@ -65,6 +66,22 @@ function statusColors(status: 'ok' | 'warning' | 'bad') {
 export function SignatureProcessingView() {
   const router = useRouter();
   const nav = router as any;
+  const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
+  const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+
+  const setSignatureStatus = (status: 'Processing' | 'Completed') => {
+    if (!currentCaseId) {
+      return;
+    }
+
+    updateCaseStatus(currentCaseId, status);
+  };
+
+  const handleBackToHome = () => {
+    // Update case status to "Processing" when going back from processing page
+    setSignatureStatus('Processing');
+    nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
@@ -73,7 +90,10 @@ export function SignatureProcessingView() {
         subtitle="AI forensic engine is running multi-stage comparison"
         accentColor={ACCENT}
         steps={processingSteps}
-        onComplete={() => nav.replace('/analysis/signature/results')}
+        onComplete={() => {
+          setSignatureStatus('Processing');
+          nav.replace('/analysis/signature/results');
+        }}
       />
       <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
         <Pressable
@@ -84,7 +104,7 @@ export function SignatureProcessingView() {
             borderRadius: 14,
             alignItems: 'center',
           }}
-          onPress={() => nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } })}
+          onPress={handleBackToHome}
         >
           <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>Back to Home</Text>
         </Pressable>
@@ -94,8 +114,29 @@ export function SignatureProcessingView() {
 }
 
 export function SignatureResultsScreen() {
+  const router = useRouter();
+  const nav = router as any;
   const suspectUri = useAnalysisFlowStore((state) => state.signature.uploads.suspect);
+  const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
+  const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
+
+  const setSignatureStatus = (status: 'Processing' | 'Completed') => {
+    if (!currentCaseId) {
+      return;
+    }
+
+    updateCaseStatus(currentCaseId, status);
+  };
+
+  const handleBackToDashboard = () => {
+    // Update case status to "Completed"
+    setSignatureStatus('Completed');
+    // Reset analysis type
+    useAnalysisFlowStore.setState({ currentAnalysisType: null });
+    // Navigate to dashboard
+    nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
+  };
 
   const activeTone = useMemo(() => {
     if (activeView === 'Heatmap') {
@@ -178,6 +219,10 @@ export function SignatureResultsScreen() {
 
         <Pressable onPress={() => Alert.alert('Export started', 'PDF report generation has started.')} style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Export PDF report</Text>
+        </Pressable>
+
+        <Pressable onPress={handleBackToDashboard} style={[styles.primaryButton, { backgroundColor: '#64748B' }]}>
+          <Text style={styles.primaryButtonText}>Back to Dashboard</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

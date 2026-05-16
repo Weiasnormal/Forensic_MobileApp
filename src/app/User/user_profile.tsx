@@ -4,13 +4,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getCaseSummary, useCaseStore } from '../../store/caseStore';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
 	const { user, load } = useUser();
 	const cases = useCaseStore((state) => state.cases);
+	const resetMockDatabase = useCaseStore((state) => state.resetMockDatabase);
 	const { totalCases, genuineCount, suspectCount } = getCaseSummary(cases);
 
 	useFocusEffect(
@@ -20,6 +21,10 @@ export default function UserProfileScreen() {
 	);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
+
+	const hiddenSavedCases = useCaseStore((s) => s.hiddenSavedCases);
+	const stashSavedCases = useCaseStore((s) => s.stashSavedCases);
+	const restoreSavedCases = useCaseStore((s) => s.restoreSavedCases);
 
 	return (
 		<View style={styles.screen}>
@@ -77,6 +82,43 @@ export default function UserProfileScreen() {
 					<ActionRow icon="information-circle-outline" label="Help & Support" />
 					<ActionRow icon="document-text-outline" label="App Version" value="v1.0.0" showChevron={false} />
 				</CardShell>
+
+				<SectionLabel title="Data" />
+				<ToggleRow
+					icon={hiddenSavedCases ? 'eye-off-outline' : 'eye-outline'}
+					label={hiddenSavedCases ? 'Saved Cases Hidden (Restore)' : 'Hide Saved Cases'}
+					value={!!hiddenSavedCases}
+					onToggle={() => {
+						if (!hiddenSavedCases) {
+							Alert.alert(
+								'Hide saved cases',
+								'This will temporarily hide saved cases from the dashboard. Continue?',
+								[
+									{ text: 'Cancel', style: 'cancel' },
+									{ text: 'Hide', style: 'destructive', onPress: () => stashSavedCases() },
+								],
+							);
+						} else {
+							restoreSavedCases();
+						}
+					}}
+				/>
+				<TouchableOpacity
+					style={styles.resetButton}
+					activeOpacity={0.88}
+					onPress={() => {
+						Alert.alert(
+							'Reset test data',
+							'This will remove the mock cases and drafts from the app. Continue?',
+							[
+								{ text: 'Cancel', style: 'cancel' },
+								{ text: 'Reset', style: 'destructive', onPress: () => resetMockDatabase() },
+							],
+						);
+					}}
+				>
+					<Text style={styles.resetButtonText}>Reset Test Data</Text>
+				</TouchableOpacity>
 
 				<TouchableOpacity style={styles.signOutButton} activeOpacity={0.88}>
 					<Text style={styles.signOutText}>Sign out</Text>
@@ -329,6 +371,20 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		paddingVertical: 15,
 		alignItems: 'center',
+	},
+	resetButton: {
+		marginTop: 2,
+		borderWidth: 1,
+		borderColor: '#FECACA',
+		backgroundColor: '#FEF2F2',
+		borderRadius: 16,
+		paddingVertical: 15,
+		alignItems: 'center',
+	},
+	resetButtonText: {
+		color: '#B91C1C',
+		fontSize: 15,
+		fontWeight: '900',
 	},
 	signOutText: {
 		color: '#EF4444',

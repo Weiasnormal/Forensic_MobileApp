@@ -58,7 +58,7 @@ export default function UserDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
       <StatusBar style="dark" backgroundColor="#ffffff" />
 
       {activeTab === 'home' ? (

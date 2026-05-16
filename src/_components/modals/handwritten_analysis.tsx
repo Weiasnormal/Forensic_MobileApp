@@ -2,21 +2,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-    hasCompleteUploads,
-    useAnalysisFlowStore,
-    type AnalysisPriority,
+  hasCompleteUploads,
+  useAnalysisFlowStore,
+  type AnalysisPriority,
 } from '../../store/analysisFlowStore';
+import { useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 import UploadSlot from '../analysis/UploadSlot';
 
@@ -265,20 +266,60 @@ export function HandwritingUploadsScreen() {
 export function HandwritingProcessingView() {
   const router = useRouter();
   const nav = router as any;
+  const currentCaseId = useAnalysisFlowStore((state) => state.handwriting.caseDetails.caseId);
+  const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+
+  const handleBackToHome = () => {
+    // Update case status to "Processing" when going back from processing page
+    updateCaseStatus(currentCaseId, 'Processing');
+    nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
+  };
 
   return (
-    <ProcessingScreen
-      title="Processing Handwriting"
-      subtitle="AI writer-identification pipeline is in progress"
-      accentColor={ACCENT}
-      steps={processingSteps}
-      onComplete={() => nav.replace('/analysis/handwriting/results')}
-    />
+    <SafeAreaView style={{ flex: 1, backgroundColor: SCREEN_BG }}>
+      <ProcessingScreen
+        title="Processing Handwriting"
+        subtitle="AI writer-identification pipeline is in progress"
+        accentColor={ACCENT}
+        steps={processingSteps}
+        onComplete={() => {
+          updateCaseStatus(currentCaseId, 'Processing');
+          nav.replace('/analysis/handwriting/results');
+        }}
+      />
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+        <Pressable
+          style={{
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            backgroundColor: ACCENT,
+            borderRadius: 14,
+            alignItems: 'center',
+          }}
+          onPress={handleBackToHome}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>Back to Home</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 export function HandwritingResultsScreen() {
+  const router = useRouter();
+  const nav = router as any;
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
+  const currentCaseId = useAnalysisFlowStore((state) => state.handwriting.caseDetails.caseId);
+  const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+
+  const handleBackToDashboard = () => {
+    // Update case status to "Completed"
+    updateCaseStatus(currentCaseId, 'Completed');
+    // Reset analysis type
+    useAnalysisFlowStore.setState({ currentAnalysisType: null });
+    // Navigate to dashboard
+    nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
+  };
 
   const activeTone = useMemo(() => {
     if (activeView === 'Heatmap') {
@@ -362,6 +403,13 @@ export function HandwritingResultsScreen() {
           style={styles.primaryButton}
         >
           <Text style={styles.primaryButtonText}>Export PDF report</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleBackToDashboard}
+          style={[styles.primaryButton, { backgroundColor: '#64748B' }]}
+        >
+          <Text style={styles.primaryButtonText}>Back to Dashboard</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

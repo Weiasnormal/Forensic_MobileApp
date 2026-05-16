@@ -52,7 +52,12 @@ interface CaseStore {
   draftSignatureCase: DraftCase;
   isSubmitting: boolean;
   nextCaseNumber: number;
+  activeSignatureCaseId: string | null;
+  hiddenSavedCases: SavedCase[] | null;
   markCaseResultViewed: (caseId: string) => void;
+  updateCaseStatus: (caseId: string, status: CaseStatus) => void;
+  stashSavedCases: () => void;
+  restoreSavedCases: () => void;
   startNewSignatureDraft: () => void;
   updateDraftCase: <K extends DraftEditableField>(field: K, value: DraftCase[K]) => void;
   setDraftUpload: (type: DraftUploadType, index: number, uri: string | null) => void;
@@ -170,6 +175,8 @@ export const useCaseStore = create<CaseStore>()(
         draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
         isSubmitting: false,
         nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
+        activeSignatureCaseId: null,
+        hiddenSavedCases: null,
 
         markCaseResultViewed: (caseId) => {
           set((state) => ({
@@ -177,6 +184,37 @@ export const useCaseStore = create<CaseStore>()(
               item.caseId === caseId ? { ...item, resultViewed: true } : item,
             ),
           }));
+        },
+
+        updateCaseStatus: (caseId, status) => {
+          caseLog.info('CaseStore:Action', `Updating case ${caseId} status to ${status}`);
+          set((state) => ({
+            cases: state.cases.map((item) =>
+              item.caseId === caseId ? { ...item, status } : item,
+            ),
+          }));
+        },
+
+        stashSavedCases: () => {
+          caseLog.info('CaseStore:Action', 'Stashing saved cases (hide from UI)');
+          set((state) => {
+            if (!state.cases || state.cases.length === 0) return state;
+            return {
+              hiddenSavedCases: state.cases,
+              cases: [],
+            } as Partial<CaseStore> as CaseStore;
+          });
+        },
+
+        restoreSavedCases: () => {
+          caseLog.info('CaseStore:Action', 'Restoring stashed saved cases');
+          set((state) => {
+            if (!state.hiddenSavedCases || state.hiddenSavedCases.length === 0) return state;
+            return {
+              cases: state.hiddenSavedCases,
+              hiddenSavedCases: null,
+            } as Partial<CaseStore> as CaseStore;
+          });
         },
 
         startNewSignatureDraft: () => {
@@ -264,6 +302,7 @@ export const useCaseStore = create<CaseStore>()(
               cases: [savedCase, ...state.cases],
               draftSignatureCase: createInitialDraft(state.nextCaseNumber),
               nextCaseNumber: state.nextCaseNumber + 1,
+              activeSignatureCaseId: savedCase.caseId,
             }));
 
             const submitTime = (performance.now() - startTime).toFixed(2);
@@ -286,6 +325,7 @@ export const useCaseStore = create<CaseStore>()(
             draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
             isSubmitting: false,
             nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
+            activeSignatureCaseId: null,
           });
         },
       };
@@ -303,6 +343,8 @@ export const useCaseStore = create<CaseStore>()(
         cases: state.cases,
         draftSignatureCase: state.draftSignatureCase,
         nextCaseNumber: state.nextCaseNumber,
+        activeSignatureCaseId: state.activeSignatureCaseId,
+        hiddenSavedCases: state.hiddenSavedCases,
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<CaseStore> | undefined;
@@ -412,8 +454,8 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
 
   const statusOrder: Record<PendingCardStatus, number> = {
     draft: 0,
-    processing: 1,
-    'result-ready': 2,
+    'result-ready': 1,
+    processing: 2,
   };
 
   return pendingCards.sort((left, right) => statusOrder[left.status] - statusOrder[right.status]).slice(0, MAX_PENDING_CARDS);
