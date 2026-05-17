@@ -112,6 +112,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
   const latestCases = [...cases]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 5);
+  const noCasesImage = require('../../../assets/expo.icon/Assets/noCase.webp');
 
   return (
     <>
@@ -171,6 +172,12 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
           />
         ))}
       </View>
+
+      {(!cases || cases.length === 0) ? (
+        <View style={styles.emptyArea}>
+          <ExpoImage source={noCasesImage} style={styles.emptyImage} contentFit="contain" />
+        </View>
+      ) : null}
     </>
   );
 }
@@ -339,5 +346,13 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
+  },
+  emptyArea: {
+    marginTop: -2,
+    alignItems: 'center',
+  },
+  emptyImage: {
+    width: 420,
+    height: 180,
   },
 });

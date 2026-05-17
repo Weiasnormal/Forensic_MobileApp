@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import React, { useMemo, useState } from 'react';
 import {
-    FlatList,
-    SectionList,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  FlatList,
+  SectionList,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
@@ -74,6 +75,7 @@ export default function UserCasesScreen() {
     return Object.entries(grouped).map(([title, data]) => ({ title, data }));
   }, [activeFilter, casesToUse, query]);
   const { totalCases } = getCaseSummary(cases);
+  const noCasesImage = require('../../../assets/expo.icon/Assets/noCase.webp');
 
   return (
     <View style={styles.screen}>
@@ -130,7 +132,12 @@ export default function UserCasesScreen() {
         />
       </View>
 
-      <SectionList
+      {totalCases === 0 ? (
+        <View style={styles.emptyArea}>
+          <ExpoImage source={noCasesImage} style={styles.emptyImage} contentFit="contain" />
+        </View>
+      ) : (
+        <SectionList
         sections={sections}
         keyExtractor={(item) => item.caseId}
         renderItem={({ item }) => (
@@ -147,7 +154,7 @@ export default function UserCasesScreen() {
         style={[styles.list, { marginTop: headerHeight }]}
         contentContainerStyle={styles.listContent}
       />
-
+      )}
       <FilterCasesModal
         visible={showFilter}
         onClose={() => setShowFilter(false)}
@@ -281,5 +288,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#94A3B8',
     letterSpacing: 0.5,
+  },
+  emptyArea: {
+    paddingTop: 180,
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyImage: {
+    width: 420,
+    height: 180,
   },
 });

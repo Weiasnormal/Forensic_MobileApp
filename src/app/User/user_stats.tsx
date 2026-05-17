@@ -1,6 +1,7 @@
 import { useCaseStore } from '@/store/caseStore';
-import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const monthlyBars = [
   { month: 'Nov', genuine: 36, suspected: 18 },
@@ -13,6 +14,7 @@ const monthlyBars = [
 
 export default function UserStatsScreen() {
   const cases = useCaseStore((state) => state.cases);
+  const skeletonOpacity = useRef(new Animated.Value(0.5)).current;
 
   const summary = useMemo(() => {
     const totals = cases.reduce(
@@ -52,6 +54,88 @@ export default function UserStatsScreen() {
       genuinePercent: totals.total > 0 ? Math.round((totals.genuine / totals.total) * 100) : 0,
     };
   }, [cases]);
+
+  useEffect(() => {
+    if (summary.total > 0) {
+      skeletonOpacity.setValue(1);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(skeletonOpacity, {
+          toValue: 0.35,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(skeletonOpacity, {
+          toValue: 0.9,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [summary.total, skeletonOpacity]);
+
+  if (summary.total === 0) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Statistics</Text>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.skeletonInfoCard}>
+            <View>
+              <Ionicons name="information-circle-outline" size={24} color="#8FA2BE" />
+            </View>
+            <Text style={styles.skeletonInfoTextLabel}>
+              Submit your first case to start seeing data here.
+            </Text>
+          </View>
+
+          <View style={styles.skeletonCardLarge}>
+            <Animated.View style={[styles.skeletonTitlePill, { opacity: skeletonOpacity }]} />
+            <Animated.View style={[styles.skeletonLineMd, { opacity: skeletonOpacity }]} />
+            <Animated.View style={[styles.skeletonLineLg, { opacity: skeletonOpacity }]} />
+            <Animated.View style={[styles.skeletonLineLg, { opacity: skeletonOpacity }]} />
+            <Animated.View style={[styles.skeletonDonut, { opacity: skeletonOpacity }]} />
+          </View>
+
+          <View style={styles.skeletonCardChart}>
+            <View style={styles.skeletonChartHead}>
+              <Animated.View style={[styles.skeletonLineSm, { opacity: skeletonOpacity }]} />
+              <Animated.View style={[styles.skeletonHeaderPill, { opacity: skeletonOpacity }]} />
+            </View>
+            <View style={styles.skeletonBarsWrap}>
+              {[0, 1, 2, 3, 4, 5].map((item) => (
+                <View key={item} style={styles.skeletonBarColumn}>
+                  <Animated.View style={[styles.skeletonBar, { opacity: skeletonOpacity }]} />
+                  <Animated.View style={[styles.skeletonTick, { opacity: skeletonOpacity }]} />
+                </View>
+              ))}
+            </View>
+            <View style={styles.skeletonLegendRow}>
+              <Animated.View style={[styles.skeletonLegendItem, { opacity: skeletonOpacity }]} />
+              <Animated.View style={[styles.skeletonLegendItem, { opacity: skeletonOpacity }]} />
+            </View>
+          </View>
+
+          <View style={styles.skeletonCardList}>
+            {[0, 1, 2, 3, 4].map((item) => (
+              <View key={item} style={styles.skeletonListRow}>
+                <Animated.View style={[styles.skeletonListLine, { opacity: skeletonOpacity }]} />
+                <Animated.View style={[styles.skeletonListDot, { opacity: skeletonOpacity }]} />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -444,5 +528,150 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     paddingVertical: 10,
+  },
+  skeletonInfoCard: {
+    minHeight: 62,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DDE6F2',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  skeletonInfoTextLabel: {
+    flex: 1,
+    color: '#8FA2BE',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  skeletonCardLarge: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DDE6F2',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    minHeight: 168,
+    padding: 16,
+  },
+  skeletonTitlePill: {
+    width: 108,
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: '#C8D3E3',
+    marginBottom: 14,
+  },
+  skeletonLineMd: {
+    width: 110,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#D4DDEB',
+    marginBottom: 14,
+  },
+  skeletonLineLg: {
+    width: 100,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#C8D3E3',
+    marginBottom: 8,
+  },
+  skeletonDonut: {
+    position: 'absolute',
+    right: 20,
+    top: 22,
+    width: 126,
+    height: 126,
+    borderRadius: 63,
+    borderWidth: 12,
+    borderColor: '#CDD6E4',
+    backgroundColor: '#F5F8FC',
+  },
+  skeletonCardChart: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DDE6F2',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    padding: 16,
+  },
+  skeletonChartHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  skeletonLineSm: {
+    width: 120,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: '#C8D3E3',
+  },
+  skeletonHeaderPill: {
+    width: 126,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#C8D3E3',
+  },
+  skeletonBarsWrap: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 10,
+  },
+  skeletonBarColumn: {
+    width: 44,
+    alignItems: 'center',
+  },
+  skeletonBar: {
+    width: 44,
+    height: 58,
+    borderRadius: 8,
+    backgroundColor: '#D9E1EE',
+  },
+  skeletonTick: {
+    width: 18,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#C8D3E3',
+    marginTop: 8,
+  },
+  skeletonLegendRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 6,
+  },
+  skeletonLegendItem: {
+    width: 74,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#D1DAE9',
+  },
+  skeletonCardList: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DDE6F2',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  skeletonListRow: {
+    minHeight: 26,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  skeletonListLine: {
+    width: '72%',
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#CDD7E5',
+  },
+  skeletonListDot: {
+    width: 12,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#CDD7E5',
   },
 });
