@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   SectionList,
@@ -14,17 +14,15 @@ import {
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
 import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '../../store/caseStore';
-
-type CaseSection = {
-  title: string;
-  data: SavedCase[];
-};
+import { caseMatchesSearch, normalizeCaseSearchQuery } from '../../utils/caseSearch';
 
 const quickFilters = ['All', 'Genuine', 'Suspect', 'Processing', 'Completed'];
 const DEFAULT_HEADER_HEIGHT = 140;
 
 export default function UserCasesScreen() {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [showFilter, setShowFilter] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(DEFAULT_HEADER_HEIGHT);
@@ -36,22 +34,25 @@ export default function UserCasesScreen() {
   } | null>(null);
   const cases = useCaseStore((state) => state.cases);
 
+  useEffect(() => {
+	const debounceId = setTimeout(() => {
+		setDebouncedQuery(query);
+	}, 220);
+
+	return () => clearTimeout(debounceId);
+  }, [query]);
+
   // Use advanced filtered cases if applied, otherwise use all cases
   const casesToUse = advancedFilters ? advancedFilters.filteredCases : cases;
 
-  const sections = useMemo(() => {
-    const trimmedQuery = query.trim().toLowerCase();
+  const { sections, visibleCaseCount } = useMemo(() => {
+    const normalizedQuery = normalizeCaseSearchQuery(debouncedQuery);
     const sortedCases = [...casesToUse].sort((left, right) => {
       return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
     });
 
     const filteredCases = sortedCases.filter((item) => {
-      const matchesQuery =
-        !trimmedQuery ||
-        item.caseId.toLowerCase().includes(trimmedQuery) ||
-        item.subjectName.toLowerCase().includes(trimmedQuery) ||
-        item.examiner.toLowerCase().includes(trimmedQuery) ||
-        item.documentType.toLowerCase().includes(trimmedQuery);
+      const matchesQuery = caseMatchesSearch(item, normalizedQuery);
 
       const matchesFilter =
         activeFilter === 'All' ||
@@ -72,10 +73,15 @@ export default function UserCasesScreen() {
       return accumulator;
     }, {});
 
-    return Object.entries(grouped).map(([title, data]) => ({ title, data }));
-  }, [activeFilter, casesToUse, query]);
+    return {
+      sections: Object.entries(grouped).map(([title, data]) => ({ title, data })),
+      visibleCaseCount: filteredCases.length,
+    };
+  }, [activeFilter, casesToUse, debouncedQuery]);
   const { totalCases } = getCaseSummary(cases);
   const noCasesImage = require('../../../assets/expo.icon/Assets/noCase.webp');
+  const hasSearchQuery = debouncedQuery.trim().length > 0;
+  const showSearchFeedback = isSearchFocused || query.trim().length > 0;
 
   return (
     <View style={styles.screen}>
@@ -103,6 +109,8 @@ export default function UserCasesScreen() {
             <TextInput
               value={query}
               onChangeText={setQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               placeholder="Search case ID, subject..."
               placeholderTextColor="#94A3B8"
               style={styles.searchInput}
@@ -113,6 +121,31 @@ export default function UserCasesScreen() {
             <Ionicons name="options-outline" size={20} color="#1F5DA8" />
           </TouchableOpacity>
         </View>
+
+        {showSearchFeedback ? (
+          <>
+            <Text style={styles.searchHint}>
+              Search covers case ID, subject, examiner, document type, priority, and analysis type.
+            </Text>
+
+            <View style={styles.searchMetaRow}>
+              <Text style={styles.searchMetaText}>
+                {hasSearchQuery
+                  ? `Showing ${visibleCaseCount} of ${casesToUse.length} cases for “${debouncedQuery.trim()}”`
+                  : `Showing all ${casesToUse.length} cases`}
+              </Text>
+              {hasSearchQuery ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setQuery('')}
+                  style={styles.clearSearchButton}
+                >
+                  <Text style={styles.clearSearchText}>Clear</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </>
+        ) : null}
 
         <FlatList
           data={quickFilters}
@@ -135,6 +168,17 @@ export default function UserCasesScreen() {
       {totalCases === 0 ? (
         <View style={styles.emptyArea}>
           <ExpoImage source={noCasesImage} style={styles.emptyImage} contentFit="contain" />
+        </View>
+      ) : sections.length === 0 ? (
+        <View style={styles.emptySearchArea}>
+          <Ionicons name="search-outline" size={34} color="#94A3B8" />
+          <Text style={styles.emptySearchTitle}>No matching cases</Text>
+          <Text style={styles.emptySearchText}>
+            Try a case ID, subject, examiner, document type, priority, or analysis type.
+          </Text>
+          <TouchableOpacity style={styles.clearSearchButtonLarge} activeOpacity={0.88} onPress={() => setQuery('')}>
+            <Text style={styles.clearSearchTextLarge}>Clear search</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <SectionList
@@ -238,6 +282,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  searchHint: {
+  paddingHorizontal: 16,
+  paddingBottom: 4,
+  fontSize: 12,
+  lineHeight: 16,
+  color: '#64748B',
+  },
+  searchMetaRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 16,
+  paddingBottom: 10,
+  gap: 10,
+  },
+  searchMetaText: {
+  flex: 1,
+  fontSize: 12,
+  color: '#64748B',
+  fontWeight: '600',
+  },
+  clearSearchButton: {
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 999,
+  backgroundColor: '#E0EDFF',
+  },
+  clearSearchText: {
+  fontSize: 12,
+  fontWeight: '700',
+  color: '#1F5DA8',
+  },
   filterButton: {
     width: 44,
     height: 44,
@@ -293,6 +369,37 @@ const styles = StyleSheet.create({
     paddingTop: 180,
     alignItems: 'center',
     paddingHorizontal: 40,
+  },
+  emptySearchArea: {
+  flex: 1,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingHorizontal: 32,
+  paddingTop: 120,
+  gap: 10,
+  },
+  emptySearchTitle: {
+  fontSize: 18,
+  fontWeight: '800',
+  color: '#0F172A',
+  },
+  emptySearchText: {
+  fontSize: 13,
+  lineHeight: 18,
+  textAlign: 'center',
+  color: '#64748B',
+  },
+  clearSearchButtonLarge: {
+  marginTop: 4,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+  borderRadius: 999,
+  backgroundColor: '#1F5DA8',
+  },
+  clearSearchTextLarge: {
+  fontSize: 13,
+  fontWeight: '800',
+  color: '#FFFFFF',
   },
   emptyImage: {
     width: 420,
