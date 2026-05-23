@@ -85,5 +85,6 @@ const styles = StyleSheet.create({
 		fontWeight: '800',
 		letterSpacing: 0.2,
 		textAlign: 'center',
+		fontFamily: 'Sora_800ExtraBold',
 	},
 });

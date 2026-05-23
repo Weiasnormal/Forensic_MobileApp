@@ -4,16 +4,19 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
 
+const maintenanceImage = require('../../../../assets/expo.icon/Assets/under_maintenance.webp');
+
 export default function SignUpPage() {
 	const router = useRouter();
 	const [activeRole, setActiveRole] = useState<AppRole>('analyst');
+	const isOrgAdmin = activeRole === 'admin';
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -102,10 +105,21 @@ export default function SignUpPage() {
 						</TouchableOpacity>
 					</View>
 
-					<View style={styles.nameRow}>
-						<View style={[styles.fieldGroup, styles.halfField]}>
-							<Text style={styles.label}>First name</Text>
-							<Controller
+					<View style={styles.formBody}>
+						{isOrgAdmin ? (
+							<View style={styles.maintenanceWrap}>
+								<Image source={maintenanceImage} style={styles.maintenanceImage} resizeMode="contain" />
+								<Text style={styles.maintenanceTitle}>Feature Currently Unavailable</Text>
+								<Text style={styles.maintenanceBody}>
+									This section is currently being polished. We'll be ready for you shortly.
+								</Text>
+							</View>
+						) : (
+						<>
+						<View style={styles.nameRow}>
+							<View style={[styles.fieldGroup, styles.halfField]}>
+								<Text style={styles.label}>First name</Text>
+								<Controller
 								control={control}
 								name="firstName"
 								render={({ field: { onChange, onBlur, value } }) => (
@@ -123,11 +137,11 @@ export default function SignUpPage() {
 								)}
 							/>
 							{errors.firstName?.message ? <Text style={styles.errorText}>{errors.firstName.message}</Text> : null}
-						</View>
+							</View>
 
-						<View style={[styles.fieldGroup, styles.halfField]}>
-							<Text style={styles.label}>Last Name</Text>
-							<Controller
+							<View style={[styles.fieldGroup, styles.halfField]}>
+								<Text style={styles.label}>Last Name</Text>
+								<Controller
 								control={control}
 								name="lastName"
 								render={({ field: { onChange, onBlur, value } }) => (
@@ -145,12 +159,12 @@ export default function SignUpPage() {
 								)}
 							/>
 							{errors.lastName?.message ? <Text style={styles.errorText}>{errors.lastName.message}</Text> : null}
+							</View>
 						</View>
-					</View>
 
-					<View style={styles.fieldGroup}>
-						<Text style={styles.label}>Email</Text>
-						<Controller
+						<View style={styles.fieldGroup}>
+							<Text style={styles.label}>Email</Text>
+							<Controller
 							control={control}
 							name="email"
 							render={({ field: { onChange, onBlur, value } }) => (
@@ -168,14 +182,14 @@ export default function SignUpPage() {
 									onChangeText={onChange}
 								/>
 							)}
-						/>
-						{errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
-					</View>
+							/>
+							{errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
+						</View>
 
-					<View style={styles.fieldGroup}>
-						<Text style={styles.label}>Password</Text>
-						<View style={[styles.passwordWrap, isPasswordFocused && styles.passwordWrapFocused, showPasswordError && styles.passwordWrapError]}>
-							<Controller
+						<View style={styles.fieldGroup}>
+							<Text style={styles.label}>Password</Text>
+							<View style={[styles.passwordWrap, isPasswordFocused && styles.passwordWrapFocused, showPasswordError && styles.passwordWrapError]}>
+								<Controller
 								control={control}
 								name="password"
 								render={({ field: { onChange, onBlur, value } }) => (
@@ -216,12 +230,12 @@ export default function SignUpPage() {
 							showError={showPasswordError}
 							errorMessage="Password does not meet requirements"
 						/>
-					</View>
+						</View>
 
-					<View style={styles.fieldGroup}>
-						<Text style={styles.label}>Confirm password</Text>
-						<View style={styles.passwordWrap}>
-							<Controller
+						<View style={styles.fieldGroup}>
+							<Text style={styles.label}>Confirm password</Text>
+							<View style={styles.passwordWrap}>
+								<Controller
 								control={control}
 								name="confirmPassword"
 								render={({ field: { onChange, onBlur, value } }) => (
@@ -251,14 +265,18 @@ export default function SignUpPage() {
 									color="#8a99af"
 								/>
 							</TouchableOpacity>
+							</View>
+							{errors.confirmPassword?.message ? <Text style={styles.errorText}>{errors.confirmPassword.message}</Text> : null}
 						</View>
-						{errors.confirmPassword?.message ? <Text style={styles.errorText}>{errors.confirmPassword.message}</Text> : null}
+						</>
+						)}
 					</View>
 
 					<TouchableOpacity
-						style={styles.primaryButton}
+						style={[styles.primaryButton, isOrgAdmin && styles.primaryButtonDisabled]}
 						activeOpacity={0.85}
 						onPress={handleSubmit(handleContinue)}
+						disabled={isOrgAdmin}
 					>
 						<Text style={styles.primaryButtonText}>Continue</Text>
 					</TouchableOpacity>
@@ -328,6 +346,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingTop: 24,
 		paddingBottom:20,
+	},
+	formBody: {
+		minHeight: 360,
 	},
 	roleTabsContainer: {
 		flexDirection: 'row',
@@ -421,6 +442,9 @@ const styles = StyleSheet.create({
 		marginTop: 10,
 		marginBottom: 12,
 	},
+	primaryButtonDisabled: {
+		backgroundColor: '#C9D7EA',
+	},
 	primaryButtonText: {
 		color: '#ffffff',
 		fontSize: 15,
@@ -447,5 +471,31 @@ const styles = StyleSheet.create({
 		color: '#E24B4A',
 		fontSize: 12,
 		fontWeight: '600',
+	},
+	maintenanceWrap: {
+		alignItems: 'center',
+		justifyContent: 'center',
+		paddingHorizontal: 8,
+		marginBottom: 18,
+		marginTop: 6,
+	},
+	maintenanceImage: {
+		width: 210,
+		height: 140,
+		marginBottom: 10,
+	},
+	maintenanceTitle: {
+		color: '#1F2B3E',
+		fontSize: 18,
+		fontWeight: '800',
+		textAlign: 'center',
+		marginBottom: 8,
+	},
+	maintenanceBody: {
+		color: '#66768E',
+		fontSize: 13,
+		lineHeight: 19,
+		textAlign: 'center',
+		maxWidth: 300,
 	},
 });

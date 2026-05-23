@@ -4,15 +4,18 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
 import { type SignInFormValues, signInSchema } from '../../utils/validation';
+
+const maintenanceImage = require('../../../assets/expo.icon/Assets/under_maintenance.webp');
 
 export default function LogInPage() {
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<AppRole>('analyst');
   const [showPassword, setShowPassword] = useState(false);
+  const isOrgAdmin = activeRole === 'admin';
 
   const roleConfig = ROLE_SETTINGS[activeRole].signIn;
   const {
@@ -73,74 +76,85 @@ export default function LogInPage() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.formFields}>
-            <View style={styles.inputGroup}>
-              <Text allowFontScaling={false} style={styles.label}>Email</Text>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.email && styles.inputError]}
-                    placeholder={emailPlaceholder}
-                    placeholderTextColor="#8FA0B7"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    textContentType="emailAddress"
-                    autoComplete="email"
-                    value={value}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                  />
-                )}
-              />
-              {errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
+          {isOrgAdmin ? (
+            <View style={styles.maintenanceWrap}>
+              <Image source={maintenanceImage} style={styles.maintenanceImage} resizeMode="contain" />
+              <Text allowFontScaling={false} style={styles.maintenanceTitle}>Feature Currently Unavailable</Text>
+              <Text allowFontScaling={false} style={styles.maintenanceBody}>
+                This section is currently being polished. We'll be ready for you shortly.
+              </Text>
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text allowFontScaling={false} style={styles.label}>Password</Text>
-              <View style={styles.passwordInputWrap}>
+          ) : (
+            <View style={styles.formFields}>
+              <View style={styles.inputGroup}>
+                <Text allowFontScaling={false} style={styles.label}>Email</Text>
                 <Controller
                   control={control}
-                  name="password"
+                  name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      style={[styles.passwordInput, errors.password && styles.passwordInputError]}
-                      placeholder="Enter your password"
+                      style={[styles.input, errors.email && styles.inputError]}
+                      placeholder={emailPlaceholder}
                       placeholderTextColor="#8FA0B7"
-                      secureTextEntry={!showPassword}
+                      keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      textContentType="password"
-                      autoComplete="password"
+                      textContentType="emailAddress"
+                      autoComplete="email"
                       value={value}
                       onBlur={onBlur}
                       onChangeText={onChange}
                     />
                   )}
                 />
-                <TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
+                {errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text allowFontScaling={false} style={styles.label}>Password</Text>
+                <View style={styles.passwordInputWrap}>
+                  <Controller
+                    control={control}
+                    name="password"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={[styles.passwordInput, errors.password && styles.passwordInputError]}
+                        placeholder="Enter your password"
+                        placeholderTextColor="#8FA0B7"
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        textContentType="password"
+                        autoComplete="password"
+                        value={value}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                      />
+                    )}
+                  />
+                  <TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
+                  </TouchableOpacity>
+                </View>
+                {errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
+
+                <TouchableOpacity
+                  style={styles.forgotPasswordWrap}
+                  activeOpacity={0.7}
+                  onPress={() => router.push(forgotPasswordRoute)}
+                >
+                  <Text allowFontScaling={false} style={styles.forgotPasswordText}>Forgot password?</Text>
                 </TouchableOpacity>
               </View>
-              {errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
-
-              <TouchableOpacity
-                style={styles.forgotPasswordWrap}
-                activeOpacity={0.7}
-                onPress={() => router.push(forgotPasswordRoute)}
-              >
-                <Text allowFontScaling={false} style={styles.forgotPasswordText}>Forgot password?</Text>
-              </TouchableOpacity>
             </View>
-          </View>
+          )}
 
           <View style={styles.bottomActions}>
             <TouchableOpacity
-              style={styles.primaryButton}
+              style={[styles.primaryButton, isOrgAdmin && styles.primaryButtonDisabled]}
               activeOpacity={0.9}
               onPress={handleSubmit(handleSignIn)}
+              disabled={isOrgAdmin}
             >
               <Text allowFontScaling={false} style={styles.primaryButtonText}>Sign In</Text>
             </TouchableOpacity>
@@ -307,6 +321,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 12,
   },
+  primaryButtonDisabled: {
+    backgroundColor: '#C9D7EA',
+  },
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 15,
@@ -334,5 +351,31 @@ const styles = StyleSheet.create({
     color: '#E24B4A',
     fontSize: 12,
     fontWeight: '600',
+  },
+  maintenanceWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    marginBottom: 16,
+    marginTop: 6,
+  },
+  maintenanceImage: {
+    width: 210,
+    height: 140,
+    marginBottom: 10,
+  },
+  maintenanceTitle: {
+    color: '#1F2B3E',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  maintenanceBody: {
+    color: '#66768E',
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    maxWidth: 300,
   },
 });

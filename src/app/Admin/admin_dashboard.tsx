@@ -114,7 +114,6 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   headerSubtitle: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 10,
     color: '#3b4b60',
     letterSpacing: 2,
@@ -122,7 +121,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   pageTitle: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace',
     fontSize: 24,
     fontWeight: 'bold',
     color: '#ffffff',
@@ -161,13 +159,11 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   statLabel: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 11,
     color: '#8b9bb4',
     textTransform: 'uppercase',
   },
   statValue: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace',
     fontSize: 24,
     fontWeight: 'bold',
     color: '#ffffff',
@@ -210,7 +206,6 @@ const styles = StyleSheet.create({
     color: '#3A82F6',
     fontSize: 14,
     fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace',
   },
   listText: {
     flex: 1,
@@ -224,7 +219,6 @@ const styles = StyleSheet.create({
   listSub: {
     fontSize: 13,
     color: '#8b9bb4',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   listArrow: {
     fontSize: 20,
@@ -249,7 +243,6 @@ const styles = StyleSheet.create({
     color: '#8b9bb4',
   },
   storageValue: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 12,
     color: '#ffffff',
   },

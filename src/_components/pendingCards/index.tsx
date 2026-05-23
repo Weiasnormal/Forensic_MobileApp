@@ -10,23 +10,26 @@ interface PendingCardProps {
 	onPress?: () => void;
 }
 
-const statusStyles: Record<PendingCardStatus, { icon: number; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }> = {
+const statusStyles: Record<
+	PendingCardStatus,
+	{ icon: () => number; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }
+> = {
 	'result-ready': {
-		icon: require('../../../assets/expo.icon/Assets/pendingCards/resultready.webp') as number,
+		icon: () => require('../../../assets/expo.icon/Assets/pendingCards/resultready.webp') as number,
 		statusText: 'RESULT READY',
 		statusColor: '#2E9F5C',
 		bgColor: '#ffffff',
 		iconBgColor: '#F1FAF4',
 	},
 	draft: {
-		icon: require('../../../assets/expo.icon/Assets/pendingCards/draft.webp') as number,
+		icon: () => require('../../../assets/expo.icon/Assets/pendingCards/draft.webp') as number,
 		statusText: 'DRAFT',
 		statusColor: '#94A3B8',
 		bgColor: '#ffffff',
 		iconBgColor: '#EFEFEF',
 	},
 	processing: {
-		icon: require('../../../assets/expo.icon/Assets/pendingCards/processing.webp') as number,
+		icon: () => require('../../../assets/expo.icon/Assets/pendingCards/processing.webp') as number,
 		statusText: 'PROCESSING',
 		statusColor: '#2D72D1',
 		bgColor: '#ffffff',
@@ -45,7 +48,7 @@ export default function PendingCard({ id, name, status, onPress }: PendingCardPr
 		>
 			<View style={[styles.iconContainer, { backgroundColor: style.iconBgColor }]}>
 				<Image
-					source={style.icon}
+					source={style.icon()}
 					style={styles.icon}
 					contentFit="contain"
 				/>

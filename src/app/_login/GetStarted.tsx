@@ -1,11 +1,8 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const introComponent = require('../../../assets/expo.icon/Assets/introcomponent.webp');
-const logoPlaceholder = require('../../../assets/expo.icon/Assets/logo_placeholder.webp');
 
 export default function GetStartedPage() {
 	const router = useRouter();
@@ -37,15 +34,15 @@ export default function GetStartedPage() {
 	}, [opacity, translateY]);
 
 	return (
-		<SafeAreaView style={styles.safeArea}>
+	    <SafeAreaView style={styles.safeArea}>
 			<StatusBar style="light" />
 
 			<Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }]}>
-				<Image source={logoPlaceholder} style={styles.finalWordmark} resizeMode="contain" />
+				<Image source={useMemo(() => require('../../../assets/expo.icon/Assets/logo_placeholder.webp'), [])} style={styles.finalWordmark} resizeMode="contain" />
 
 				<View style={styles.heroWrap}>
 					<View style={styles.heroGlow} />
-					<Image source={introComponent} style={styles.heroArt} resizeMode="contain" />
+					<Image source={useMemo(() => require('../../../assets/expo.icon/Assets/introcomponent.webp'), [])} style={styles.heroArt} resizeMode="contain" />
 				</View>
 
 				<View style={styles.copyBlock}>
@@ -125,9 +122,11 @@ const styles = StyleSheet.create({
 		fontWeight: '800',
 		lineHeight: 31,
 		textAlign: 'center',
+		fontFamily: 'Sora_800ExtraBold',
 	},
 	headlineAccent: {
 		color: '#BBD4FF',
+		fontFamily: 'Sora_800ExtraBold',
 	},
 	subheadline: {
 		marginTop: 10,
@@ -136,6 +135,7 @@ const styles = StyleSheet.create({
 		lineHeight: 20,
 		textAlign: 'center',
 		opacity: 0.95,
+		fontFamily: 'Sora_400Regular',
 	},
 	buttonContainer: {
 		gap: 12,
@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
 		color: '#2A71D8',
 		fontSize: 18,
 		fontWeight: '800',
+		fontFamily: 'Sora_800ExtraBold',
 	},
 	secondaryButton: {
 		height: 52,
@@ -170,5 +171,6 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		fontSize: 18,
 		fontWeight: '800',
+		fontFamily: 'Sora_800ExtraBold',
 	},
 });

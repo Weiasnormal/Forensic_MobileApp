@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Slide = {
@@ -34,13 +34,14 @@ export default function OnBoardingPage() {
 	const router = useRouter();
 	const { width } = useWindowDimensions();
 	const [currentIndex, setCurrentIndex] = useState(0);
+	const listRef = useRef<FlatList<Slide>>(null);
 
 	const currentSlide = slides[currentIndex];
 	const isLastSlide = currentIndex === slides.length - 1;
 
 	const handleNext = () => {
 		if (!isLastSlide) {
-			setCurrentIndex((value) => value + 1);
+			listRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
 			return;
 		}
 
@@ -56,18 +57,37 @@ export default function OnBoardingPage() {
 		[currentIndex]
 	);
 
+	const handleSlideChange = (offsetX: number) => {
+		const nextIndex = Math.round(offsetX / width);
+		setCurrentIndex(Math.max(0, Math.min(nextIndex, slides.length - 1)));
+	};
+
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<StatusBar style="light" />
 			<View style={styles.container}>
-				<View style={styles.topArtWrap}>
-					<Image source={require('../../../assets/expo.icon/Assets/OnboardingBG.webp')} style={styles.topBlob} contentFit="cover" />
-					<Image source={currentSlide.image} style={[styles.heroImage, currentIndex === 2 && styles.heroImageLast]} contentFit="contain" />
-				</View>
-				<View style={styles.copyBlock}>
-					<Text style={styles.title}>{currentSlide.title}</Text>
-					<Text style={styles.description}>{currentSlide.description}</Text>
-				</View>
+				<FlatList
+					ref={listRef}
+					data={slides}
+					horizontal
+					pagingEnabled
+					showsHorizontalScrollIndicator={false}
+					keyExtractor={(_, index) => String(index)}
+					onMomentumScrollEnd={(event) => handleSlideChange(event.nativeEvent.contentOffset.x)}
+					getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+					renderItem={({ item, index }) => (
+						<View style={[styles.slide, { width }]}>
+							<View style={styles.topArtWrap}>
+								<Image source={require('../../../assets/expo.icon/Assets/OnboardingBG.webp')} style={styles.topBlob} contentFit="cover" />
+								<Image source={item.image} style={[styles.heroImage, index === 2 && styles.heroImageLast]} contentFit="contain" />
+							</View>
+							<View style={styles.copyBlock}>
+								<Text style={styles.title}>{item.title}</Text>
+								<Text style={styles.description}>{item.description}</Text>
+							</View>
+						</View>
+					)}
+				/>
 
 				<View style={styles.footer}>
 					<View style={styles.progressRow}>
@@ -145,6 +165,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 24,
 		paddingTop: 20,
 		paddingBottom: 30,
+	},
+	slide: {
+		flex: 1,
 	},
 	progressRow: {
 		flexDirection: 'row',
