@@ -1,3 +1,4 @@
+import DraftSavedModal from '@/_components/modals/draft_saved';
 import { useUser } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -24,6 +25,7 @@ export default function SetupAccount() {
   const [role, setRole] = useState(user.role || '');
   const [organization, setOrganization] = useState(user.organization || '');
   const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri || null);
+  const [showSaveProfileModal, setShowSaveProfileModal] = useState(false);
 
   const pickImage = async () => {
     try {
@@ -62,6 +64,10 @@ export default function SetupAccount() {
     });
 
     router.back();
+  };
+
+  const handleConfirmSave = () => {
+    setShowSaveProfileModal(true);
   };
 
   const nav = router as any;
@@ -117,10 +123,23 @@ export default function SetupAccount() {
       </ScrollView>
 
       <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}> 
-        <Pressable onPress={handleSave} disabled={!canContinue} style={[styles.primaryButton, !canContinue && styles.disabledButton]}>
+        <Pressable onPress={handleConfirmSave} disabled={!canContinue} style={[styles.primaryButton, !canContinue && styles.disabledButton]}>
           <Text style={styles.primaryButtonText}>Save</Text>
         </Pressable>
       </View>
+
+      <DraftSavedModal
+        visible={showSaveProfileModal}
+        title="Save profile?"
+        message="Do you want to save these profile changes?"
+        primaryLabel="Save profile"
+        secondaryLabel="No"
+        onContinue={() => {
+          setShowSaveProfileModal(false);
+          void handleSave();
+        }}
+        onDismiss={() => setShowSaveProfileModal(false)}
+      />
     </SafeAreaView>
   );
 }

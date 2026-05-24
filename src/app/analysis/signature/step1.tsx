@@ -18,6 +18,7 @@ export default function SignatureStep1Route() {
   const nav = router as any;
   const draftCase = useCaseStore((state) => state.draftSignatureCase);
   const updateDraftCase = useCaseStore((state) => state.updateDraftCase);
+  const discardSignatureDraft = useCaseStore((state) => state.discardSignatureDraft);
   const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
   const [showDraftSavedModal, setShowDraftSavedModal] = useState(false);
   const canContinue = draftCase.subjectName.trim().length > 1 && draftCase.examiner.trim().length > 1;
@@ -29,20 +30,24 @@ export default function SignatureStep1Route() {
 
   const insets = useSafeAreaInsets();
 
+  const confirmSaveDraft = useCallback(() => {
+    setShowDraftSavedModal(true);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        setShowDraftSavedModal(true);
+        confirmSaveDraft();
         return true;
       });
 
       return () => subscription.remove();
-    }, [])
+    }, [confirmSaveDraft])
   );
 
   return (
     <SafeAreaView style={styles.screen}>
-      <TopBar title="New Analysis" step="1 / 2" onBackPress={() => setShowDraftSavedModal(true)} />
+      <TopBar title="New Analysis" step="1 / 2" onBackPress={confirmSaveDraft} />
       <View style={styles.progressWrap}>
         <View style={styles.progressBar} />
         <View style={[styles.progressFill, { width: '50%' }]} />
@@ -108,7 +113,16 @@ export default function SignatureStep1Route() {
 
       <DraftSavedModal
         visible={showDraftSavedModal}
+        title="Save draft?"
+        message="Do you want to save this draft before leaving?"
+        primaryLabel="Save draft"
+        secondaryLabel="No"
         onContinue={() => {
+          setShowDraftSavedModal(false);
+          nav.back();
+        }}
+        onDismiss={() => {
+          discardSignatureDraft();
           setShowDraftSavedModal(false);
           nav.back();
         }}

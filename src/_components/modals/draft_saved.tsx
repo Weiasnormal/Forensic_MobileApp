@@ -5,24 +5,43 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 interface DraftSavedModalProps {
   visible: boolean;
   onContinue: () => void;
+  onDismiss?: () => void;
+  title?: string;
+  message?: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
 }
 
-export default function DraftSavedModal({ visible, onContinue }: DraftSavedModalProps) {
+export default function DraftSavedModal({
+  visible,
+  onContinue,
+  onDismiss,
+  title = 'Draft saved',
+  message = 'Your case details were saved before you left, so you can continue from where you stopped.',
+  primaryLabel = 'Continue later',
+  secondaryLabel,
+}: DraftSavedModalProps) {
+  const handleClose = onDismiss ?? onContinue;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onContinue}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.iconWrap}>
             <Ionicons name="checkmark-circle" size={30} color="#1F5DA8" />
           </View>
 
-          <Text style={styles.title}>Draft saved</Text>
-          <Text style={styles.message}>
-            Your case details were saved before you left, so you can continue from where you stopped.
-          </Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
+
+          {secondaryLabel ? (
+            <Pressable style={styles.secondaryButton} onPress={handleClose}>
+              <Text style={styles.secondaryButtonText}>{secondaryLabel}</Text>
+            </Pressable>
+          ) : null}
 
           <Pressable style={styles.button} onPress={onContinue}>
-            <Text style={styles.buttonText}>Continue later</Text>
+            <Text style={styles.buttonText}>{primaryLabel}</Text>
           </Pressable>
         </View>
       </View>
@@ -75,6 +94,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F5DA8',
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  secondaryButton: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D8E3EF',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  secondaryButtonText: {
+    color: '#334155',
+    fontSize: 15,
+    fontWeight: '800',
   },
   buttonText: {
     color: '#FFFFFF',

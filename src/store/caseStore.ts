@@ -59,6 +59,7 @@ interface CaseStore {
   stashSavedCases: () => void;
   restoreSavedCases: () => void;
   startNewSignatureDraft: () => void;
+  discardSignatureDraft: () => void;
   updateDraftCase: <K extends DraftEditableField>(field: K, value: DraftCase[K]) => void;
   setDraftUpload: (type: DraftUploadType, index: number, uri: string | null) => void;
   submitNewCase: () => Promise<SavedCase>;
@@ -228,6 +229,13 @@ export const useCaseStore = create<CaseStore>()(
               nextCaseNumber: nextCaseNumber + 1,
             };
           });
+        },
+
+        discardSignatureDraft: () => {
+          caseLog.info('CaseStore:Action', 'Discarding current signature draft');
+          set((state) => ({
+            draftSignatureCase: createDraftCase(state.draftSignatureCase.caseId),
+          }));
         },
 
         updateDraftCase: (field, value) => {

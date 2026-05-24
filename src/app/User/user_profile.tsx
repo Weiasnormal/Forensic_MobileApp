@@ -1,3 +1,4 @@
+import DraftSavedModal from '@/_components/modals/draft_saved';
 import { useUser } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,6 +22,7 @@ export default function UserProfileScreen() {
 	);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
+	const [showSignOutModal, setShowSignOutModal] = useState(false);
 
 	const hiddenSavedCases = useCaseStore((s) => s.hiddenSavedCases);
 	const stashSavedCases = useCaseStore((s) => s.stashSavedCases);
@@ -120,10 +122,27 @@ export default function UserProfileScreen() {
 					<Text style={styles.resetButtonText}>Reset Test Data</Text>
 				</TouchableOpacity>
 
-				<TouchableOpacity style={styles.signOutButton} activeOpacity={0.88}>
+				<TouchableOpacity
+					style={styles.signOutButton}
+					activeOpacity={0.88}
+					onPress={() => setShowSignOutModal(true)}
+				>
 					<Text style={styles.signOutText}>Sign out</Text>
 				</TouchableOpacity>
 			</ScrollView>
+
+			<DraftSavedModal
+				visible={showSignOutModal}
+				title="Sign out?"
+				message="Are you sure you want to sign out?"
+				primaryLabel="Sign out"
+				secondaryLabel="No"
+				onContinue={() => {
+					setShowSignOutModal(false);
+					router.replace('/_login/SignInPage');
+				}}
+				onDismiss={() => setShowSignOutModal(false)}
+			/>
 		</View>
 	);
 }
