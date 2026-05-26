@@ -10,7 +10,7 @@ This document defines the endpoints and data types for:
 ```ts
 export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type AnalysisType = 'SIG' | 'HW' | 'DOC';
-export type CaseStatus = 'Processing' | 'Completed' | 'Suspect' | 'Genuine';
+export type CaseStatus = 'Processing' | 'Suspected' | 'Genuine';
 
 export type UploadKind = 'reference' | 'suspect';
 
@@ -46,7 +46,7 @@ export interface SignatureItem {
 }
 
 export interface AnalysisResult {
-  conclusion: 'Genuine' | 'Suspect' | 'Inconclusive';
+  conclusion: 'Genuine' | 'Suspected' | 'Inconclusive';
   confidence: number; // 0..100
   details: string;
   processedAt: string; // ISO 8601 date-time string

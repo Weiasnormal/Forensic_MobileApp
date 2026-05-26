@@ -33,6 +33,7 @@ export default function UserDashboardScreen() {
   const router = useRouter();
   const nav = router as any;
   const cases = useCaseStore((state) => state.cases);
+  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
   const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
   const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
   const { user, load } = useUser();
@@ -108,11 +109,33 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
   const router = useRouter();
   const nav = router as any;
   const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
+  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
   const pendingCards = getPendingCards(cases, draftSignatureCase);
   const latestCases = [...cases]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 5);
   const noCasesImage = require('../../../assets/expo.icon/Assets/noCase.webp');
+
+  const goToCaseDestination = (item: SavedCase) => {
+    setActiveSignatureCaseId(item.caseId);
+
+    if (item.status === 'Processing') {
+      if (item.analysisType === 'HW') {
+        nav.push('/analysis/handwriting/processing');
+        return;
+      }
+
+      nav.push('/analysis/signature/processing');
+      return;
+    }
+
+    if (item.analysisType === 'HW') {
+      nav.push('/analysis/handwriting/results');
+      return;
+    }
+
+    nav.push(`/analysis/signature/results/${item.caseId}`);
+  };
 
   return (
     <>
@@ -146,7 +169,20 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
                 id={item.id}
                 name={item.name}
                 status={item.status}
-                onPress={item.status === 'draft' ? () => nav.push('/analysis/signature/step1') : undefined}
+                onPress={() => {
+                  if (item.status === 'draft') {
+                    nav.push('/analysis/signature/step1');
+                    return;
+                  }
+
+                  const linkedCase = cases.find((entry) => entry.caseId === item.id);
+
+                  if (!linkedCase) {
+                    return;
+                  }
+
+                  goToCaseDestination(linkedCase);
+                }}
               />
             ))}
           </View>
@@ -169,6 +205,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
             type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
             name={`${item.subjectName} · ${item.documentType}`}
             status={item.status}
+            onPress={() => goToCaseDestination(item)}
           />
         ))}
       </View>

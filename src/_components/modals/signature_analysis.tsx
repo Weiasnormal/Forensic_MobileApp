@@ -1,18 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Asset } from 'expo-asset';
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  createMockSignatureAnalysisResult,
+  getMockSignatureAnalysisAssets,
+  getMockSignatureAnalysisPdf,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisConfidence,
+  getSignatureAnalysisVerdictLabel,
+  type MockSignatureAnalysisResult,
+  type SignatureAnalysisViewMode,
+} from '../../services/mockSignatureAnalysis';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
-import { useCaseStore } from '../../store/caseStore';
+import { type CaseStatus, useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 
 const ACCENT = '#1F5DA8';
 const SCREEN_BG = '#ffffff';
 
 const viewModes = ['Heatmap', 'Bounding box', 'Stroke diff'] as const;
-type ViewMode = (typeof viewModes)[number];
+type ViewMode = SignatureAnalysisViewMode;
 
 const processingSteps: ProcessingStep[] = [
   {
@@ -28,7 +41,7 @@ const processingSteps: ProcessingStep[] = [
   {
     id: 'sig-score',
     label: 'Similarity scoring',
-    detail: 'Contrastive loss comparison',
+    detail: 'Triplet loss comparison',
   },
   {
     id: 'sig-heatmap',
@@ -42,15 +55,6 @@ const processingSteps: ProcessingStep[] = [
   },
 ];
 
-const findings = [
-  { metric: 'Letter formation', value: 'Major divergence from references', status: 'bad' },
-  { metric: 'Word spacing', value: 'Compressed pattern in suspect script', status: 'warning' },
-  { metric: 'Baseline alignment', value: 'Irregular vertical drift', status: 'bad' },
-  { metric: 'Pen pressure', value: 'Pressure profile partially aligned', status: 'warning' },
-  { metric: 'Writing slant', value: 'Strong rightward mismatch', status: 'bad' },
-  { metric: 'CRAFT regions', value: 'Anomalies concentrated in initials', status: 'ok' },
-] as const;
-
 function statusColors(status: 'ok' | 'warning' | 'bad') {
   if (status === 'ok') {
     return { bg: '#ECFDF3', text: '#15803D', border: '#BBF7D0' };
@@ -63,13 +67,63 @@ function statusColors(status: 'ok' | 'warning' | 'bad') {
   return { bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' };
 }
 
+function buildPayloadRows(result: MockSignatureAnalysisResult, verdictLabel: string) {
+  return [
+    { metric: 'General information', value: result.case_name },
+    { metric: 'Relation to Baseline', value: result.verdict === 'FORGED' ? 'Inconsistent' : 'Simulated Writing' },
+    { metric: 'Line Quality', value: result.verdict === 'FORGED' ? 'Tremor detected' : 'Tremor detected' },
+    { metric: 'Proportion & Spacing', value: 'Irregular (x4)' },
+    { metric: 'Variation', value: 'Beyond controlling pattern' },
+  ];
+}
+
+function buildSignaturePdfHtml(result: MockSignatureAnalysisResult, verdictLabel: string) {
+  const confidence = getSignatureAnalysisConfidence(result).toFixed(1);
+
+  return `
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          body { font-family: Arial, sans-serif; margin: 32px; color: #0f172a; }
+          h1 { margin: 0 0 8px; font-size: 26px; }
+          .sub { color: #64748b; margin-bottom: 20px; font-size: 13px; }
+          .card { border: 1px solid #dbe5f1; border-radius: 16px; padding: 18px; margin-bottom: 18px; }
+          .verdict { font-size: 22px; font-weight: 700; color: ${verdictLabel === 'SUSPECTED' ? '#eb5757' : '#16a34a'}; }
+          .row { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid #eef2f7; }
+          .row:first-of-type { border-top: 0; }
+          .label { color: #334155; font-weight: 700; }
+          .value { color: #0f172a; font-weight: 600; text-align: right; max-width: 60%; }
+        </style>
+      </head>
+      <body>
+        <h1>Signature Analysis Report</h1>
+        <div class="sub">Mock export generated from the current in-app analysis result</div>
+        <div class="card">
+          <div class="verdict">${confidence}% ${verdictLabel}</div>
+          <div class="sub">Case · ${result.case_name}</div>
+          <div class="row"><div class="label">Confidence Genuine</div><div class="value">${result.confidence_genuine.toFixed(4)}%</div></div>
+          <div class="row"><div class="label">Confidence Forged</div><div class="value">${result.confidence_forged.toFixed(4)}%</div></div>
+          <div class="row"><div class="label">Distance</div><div class="value">${result.distance.toFixed(7)}</div></div>
+          <div class="row"><div class="label">Threshold</div><div class="value">${result.threshold.toFixed(4)}</div></div>
+          <div class="row"><div class="label">GradCAM Blob</div><div class="value">${result.gradcam_blob_id}</div></div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+// NOTE: Removed static require for a bundled PDF/image to avoid bundling errors when the
+// asset isn't present. If you add a real PDF under
+// `assets/expo.icon/Assets/SampleTest/pdf/`, update this function to return its URI.
+
 export function SignatureProcessingView() {
   const router = useRouter();
   const nav = router as any;
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
 
-  const setSignatureStatus = (status: 'Processing' | 'Completed') => {
+  const setSignatureStatus = (status: CaseStatus) => {
     if (!currentCaseId) {
       return;
     }
@@ -93,8 +147,9 @@ export function SignatureProcessingView() {
         accentColor={ACCENT}
         steps={processingSteps}
         onComplete={() => {
-          setSignatureStatus('Processing');
-          nav.replace('/analysis/signature/results');
+          if (currentCaseId) {
+            nav.replace(`/analysis/signature/results/${currentCaseId}`);
+          }
         }}
       />
       <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
@@ -121,9 +176,54 @@ export function SignatureResultsScreen() {
   const suspectUri = useAnalysisFlowStore((state) => state.signature.uploads.suspect);
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+  const analysisResult = useCaseStore((state) =>
+    currentCaseId ? state.signatureAnalysisResults[currentCaseId] : undefined,
+  );
+  const currentCase = useCaseStore((state) =>
+    currentCaseId ? state.cases.find((c) => c.caseId === currentCaseId) : undefined,
+  );
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
+  const [previewSource, setPreviewSource] = useState<number | null>(null);
+  const [previewLabel, setPreviewLabel] = useState('');
+  const mockTemplateNumber = currentCase?.mockTemplateNumber ?? 1;
 
-  const setSignatureStatus = (status: 'Processing' | 'Completed') => {
+  useEffect(() => {
+    if (currentCase?.status === 'Processing') {
+      nav.replace('/analysis/signature/processing');
+    }
+  }, [currentCase?.status, nav]);
+
+  if (currentCase?.status === 'Processing') {
+    return null;
+  }
+
+  // Build a mock result based on the stored case status (Suspected/Genuine)
+  const forcedVerdict = currentCase?.status === 'Suspected' ? 'FORGED' : 'GENUINE';
+  const activeResult = analysisResult ?? createMockSignatureAnalysisResult(mockTemplateNumber, forcedVerdict as any);
+  const caseAssets = getMockSignatureAnalysisAssets(mockTemplateNumber, activeView);
+  const verdictLabel = getSignatureAnalysisVerdictLabel(activeResult.verdict);
+  const confidenceValue = getSignatureAnalysisConfidence(activeResult);
+  const payloadRows = useMemo(() => buildPayloadRows(activeResult, verdictLabel), [activeResult, verdictLabel]);
+  const isSuspected = verdictLabel === 'SUSPECTED';
+  const resultCardTheme = isSuspected
+    ? {
+        cardBg: '#FEF1F1',
+        iconBg: '#EB5757',
+        text: '#EB5757',
+        subtleText: '#64748B',
+        iconName: 'alert-circle' as const,
+        iconColor: '#FFFFFF',
+      }
+    : {
+        cardBg: '#F1FAF3',
+        iconBg: '#22B24C',
+        text: '#16A34A',
+        subtleText: '#64748B',
+        iconName: 'checkmark-circle' as const,
+        iconColor: '#FFFFFF',
+      };
+
+  const setSignatureStatus = (status: CaseStatus) => {
     if (!currentCaseId) {
       return;
     }
@@ -132,12 +232,47 @@ export function SignatureResultsScreen() {
   };
 
   const handleBackToDashboard = () => {
-    // Update case status to "Completed"
-    setSignatureStatus('Completed');
+    // Keep the stored case status aligned with the analysis verdict.
+    setSignatureStatus(getSignatureAnalysisCaseStatus(activeResult));
     // Reset analysis type
     useAnalysisFlowStore.setState({ currentAnalysisType: null });
     // Navigate to dashboard
     nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const pdfModule = getMockSignatureAnalysisPdf(mockTemplateNumber);
+
+      if (!pdfModule) {
+        Alert.alert('Export failed', 'Unable to locate the PDF report.');
+        return;
+      }
+
+      const pdfAsset = Asset.fromModule(pdfModule);
+      await pdfAsset.downloadAsync();
+
+      const localUri = pdfAsset.localUri ?? pdfAsset.uri;
+
+      if (!localUri) {
+        Alert.alert('Export failed', 'Unable to prepare the PDF report.');
+        return;
+      }
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(localUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Export PDF Report',
+          UTI: 'com.adobe.pdf',
+        });
+        return;
+      }
+
+      Alert.alert('PDF ready', `Saved to: ${localUri}`);
+    } catch (error) {
+      console.warn('Failed to export bundled PDF report:', error);
+      Alert.alert('Export failed', 'Unable to create the PDF report.');
+    }
   };
 
   const activeTone = useMemo(() => {
@@ -153,19 +288,28 @@ export function SignatureResultsScreen() {
   }, [activeView]);
 
   const insets = useSafeAreaInsets();
+  const openPreview = (source: number, label: string) => {
+    setPreviewSource(source);
+    setPreviewLabel(label);
+  };
+
+  const closePreview = () => {
+    setPreviewSource(null);
+    setPreviewLabel('');
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar title="Upload Signatures" step={""} onBackPress={() => nav.back()} />
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(160, insets.bottom + 120) }]} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroResultWrap}>
-          <View style={styles.heroBadge}>
-            <Ionicons name="alert-circle" size={20} color="#7F1D1D" />
+        <View style={[styles.heroResultWrap, { backgroundColor: resultCardTheme.cardBg }]}>
+          <View style={[styles.heroBadge, { backgroundColor: resultCardTheme.iconBg }]}>
+            <Ionicons name={resultCardTheme.iconName} size={28} color={resultCardTheme.iconColor} />
           </View>
           <View style={styles.heroTextWrap}>
-            <Text style={styles.heroPercent}>94.3% <Text style={styles.heroLabel}>SUSPECTED</Text></Text>
-            <Text style={styles.heroCase}>VERDICT · {currentCaseId ?? '—'}</Text>
+            <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>{confidenceValue.toFixed(1)}% <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>{verdictLabel}</Text></Text>
+            <Text style={[styles.heroCase, { color: resultCardTheme.subtleText }]}>VERDICT · {activeResult.case_name}</Text>
           </View>
         </View>
 
@@ -183,19 +327,18 @@ export function SignatureResultsScreen() {
         <View style={styles.thumbsGrid}>
           <View style={styles.smallThumbsGrid}>
             {[0, 1, 2, 3].map((i) => (
-              <View key={`r-${i}`} style={styles.thumbCardSmall}>
-                <View style={styles.thumbPreview} />
-                <Text style={styles.thumbLabel}>SIG 01</Text>
+              <Pressable key={`r-${i}`} style={styles.thumbCardSmall} onPress={() => openPreview(caseAssets.references[i], `Reference ${String(i + 1).padStart(2, '0')}`)}>
+                <ExpoImage source={caseAssets.references[i]} style={styles.thumbPreview} contentFit="cover" />
+                <Text style={styles.thumbLabel}>{`SIG ${String(i + 1).padStart(2, '0')}`}</Text>
                 <Text style={styles.thumbTag}>Reference</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
 
-          <View style={styles.largeThumbWrap}>
-            <View style={styles.largeThumbPreview} />
-            <Text style={styles.suspectLabel}>SUSPECT</Text>
-            <Text style={styles.suspectHint}>Anomaly detected</Text>
-          </View>
+          <Pressable style={styles.largeThumbWrap} onPress={() => openPreview(caseAssets.suspect, `Suspect · ${activeView}`)}>
+            <ExpoImage source={caseAssets.suspect} style={styles.largeThumbPreview} contentFit="cover" />
+            <Text style={styles.suspectLabel}>{activeView.toUpperCase()}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.findingsContainer}>
@@ -204,57 +347,45 @@ export function SignatureResultsScreen() {
             <Text style={styles.findingsTap}>Tap for detail</Text>
           </View>
           <View style={styles.findingsList}>
-            <Pressable style={styles.findingItem}>
-              <View style={styles.findingIndicator} />
-              <View style={styles.findingTextCol}>
-                <Text style={styles.findingMain}>General information</Text>
-                <Text style={styles.findingSub}>Simulated Writing</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-            </Pressable>
+            {payloadRows.map((item) => {
+              const colors = isSuspected
+                ? { line: '#EF4444', text: '#EF4444' }
+                : { line: '#16A34A', text: '#16A34A' };
 
-            <Pressable style={styles.findingItem}>
-              <View style={styles.findingIndicator} />
-              <View style={styles.findingTextCol}>
-                <Text style={styles.findingMain}>Relation to Baseline</Text>
-                <Text style={styles.findingSub}>Inconsistent</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-            </Pressable>
-
-            <Pressable style={styles.findingItem}>
-              <View style={styles.findingIndicator} />
-              <View style={styles.findingTextCol}>
-                <Text style={styles.findingMain}>Line Quality</Text>
-                <Text style={styles.findingSub}>Tremor detected</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-            </Pressable>
-
-            <Pressable style={styles.findingItem}>
-              <View style={styles.findingIndicator} />
-              <View style={styles.findingTextCol}>
-                <Text style={styles.findingMain}>Proportion & Spacing</Text>
-                <Text style={styles.findingSub}>Irregular (x4)</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-            </Pressable>
-
-            <Pressable style={styles.findingItem}>
-              <View style={styles.findingIndicator} />
-              <View style={styles.findingTextCol}>
-                <Text style={styles.findingMain}>Variation</Text>
-                <Text style={styles.findingSub}>Beyond controlling pattern</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-            </Pressable>
+              return (
+                <Pressable key={item.metric} style={styles.findingItem}>
+                  <View style={[styles.findingIndicator, { backgroundColor: colors.line }]} />
+                  <View style={styles.findingTextCol}>
+                    <Text style={styles.findingMain}>{item.metric}</Text>
+                    <Text style={[styles.findingSub, { color: colors.text }]}>{item.value}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
       </ScrollView>
 
+      <Modal visible={previewSource !== null} transparent animationType="fade" onRequestClose={closePreview}>
+        <Pressable style={styles.previewBackdrop} onPress={closePreview}>
+          <Pressable style={styles.previewSheet} onPress={() => {}}>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewTitle}>{previewLabel}</Text>
+              <Pressable onPress={closePreview} style={styles.previewCloseButton}>
+                <Ionicons name="close" size={22} color="#0F172A" />
+              </Pressable>
+            </View>
+            {previewSource !== null ? (
+              <ExpoImage source={previewSource} style={styles.previewImage} contentFit="contain" />
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
-        <Pressable onPress={() => Alert.alert('Export started', 'PDF report generation has started.')} style={styles.primaryButton}>
+        <Pressable onPress={handleExportPdf} style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Export PDF Report</Text>
         </Pressable>
         <Pressable onPress={handleBackToDashboard} style={[styles.backButtonSecondary, { marginTop: 12 }]}>
@@ -528,22 +659,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 14,
-    backgroundColor: '#FEF2F2',
-    padding: 16,
+    borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    marginBottom: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   heroBadge: {
     width: 56,
     height: 56,
-    borderRadius: 12,
-    backgroundColor: '#FEE2E2',
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroTextWrap: { flex: 1 },
-  heroPercent: { fontSize: 20, fontWeight: '900', color: '#7F1D1D' },
-  heroLabel: { fontSize: 12, fontWeight: '800', color: '#7F1D1D', textTransform: 'uppercase' },
-  heroCase: { marginTop: 6, color: '#7F1D1D', fontSize: 12, opacity: 0.9 },
+  heroPercent: {
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  heroLabel: {
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+    textTransform: 'uppercase',
+  },
+  heroCase: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
 
   viewTabsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   viewTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 999, borderWidth: 1, borderColor: '#EEF2F7', backgroundColor: '#FFFFFF' },
@@ -554,14 +707,54 @@ const styles = StyleSheet.create({
   thumbsGrid: { flexDirection: 'column', gap: 12, marginTop: 12 },
   smallThumbsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   thumbCardSmall: { borderRadius: 12, borderWidth: 1, borderColor: '#EEF2F7', padding: 10, backgroundColor: '#FFFFFF', width: '48%' , marginBottom: 8},
-  thumbPreview: { height: 56, borderRadius: 8, backgroundColor: '#F8FAFC', marginBottom: 8 },
+  thumbPreview: { height: 56, borderRadius: 8, backgroundColor: '#F8FAFC', marginBottom: 8, overflow: 'hidden' },
   thumbLabel: { fontSize: 12, fontWeight: '800', color: '#0F172A' },
   thumbTag: { fontSize: 11, color: '#10B981', fontWeight: '700', marginTop: 4 },
 
   largeThumbWrap: { borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9', backgroundColor: '#FFFFFF', padding: 12, alignItems: 'center', justifyContent: 'center' },
-  largeThumbPreview: { width: '100%', height: 120, borderRadius: 8, backgroundColor: '#F8FAFB', marginBottom: 10 },
+  largeThumbPreview: { width: '100%', height: 120, borderRadius: 8, backgroundColor: '#F8FAFB', marginBottom: 10, overflow: 'hidden' },
   suspectLabel: { color: '#EF4444', fontSize: 12, fontWeight: '800' },
   suspectHint: { color: '#F97316', fontSize: 12, marginTop: 4 },
+
+  previewBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    padding: 10,
+    justifyContent: 'center',
+  },
+  previewSheet: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 10,
+    maxHeight: '72%',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  previewTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    paddingRight: 10,
+  },
+  previewCloseButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+  },
+  previewImage: {
+    width: '100%',
+    height: 300,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+  },
 
   findingsContainer: { marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: '#EEF2F7', backgroundColor: '#FFFFFF', padding: 12 },
   findingsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },

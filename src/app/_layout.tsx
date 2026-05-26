@@ -4,7 +4,7 @@ import { UserProvider } from '@/store/userStore';
 import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold, useFonts } from '@expo-google-fonts/sora';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput, TextStyle } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -31,8 +31,8 @@ function resolveSoraFamily(fontWeight?: string | number) {
 }
 
 function mergeSoraStyle(style: unknown, defaultWeight: string | number = '400') {
-  const flattened = StyleSheet.flatten(style) ?? {};
-  const fontFamily = resolveSoraFamily(flattened.fontWeight ?? defaultWeight);
+  const flattened = StyleSheet.flatten(style) as TextStyle | undefined;
+  const fontFamily = resolveSoraFamily(flattened?.fontWeight ?? defaultWeight);
 
   return [style, { fontFamily }];
 }

@@ -1,25 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FlatList,
-  SectionList,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    FlatList,
+    SectionList,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
 import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '../../store/caseStore';
 import { caseMatchesSearch, normalizeCaseSearchQuery } from '../../utils/caseSearch';
 
-const quickFilters = ['All', 'Genuine', 'Suspect', 'Processing', 'Completed'];
+const quickFilters = ['All', 'Genuine', 'Suspected', 'Processing'];
 const DEFAULT_HEADER_HEIGHT = 140;
 
 export default function UserCasesScreen() {
+  const router = useRouter();
+  const nav = router as any;
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -33,6 +36,7 @@ export default function UserCasesScreen() {
     filteredCases: SavedCase[];
   } | null>(null);
   const cases = useCaseStore((state) => state.cases);
+  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
 
   useEffect(() => {
 	const debounceId = setTimeout(() => {
@@ -191,6 +195,25 @@ export default function UserCasesScreen() {
             type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
             name={`${item.subjectName} · ${item.documentType}`}
             status={item.status}
+            onPress={() => {
+              setActiveSignatureCaseId(item.caseId);
+
+              if (item.status === 'Processing') {
+                if (item.analysisType === 'HW') {
+                  nav.push('/analysis/handwriting/processing');
+                  return;
+                }
+
+                nav.push('/analysis/signature/processing');
+                return;
+              }
+
+              if (item.analysisType === 'HW') {
+                nav.push('/analysis/handwriting/results');
+              } else {
+                nav.push(`/analysis/signature/results/${item.caseId}`);
+              }
+            }}
           />
         )}
         renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}

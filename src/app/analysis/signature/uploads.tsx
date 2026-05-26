@@ -1,11 +1,13 @@
+import MediaSourcePicker from '@/_components/modals/media_source_picker';
 import { hasCompleteUploads, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ACCENT = '#1F5DA8';
 const SCREEN_BG = '#FFFFFF';
@@ -13,10 +15,12 @@ const SCREEN_BG = '#FFFFFF';
 export default function SignatureUploadsRoute() {
   const router = useRouter();
   const nav = router as any;
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraVisible, setCameraVisible] = useState(false);
   const [currentUploadTarget, setCurrentUploadTarget] = useState<'reference' | 'suspect' | null>(null);
   const [currentReferenceIndex, setCurrentReferenceIndex] = useState<number | null>(null);
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
   const cameraRef = useRef(null);
   const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
@@ -44,7 +48,8 @@ export default function SignatureUploadsRoute() {
     if (refIndex !== undefined) {
       setCurrentReferenceIndex(refIndex);
     }
-    setCameraVisible(true);
+    // show custom source picker modal
+    setShowSourcePicker(true);
   };
 
   const handleCapture = async () => {
@@ -81,14 +86,14 @@ export default function SignatureUploadsRoute() {
     <SafeAreaView style={styles.screen}>
       <TopBar title="Upload Signatures" step="2 / 2" onBackPress={() => nav.back()} />
       <View style={[styles.progressBar, styles.progressBarFull]} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 96) }]} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <Text style={styles.sectionHeading}>Reference Signatures</Text>
           <Text style={styles.sectionSubheading}>Upload 4 reference signatures</Text>
         </View>
         <View style={styles.referenceGrid}>
           {uploads.references.map((uri, index) => {
-            const refLabel = `REF ${String(index + 1).padStart(2, '0')}`;
+            const refLabel = `SIG ${String(index + 1).padStart(2, '0')}`;
             return (
               <View key={`sig-ref-${index}`} style={styles.uploadSlotWrapper}>
                 <Text style={styles.slotLabel}>{refLabel}</Text>
@@ -130,11 +135,49 @@ export default function SignatureUploadsRoute() {
           )}
         </Pressable>
       </ScrollView>
-      <View style={styles.buttonContainer}>
+      <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}>
         <Pressable onPress={handleSubmit} disabled={!canRun || isSubmitting} style={[styles.primaryButton, (!canRun || isSubmitting) && styles.disabledButton]}>
           <Text style={styles.primaryButtonText}>{isSubmitting ? 'Saving...' : 'Run Analysis'}</Text>
         </Pressable>
       </View>
+      <MediaSourcePicker
+        visible={showSourcePicker}
+        onCancel={() => setShowSourcePicker(false)}
+        onSelect={async (choice) => {
+          setShowSourcePicker(false);
+          if (choice === 'camera') {
+            setCameraVisible(true);
+            return;
+          }
+
+          try {
+            const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!perm.granted) {
+              Alert.alert('Permission required', 'Gallery access is required to pick images.');
+              return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              quality: 0.9,
+            });
+
+            const uri = (result as any).uri ?? (result as any).assets?.[0]?.uri;
+
+            if (result && !(result as any).cancelled && uri) {
+              if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+                setDraftUpload('reference', currentReferenceIndex, uri);
+              } else if (currentUploadTarget === 'suspect') {
+                setDraftUpload('suspect', 0, uri);
+              }
+            }
+          } catch (e) {
+            console.warn('Gallery pick failed', e);
+            Alert.alert('Error', 'Unable to pick image from gallery.');
+          }
+        }}
+      />
       {cameraVisible && (
         <View style={styles.cameraOverlay}>
           <SafeAreaView style={styles.cameraContainer}>
@@ -359,7 +402,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',

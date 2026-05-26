@@ -21,9 +21,8 @@ export default function UserStatsScreen() {
       (accumulator, item) => {
         accumulator.total += 1;
         accumulator.genuine += item.status === 'Genuine' ? 1 : 0;
-        accumulator.suspect += item.status === 'Suspect' ? 1 : 0;
+        accumulator.suspected += item.status === 'Suspected' ? 1 : 0;
         accumulator.processing += item.status === 'Processing' ? 1 : 0;
-        accumulator.completed += item.status === 'Completed' ? 1 : 0;
         accumulator.documentTypeCounts[item.documentType] =
           (accumulator.documentTypeCounts[item.documentType] || 0) + 1;
         return accumulator;
@@ -31,9 +30,8 @@ export default function UserStatsScreen() {
       {
         total: 0,
         genuine: 0,
-        suspect: 0,
+        suspected: 0,
         processing: 0,
-        completed: 0,
         documentTypeCounts: {} as Record<string, number>,
       },
     );
@@ -154,7 +152,7 @@ export default function UserStatsScreen() {
               <Text style={styles.statPillGreenText}>{summary.genuine} genuine</Text>
             </View>
             <View style={styles.statPillRed}>
-              <Text style={styles.statPillRedText}>{summary.suspect} suspected</Text>
+              <Text style={styles.statPillRedText}>{summary.suspected} suspected</Text>
             </View>
           </View>
 

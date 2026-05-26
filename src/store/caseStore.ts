@@ -2,6 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { fetchBackendCases } from '@/services/backendCases';
+import {
+    createMockSignatureAnalysisResult,
+    getSignatureAnalysisCaseStatus,
+    type MockSignatureAnalysisResult,
+} from '@/services/mockSignatureAnalysis';
+
 // Debug logger for case store
 const caseLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -20,7 +27,7 @@ const caseLog = {
 
 export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type AnalysisType = 'SIG' | 'HW' | 'DOC';
-export type CaseStatus = 'Processing' | 'Completed' | 'Suspect' | 'Genuine';
+export type CaseStatus = 'Processing' | 'Genuine' | 'Suspected';
 export type DraftUploadType = 'reference' | 'suspect';
 export type PendingCardStatus = 'draft' | 'processing' | 'result-ready';
 
@@ -35,6 +42,7 @@ export interface DraftCase {
   examiner: string;
   documentType: string;
   priority: AnalysisPriority;
+  mockTemplateNumber?: number;
   uploads: DraftUploads;
 }
 
@@ -52,10 +60,15 @@ interface CaseStore {
   draftSignatureCase: DraftCase;
   isSubmitting: boolean;
   nextCaseNumber: number;
+  nextMockTemplateNumber: number;
   activeSignatureCaseId: string | null;
   hiddenSavedCases: SavedCase[] | null;
+  signatureAnalysisResults: Record<string, MockSignatureAnalysisResult>;
   markCaseResultViewed: (caseId: string) => void;
   updateCaseStatus: (caseId: string, status: CaseStatus) => void;
+  setSignatureAnalysisResult: (caseId: string, result: MockSignatureAnalysisResult) => void;
+  setActiveSignatureCaseId: (caseId: string | null) => void;
+  refreshCasesFromBackend: () => Promise<boolean>;
   stashSavedCases: () => void;
   restoreSavedCases: () => void;
   startNewSignatureDraft: () => void;
@@ -68,7 +81,6 @@ interface CaseStore {
 
 const DEFAULT_DOCUMENT_TYPE = 'Bank cheque';
 const DEFAULT_PRIORITY: AnalysisPriority = 'Medium';
-const INITIAL_CASE_SEQUENCE = 4;
 const STORAGE_KEY = 'avera_mock_case_store';
 
 function buildCaseId(sequence: number) {
@@ -87,6 +99,7 @@ function createDraftCase(caseId: string): DraftCase {
     examiner: '',
     documentType: DEFAULT_DOCUMENT_TYPE,
     priority: DEFAULT_PRIORITY,
+    mockTemplateNumber: undefined,
     uploads: {
       references: [null, null, null, null],
       suspect: null,
@@ -102,9 +115,38 @@ function createSavedCase(seed: Omit<SavedCase, 'uploads'> & { uploads?: DraftUpl
   };
 }
 
+function getNextCaseNumberFromCases(cases: SavedCase[]) {
+  const highestSequence = cases.reduce((highest, item) => {
+    const match = item.caseId.match(/-(\d{3})$/);
+
+    if (!match) {
+      return highest;
+    }
+
+    return Math.max(highest, Number(match[1]));
+  }, 0);
+
+  return highestSequence + 1;
+}
+
+function mergeCasesById(existingCases: SavedCase[], incomingCases: SavedCase[]) {
+  const mergedCases = new Map<string, SavedCase>();
+
+  existingCases.forEach((item) => {
+    mergedCases.set(item.caseId, item);
+  });
+
+  incomingCases.forEach((item) => {
+    mergedCases.set(item.caseId, item);
+  });
+
+  return Array.from(mergedCases.values());
+}
+
 const INITIAL_CASES: SavedCase[] = [
   createSavedCase({
     caseId: '04-27-2026-001',
+    mockTemplateNumber: 4,
     subjectName: 'Juan dela Cruz',
     examiner: 'Ana Rivera',
     documentType: 'Bank cheque',
@@ -115,16 +157,18 @@ const INITIAL_CASES: SavedCase[] = [
   }),
   createSavedCase({
     caseId: '04-28-2026-002',
+    mockTemplateNumber: 5,
     subjectName: 'Maria Santos',
     examiner: 'Ana Rivera',
     documentType: 'Legal contract',
     priority: 'Urgent',
     createdAt: '2026-04-28T13:15:00.000Z',
-    status: 'Suspect',
+    status: 'Suspected',
     analysisType: 'SIG',
   }),
   createSavedCase({
     caseId: '04-29-2026-003',
+    mockTemplateNumber: 6,
     subjectName: 'Pedro Reyes',
     examiner: 'Ana Rivera',
     documentType: 'Government form',
@@ -136,26 +180,30 @@ const INITIAL_CASES: SavedCase[] = [
   }),
   createSavedCase({
     caseId: '04-30-2026-004',
+    mockTemplateNumber: 7,
     subjectName: 'Elena Garcia',
     examiner: 'Ana Rivera',
     documentType: 'Passport copy',
     priority: 'Low',
     createdAt: '2026-04-30T08:20:00.000Z',
-    status: 'Completed',
-    analysisType: 'HW',
+    status: 'Genuine',
+    analysisType: 'SIG',
     resultViewed: false,
   }),
   createSavedCase({
     caseId: '05-01-2026-005',
+    mockTemplateNumber: 8,
     subjectName: 'Ricardo Mendez',
     examiner: 'Ana Rivera',
     documentType: 'Employment record',
     priority: 'High',
     createdAt: '2026-05-01T11:05:00.000Z',
     status: 'Genuine',
-    analysisType: 'DOC',
+    analysisType: 'SIG',
   }),
 ];
+
+const INITIAL_CASE_SEQUENCE = getNextCaseNumberFromCases(INITIAL_CASES);
 
 function createInitialDraft(nextCaseNumber: number) {
   return createDraftCase(buildCaseId(nextCaseNumber));
@@ -176,8 +224,10 @@ export const useCaseStore = create<CaseStore>()(
         draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
         isSubmitting: false,
         nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
+        nextMockTemplateNumber: 1,
         activeSignatureCaseId: null,
         hiddenSavedCases: null,
+        signatureAnalysisResults: {},
 
         markCaseResultViewed: (caseId) => {
           set((state) => ({
@@ -194,6 +244,52 @@ export const useCaseStore = create<CaseStore>()(
               item.caseId === caseId ? { ...item, status } : item,
             ),
           }));
+        },
+
+        setSignatureAnalysisResult: (caseId, result) => {
+          caseLog.info('CaseStore:Result', 'Saving mock signature analysis result', { caseId, verdict: result.verdict });
+          set((state) => ({
+            signatureAnalysisResults: {
+              ...state.signatureAnalysisResults,
+              [caseId]: result,
+            },
+            cases: state.cases.map((item) =>
+              item.caseId === caseId ? { ...item, status: getSignatureAnalysisCaseStatus(result) } : item,
+            ),
+          }));
+        },
+
+        setActiveSignatureCaseId: (caseId) => {
+          caseLog.info('CaseStore:Action', `Setting active signature case id: ${caseId}`);
+          set({ activeSignatureCaseId: caseId });
+        },
+
+        refreshCasesFromBackend: async () => {
+          caseLog.info('CaseStore:Sync', 'Loading cases from backend');
+
+          try {
+            const backendCases = await fetchBackendCases();
+
+            if (backendCases.length === 0) {
+              caseLog.warn('CaseStore:Sync', 'Backend returned no case records');
+              return false;
+            }
+
+            set((state) => {
+              const mergedCases = mergeCasesById(state.cases, backendCases);
+
+              return {
+                cases: mergedCases,
+                nextCaseNumber: Math.max(state.nextCaseNumber, getNextCaseNumberFromCases(mergedCases)),
+              };
+            });
+
+            caseLog.info('CaseStore:Sync', '✓ Backend cases synced', { count: backendCases.length });
+            return true;
+          } catch (error) {
+            caseLog.warn('CaseStore:Sync', 'Backend cases sync failed', error);
+            return false;
+          }
         },
 
         stashSavedCases: () => {
@@ -282,6 +378,7 @@ export const useCaseStore = create<CaseStore>()(
           caseLog.info('CaseStore:Submit', 'Submitting new case');
           
           const currentDraft = get().draftSignatureCase;
+          const mockTemplateNumber = get().nextMockTemplateNumber;
 
           if (!currentDraft.subjectName.trim() || !currentDraft.examiner.trim()) {
             throw createMockError('Subject name and examiner are required before submission.');
@@ -303,15 +400,36 @@ export const useCaseStore = create<CaseStore>()(
               status: 'Processing',
               analysisType: 'SIG',
               resultViewed: false,
+              mockTemplateNumber,
             };
+            const mockResult = createMockSignatureAnalysisResult(savedCase.mockTemplateNumber ?? 1);
 
             caseLog.info('CaseStore:Submit', 'Case created, updating store');
-            set((state) => ({
-              cases: [savedCase, ...state.cases],
-              draftSignatureCase: createInitialDraft(state.nextCaseNumber),
-              nextCaseNumber: state.nextCaseNumber + 1,
-              activeSignatureCaseId: savedCase.caseId,
-            }));
+            set((state) => {
+              const nextCases: SavedCase[] = mergeCasesById([savedCase], state.cases).map((item) => {
+                if (item.caseId === savedCase.caseId) {
+                  return {
+                    ...item,
+                    status: getSignatureAnalysisCaseStatus(mockResult),
+                  };
+                }
+
+                return item;
+              });
+              const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+
+              return {
+                cases: nextCases,
+                signatureAnalysisResults: {
+                  ...state.signatureAnalysisResults,
+                  [savedCase.caseId]: mockResult,
+                },
+                draftSignatureCase: createInitialDraft(nextCaseNumber),
+                nextCaseNumber,
+                nextMockTemplateNumber: mockTemplateNumber + 1,
+                activeSignatureCaseId: savedCase.caseId,
+              };
+            });
 
             const submitTime = (performance.now() - startTime).toFixed(2);
             caseLog.info('CaseStore:Submit', `✓ Case submitted successfully (${submitTime}ms)`, { caseId: savedCase.caseId });
@@ -334,6 +452,7 @@ export const useCaseStore = create<CaseStore>()(
             isSubmitting: false,
             nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
             activeSignatureCaseId: null,
+            signatureAnalysisResults: {},
           });
         },
       };
@@ -353,6 +472,7 @@ export const useCaseStore = create<CaseStore>()(
         nextCaseNumber: state.nextCaseNumber,
         activeSignatureCaseId: state.activeSignatureCaseId,
         hiddenSavedCases: state.hiddenSavedCases,
+        signatureAnalysisResults: state.signatureAnalysisResults,
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<CaseStore> | undefined;
@@ -370,6 +490,7 @@ export const useCaseStore = create<CaseStore>()(
           ...currentState,
           ...persisted,
           cases: mergedCases,
+          signatureAnalysisResults: persisted.signatureAnalysisResults ?? currentState.signatureAnalysisResults,
         };
       },
       onRehydrateStorage: () => (state, error) => {
@@ -403,7 +524,7 @@ export function formatAnalysisTypeLabel(analysisType: AnalysisType) {
 export function getCaseSummary(cases: SavedCase[]) {
   const totalCases = cases.length;
   const genuineCount = cases.filter((item) => item.status === 'Genuine').length;
-  const suspectCount = cases.filter((item) => item.status === 'Suspect').length;
+  const suspectCount = cases.filter((item) => item.status === 'Suspected').length;
 
   return {
     totalCases,
@@ -416,6 +537,7 @@ export interface PendingCardEntry {
   id: string;
   name: string;
   status: PendingCardStatus;
+  sortKey: number;
 }
 
 const MAX_PENDING_CARDS = 3;
@@ -439,6 +561,7 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
       id: draft.caseId,
       name: draft.subjectName.trim() || 'Draft in progress',
       status: 'draft',
+      sortKey: Number.MAX_SAFE_INTEGER,
     });
   }
 
@@ -448,23 +571,19 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
         id: item.caseId,
         name: item.subjectName,
         status: 'processing',
+        sortKey: new Date(item.createdAt).getTime(),
       });
     }
 
-    if (item.status === 'Completed' && !item.resultViewed) {
+    if (item.status !== 'Processing' && !item.resultViewed) {
       pendingCards.push({
         id: item.caseId,
         name: item.subjectName,
         status: 'result-ready',
+        sortKey: new Date(item.createdAt).getTime(),
       });
     }
   });
 
-  const statusOrder: Record<PendingCardStatus, number> = {
-    draft: 0,
-    'result-ready': 1,
-    processing: 2,
-  };
-
-  return pendingCards.sort((left, right) => statusOrder[left.status] - statusOrder[right.status]).slice(0, MAX_PENDING_CARDS);
+  return pendingCards.sort((left, right) => right.sortKey - left.sortKey).slice(0, MAX_PENDING_CARDS);
 }

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export type CaseStatus = 'Suspect' | 'Genuine' | 'Processing' | 'Completed';
+export type CaseStatus = 'Suspected' | 'Genuine' | 'Processing';
 
 interface CaseCardProps {
 	id: string;
@@ -12,10 +12,10 @@ interface CaseCardProps {
 }
 
 const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string; badgeText: string; badgeBgColor: string }> = {
-	Suspect: {
+	Suspected: {
 		borderColor: '#E24B4A',
 		badgeColor: '#E24B4A',
-		badgeText: 'Suspect',
+		badgeText: 'Suspected',
 		badgeBgColor: 'rgba(226, 75, 74, 0.1)',
 	},
 	Genuine: {
@@ -30,16 +30,11 @@ const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string
 		badgeText: 'Processing',
 		badgeBgColor: 'rgba(45, 114, 209, 0.1)',
 	},
-	Completed: {
-		borderColor: '#64748B',
-		badgeColor: '#64748B',
-		badgeText: 'Completed',
-		badgeBgColor: 'rgba(100, 116, 139, 0.1)',
-	},
+	// Completed state removed: use 'Suspected' or 'Genuine' instead
 };
 
 export default function CaseCard({ id, type, name, status, createdAt, onPress }: CaseCardProps) {
-	const style = statusStyles[status];
+	const style = statusStyles[status] ?? statusStyles.Processing;
 
 	return (
 		<TouchableOpacity

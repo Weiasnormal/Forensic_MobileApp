@@ -1,3 +1,15 @@
+export const DEFAULT_API_BASE_URL = 'https://avera-api.lemonwave-c38ebe4d.southeastasia.azurecontainerapps.io';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL;
+
+export function buildApiUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return new URL(normalizedPath, API_BASE_URL).toString();
+}
+
 export const API_ENDPOINTS = {
   auth: {
     signIn: '/auth/sign-in',
@@ -9,31 +21,31 @@ export const API_ENDPOINTS = {
     resetPassword: '/auth/password/reset',
   },
   cases: {
-    list: '/api/cases',
-    create: '/api/cases',
-    get: (caseId: string) => `/api/cases/${caseId}`,
-    update: (caseId: string) => `/api/cases/${caseId}`,
-    updateStatus: (caseId: string) => `/api/cases/${caseId}/status`,
-    delete: (caseId: string) => `/api/cases/${caseId}`,
-    listDrafts: '/api/cases/drafts',
-    createDraft: '/api/cases/drafts',
-    updateDraft: (caseId: string) => `/api/cases/drafts/${caseId}`,
-    deleteDraft: (caseId: string) => `/api/cases/drafts/${caseId}`,
-    markResultViewed: (caseId: string) => `/api/cases/${caseId}/result-viewed`,
+    list: '/cases',
+    create: '/cases',
+    get: (caseId: string) => `/cases/${caseId}`,
+    update: (caseId: string) => `/cases/${caseId}`,
+    updateStatus: (caseId: string) => `/cases/${caseId}/status`,
+    delete: (caseId: string) => `/cases/${caseId}`,
+    listDrafts: '/cases/drafts',
+    createDraft: '/cases/drafts',
+    updateDraft: (caseId: string) => `/cases/drafts/${caseId}`,
+    deleteDraft: (caseId: string) => `/cases/drafts/${caseId}`,
+    markResultViewed: (caseId: string) => `/cases/${caseId}/result-viewed`,
   },
   signatures: {
-    uploadReference: (caseId: string) => `/api/cases/${caseId}/signatures/reference`,
-    uploadSuspect: (caseId: string) => `/api/cases/${caseId}/signatures/suspect`,
-    getReference: (caseId: string, index: number) => `/api/cases/${caseId}/signatures/reference/${index}`,
-    getSuspect: (caseId: string) => `/api/cases/${caseId}/signatures/suspect`,
-    getAll: (caseId: string) => `/api/cases/${caseId}/signatures`,
-    deleteReference: (caseId: string, index: number) => `/api/cases/${caseId}/signatures/reference/${index}`,
-    deleteSuspect: (caseId: string) => `/api/cases/${caseId}/signatures/suspect`,
+    uploadReference: (caseId: string) => `/cases/${caseId}/signatures/reference`,
+    uploadSuspect: (caseId: string) => `/cases/${caseId}/signatures/suspect`,
+    getReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
+    getSuspect: (caseId: string) => `/cases/${caseId}/signatures/suspect`,
+    getAll: (caseId: string) => `/cases/${caseId}/signatures`,
+    deleteReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
+    deleteSuspect: (caseId: string) => `/cases/${caseId}/signatures/suspect`,
   },
   analysis: {
-    start: (caseId: string) => `/api/cases/${caseId}/analysis`,
-    getStatus: (caseId: string) => `/api/cases/${caseId}/analysis/status`,
-    getResults: (caseId: string) => `/api/cases/${caseId}/analysis/results`,
-    updateResults: (caseId: string) => `/api/cases/${caseId}/analysis/results`,
+    start: (caseId: string) => `/cases/${caseId}/analysis`,
+    getStatus: (caseId: string) => `/cases/${caseId}/analysis/status`,
+    getResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
+    updateResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
   },
 } as const;

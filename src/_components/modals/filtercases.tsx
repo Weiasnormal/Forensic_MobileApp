@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Animated,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 import { type SavedCase } from '../../store/caseStore';
@@ -24,8 +24,8 @@ interface FilterCasesModalProps {
   }) => void;
 }
 
-const sortOptions = ['Newest first', 'Oldest first', 'Suspect first', 'Genuine first'];
-const verdictOptions = ['All', 'Genuine', 'Suspect', 'Processing', 'Completed'];
+const sortOptions = ['Newest first', 'Oldest first', 'Suspected first', 'Genuine first'];
+const verdictOptions = ['All', 'Genuine', 'Suspected', 'Processing'];
 const analysisOptions = ['All', 'Signature', 'Handwriting', 'Document'];
 
 export default function FilterCasesModal({ visible, onClose, cases, onApply }: FilterCasesModalProps) {
@@ -59,10 +59,10 @@ export default function FilterCasesModal({ visible, onClose, cases, onApply }: F
       filteredCases.sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
     } else if (sortBy === 'Oldest first') {
       filteredCases.sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
-    } else if (sortBy === 'Suspect first') {
+    } else if (sortBy === 'Suspected first') {
       filteredCases.sort((left, right) => {
-        if (left.status === 'Suspect' && right.status !== 'Suspect') return -1;
-        if (left.status !== 'Suspect' && right.status === 'Suspect') return 1;
+        if (left.status === 'Suspected' && right.status !== 'Suspected') return -1;
+        if (left.status !== 'Suspected' && right.status === 'Suspected') return 1;
         return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
       });
     } else if (sortBy === 'Genuine first') {
