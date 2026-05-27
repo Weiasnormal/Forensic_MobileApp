@@ -8,14 +8,14 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  createMockSignatureAnalysisResult,
-  getMockSignatureAnalysisAssets,
-  getMockSignatureAnalysisPdf,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisConfidence,
-  getSignatureAnalysisVerdictLabel,
-  type MockSignatureAnalysisResult,
-  type SignatureAnalysisViewMode,
+    createMockSignatureAnalysisResult,
+    getMockSignatureAnalysisAssets,
+    getMockSignatureAnalysisPdf,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisConfidence,
+    getSignatureAnalysisVerdictLabel,
+    type MockSignatureAnalysisResult,
+    type SignatureAnalysisViewMode,
 } from '../../services/mockSignatureAnalysis';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
@@ -173,7 +173,6 @@ export function SignatureProcessingView() {
 export function SignatureResultsScreen() {
   const router = useRouter();
   const nav = router as any;
-  const suspectUri = useAnalysisFlowStore((state) => state.signature.uploads.suspect);
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
   const analysisResult = useCaseStore((state) =>
@@ -183,7 +182,7 @@ export function SignatureResultsScreen() {
     currentCaseId ? state.cases.find((c) => c.caseId === currentCaseId) : undefined,
   );
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
-  const [previewSource, setPreviewSource] = useState<number | null>(null);
+  const [previewSource, setPreviewSource] = useState<number | { uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
   const mockTemplateNumber = currentCase?.mockTemplateNumber ?? 1;
 
@@ -201,6 +200,8 @@ export function SignatureResultsScreen() {
   const forcedVerdict = currentCase?.status === 'Suspected' ? 'FORGED' : 'GENUINE';
   const activeResult = analysisResult ?? createMockSignatureAnalysisResult(mockTemplateNumber, forcedVerdict as any);
   const caseAssets = getMockSignatureAnalysisAssets(mockTemplateNumber, activeView);
+  const uploadedReferences = currentCase?.uploads.references ?? [];
+  const uploadedSuspect = currentCase?.uploads.suspect ?? null;
   const verdictLabel = getSignatureAnalysisVerdictLabel(activeResult.verdict);
   const confidenceValue = getSignatureAnalysisConfidence(activeResult);
   const payloadRows = useMemo(() => buildPayloadRows(activeResult, verdictLabel), [activeResult, verdictLabel]);
@@ -288,7 +289,7 @@ export function SignatureResultsScreen() {
   }, [activeView]);
 
   const insets = useSafeAreaInsets();
-  const openPreview = (source: number, label: string) => {
+  const openPreview = (source: number | { uri: string }, label: string) => {
     setPreviewSource(source);
     setPreviewLabel(label);
   };
@@ -340,6 +341,45 @@ export function SignatureResultsScreen() {
             <Text style={styles.suspectLabel}>{activeView.toUpperCase()}</Text>
           </Pressable>
         </View>
+
+        {(uploadedReferences.some(Boolean) || uploadedSuspect) ? (
+          <View style={styles.uploadedSection}>
+            <View style={styles.findingsHeaderRow}>
+              <Text style={styles.findingsTitle}>Uploaded Signatures</Text>
+              <Text style={styles.findingsTap}>Tap to enlarge</Text>
+            </View>
+
+            <View style={styles.smallThumbsGrid}>
+              {uploadedReferences.map((uri, index) => {
+                if (!uri) {
+                  return null;
+                }
+
+                return (
+                  <Pressable
+                    key={`uploaded-ref-${index}`}
+                    style={styles.thumbCardSmall}
+                    onPress={() => openPreview({ uri }, `Uploaded Reference ${String(index + 1).padStart(2, '0')}`)}
+                  >
+                    <ExpoImage source={{ uri }} style={styles.thumbPreview} contentFit="cover" />
+                    <Text style={styles.thumbLabel}>{`SIG ${String(index + 1).padStart(2, '0')}`}</Text>
+                    <Text style={styles.thumbTag}>Uploaded Reference</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {uploadedSuspect ? (
+              <Pressable
+                style={styles.largeThumbWrap}
+                onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}
+              >
+                <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="cover" />
+                <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.findingsContainer}>
           <View style={styles.findingsHeaderRow}>
@@ -705,6 +745,15 @@ const styles = StyleSheet.create({
   viewTabTextActive: { color: '#0F172A' },
 
   thumbsGrid: { flexDirection: 'column', gap: 12, marginTop: 12 },
+  uploadedSection: {
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    gap: 10,
+  },
   smallThumbsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   thumbCardSmall: { borderRadius: 12, borderWidth: 1, borderColor: '#EEF2F7', padding: 10, backgroundColor: '#FFFFFF', width: '48%' , marginBottom: 8},
   thumbPreview: { height: 56, borderRadius: 8, backgroundColor: '#F8FAFC', marginBottom: 8, overflow: 'hidden' },

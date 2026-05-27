@@ -6,7 +6,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
-import { Alert, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ACCENT = '#1F5DA8';
@@ -21,6 +21,8 @@ export default function SignatureUploadsRoute() {
   const [currentUploadTarget, setCurrentUploadTarget] = useState<'reference' | 'suspect' | null>(null);
   const [currentReferenceIndex, setCurrentReferenceIndex] = useState<number | null>(null);
   const [showSourcePicker, setShowSourcePicker] = useState(false);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewLabel, setPreviewLabel] = useState('');
   const cameraRef = useRef(null);
   const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
@@ -44,10 +46,24 @@ export default function SignatureUploadsRoute() {
       requestPermission();
       return;
     }
+
+    // Prevent uploading a suspect image until all 4 reference signatures are present
+    if (target === 'suspect') {
+      const allRefsFilled = uploads.references.every(Boolean);
+      if (!allRefsFilled) {
+        Alert.alert(
+          'Complete references first',
+          'Please upload all 4 reference signatures (SIG 01–04) before adding the suspected signature.'
+        );
+        return;
+      }
+    }
+
     setCurrentUploadTarget(target);
     if (refIndex !== undefined) {
       setCurrentReferenceIndex(refIndex);
     }
+
     // show custom source picker modal
     setShowSourcePicker(true);
   };
@@ -82,6 +98,16 @@ export default function SignatureUploadsRoute() {
     }
   };
 
+  const openPreview = (uri: string, label: string) => {
+    setPreviewUri(uri);
+    setPreviewLabel(label);
+  };
+
+  const closePreview = () => {
+    setPreviewUri(null);
+    setPreviewLabel('');
+  };
+
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar title="Upload Signatures" step="2 / 2" onBackPress={() => nav.back()} />
@@ -97,7 +123,17 @@ export default function SignatureUploadsRoute() {
             return (
               <View key={`sig-ref-${index}`} style={styles.uploadSlotWrapper}>
                 <Text style={styles.slotLabel}>{refLabel}</Text>
-                <Pressable onPress={() => handleCameraPress('reference', index)} style={[styles.uploadSlot, uri && styles.uploadSlotFilled]}>
+                <Pressable
+                  onPress={() => {
+                    if (uri) {
+                      openPreview(uri, refLabel);
+                      return;
+                    }
+
+                    handleCameraPress('reference', index);
+                  }}
+                  style={[styles.uploadSlot, uri && styles.uploadSlotFilled]}
+                >
                   {!uri ? (
                     <View style={styles.uploadSlotContent}>
                       <View style={styles.uploadButton}>
@@ -106,9 +142,33 @@ export default function SignatureUploadsRoute() {
                       <Text style={styles.uploadSlotText}>Add photo</Text>
                     </View>
                   ) : (
-                    <View style={styles.uploadedImagePlaceholder}>
-                      <Ionicons name="checkmark-circle" size={32} color={ACCENT} />
-                    </View>
+                    <>
+                      <Image source={{ uri }} style={styles.uploadedImage} resizeMode="cover" />
+                      <View style={styles.uploadCheckBadge}>
+                        <Ionicons name="checkmark-circle" size={24} color={ACCENT} />
+                      </View>
+                      <Pressable
+                        style={styles.changeImageButton}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handleCameraPress('reference', index);
+                        }}
+                      >
+                        <Ionicons name="camera-outline" size={14} color="#0F172A" />
+                      </Pressable>
+                      <Pressable
+                        style={styles.clearImageButton}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          Alert.alert('Remove image', 'Remove this reference signature?', [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Remove', style: 'destructive', onPress: () => setDraftUpload('reference', index, null) },
+                          ]);
+                        }}
+                      >
+                        <Ionicons name="trash" size={14} color="#0F172A" />
+                      </Pressable>
+                    </>
                   )}
                 </Pressable>
               </View>
@@ -119,7 +179,17 @@ export default function SignatureUploadsRoute() {
           <Text style={styles.sectionHeading}>Suspected Signature</Text>
           <Text style={styles.sectionSubheading}>Upload the signature to be verified</Text>
         </View>
-        <Pressable onPress={() => handleCameraPress('suspect')} style={[styles.suspectSlot, uploads.suspect && styles.suspectSlotFilled]}>
+        <Pressable
+          onPress={() => {
+            if (uploads.suspect) {
+              openPreview(uploads.suspect, 'Suspected Signature');
+              return;
+            }
+
+            handleCameraPress('suspect');
+          }}
+          style={[styles.suspectSlot, uploads.suspect && styles.suspectSlotFilled]}
+        >
           {!uploads.suspect ? (
             <View style={styles.suspectSlotContent}>
               <View style={styles.suspectUploadButton}>
@@ -129,9 +199,33 @@ export default function SignatureUploadsRoute() {
               <Text style={styles.suspectSlotSubtitle}>Tap to upload or take a photo</Text>
             </View>
           ) : (
-            <View style={styles.uploadedImagePlaceholder}>
-              <Ionicons name="checkmark-circle" size={40} color="#D97706" />
-            </View>
+            <>
+              <Image source={{ uri: uploads.suspect }} style={styles.uploadedSuspectImage} resizeMode="cover" />
+              <View style={styles.uploadCheckBadgeLarge}>
+                <Ionicons name="checkmark-circle" size={28} color="#D97706" />
+              </View>
+              <Pressable
+                style={styles.changeImageButton}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  handleCameraPress('suspect');
+                }}
+              >
+                <Ionicons name="camera-outline" size={14} color="#0F172A" />
+              </Pressable>
+              <Pressable
+                style={styles.clearImageButtonLarge}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  Alert.alert('Remove image', 'Remove the suspected signature?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => setDraftUpload('suspect', 0, null) },
+                  ]);
+                }}
+              >
+                <Ionicons name="trash" size={16} color="#0F172A" />
+              </Pressable>
+            </>
           )}
         </Pressable>
       </ScrollView>
@@ -143,40 +237,66 @@ export default function SignatureUploadsRoute() {
       <MediaSourcePicker
         visible={showSourcePicker}
         onCancel={() => setShowSourcePicker(false)}
-        onSelect={async (choice) => {
-          setShowSourcePicker(false);
-          if (choice === 'camera') {
-            setCameraVisible(true);
-            return;
-          }
-
-          try {
-            const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (!perm.granted) {
-              Alert.alert('Permission required', 'Gallery access is required to pick images.');
+          onSelect={async (choice) => {
+            setShowSourcePicker(false);
+            if (choice === 'camera') {
+              setCameraVisible(true);
               return;
             }
 
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              quality: 0.9,
-            });
-
-            const uri = (result as any).uri ?? (result as any).assets?.[0]?.uri;
-
-            if (result && !(result as any).cancelled && uri) {
-              if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-                setDraftUpload('reference', currentReferenceIndex, uri);
-              } else if (currentUploadTarget === 'suspect') {
-                setDraftUpload('suspect', 0, uri);
+            try {
+              const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (!perm.granted) {
+                Alert.alert('Permission required', 'Gallery access is required to pick images.');
+                return;
               }
+
+              // If selecting references, allow multiple selection and assign sequentially
+              if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+                const remainingSlots = 4 - currentReferenceIndex;
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  allowsMultipleSelection: true,
+                  allowsEditing: false,
+                  selectionLimit: Math.max(1, remainingSlots),
+                  quality: 0.9,
+                });
+
+                if (result && !(result as any).cancelled) {
+                  const assets = (result as any).assets ?? ((result as any).uri ? [{ uri: (result as any).uri }] : []);
+                  // Fill sequential reference slots starting at currentReferenceIndex
+                  for (let i = 0; i < assets.length; i++) {
+                    const slotIndex = currentReferenceIndex + i;
+                    if (slotIndex > 3) break; // only 4 slots
+                    const aUri = assets[i]?.uri ?? null;
+                    if (aUri) setDraftUpload('reference', slotIndex, aUri);
+                  }
+                }
+
+                return;
+              }
+
+              // Default: single selection for suspect or other flows
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.9,
+              });
+
+              const uri = (result as any).uri ?? (result as any).assets?.[0]?.uri;
+
+              if (result && !(result as any).cancelled && uri) {
+                if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+                  setDraftUpload('reference', currentReferenceIndex, uri);
+                } else if (currentUploadTarget === 'suspect') {
+                  setDraftUpload('suspect', 0, uri);
+                }
+              }
+            } catch (e) {
+              console.warn('Gallery pick failed', e);
+              Alert.alert('Error', 'Unable to pick image from gallery.');
             }
-          } catch (e) {
-            console.warn('Gallery pick failed', e);
-            Alert.alert('Error', 'Unable to pick image from gallery.');
-          }
-        }}
+          }}
       />
       {cameraVisible && (
         <View style={styles.cameraOverlay}>
@@ -200,6 +320,20 @@ export default function SignatureUploadsRoute() {
           </SafeAreaView>
         </View>
       )}
+
+      <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={closePreview}>
+        <Pressable style={styles.previewBackdrop} onPress={closePreview}>
+          <Pressable style={styles.previewSheet} onPress={() => {}}>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewTitle}>{previewLabel}</Text>
+              <Pressable onPress={closePreview} style={styles.previewCloseButton}>
+                <Ionicons name="close" size={22} color="#0F172A" />
+              </Pressable>
+            </View>
+            {previewUri ? <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" /> : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -318,6 +452,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 120,
+    overflow: 'hidden',
   },
   uploadSlotFilled: {
     borderStyle: 'solid',
@@ -340,7 +475,62 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
   },
-  uploadedImagePlaceholder: {
+  uploadedImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  uploadedSuspectImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  uploadCheckBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FFFFFFE0',
+    borderRadius: 999,
+  },
+  uploadCheckBadgeLarge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#FFFFFFE0',
+    borderRadius: 999,
+  },
+  changeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFFE6',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearImageButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFFE6',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearImageButtonLarge: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFFE6',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -357,6 +547,8 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 170,
+    overflow: 'hidden',
   },
   suspectSlotFilled: {
     borderStyle: 'solid',
@@ -472,5 +664,45 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 12,
     fontWeight: '600',
+  },
+  previewBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 6, 23, 0.72)',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  previewSheet: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    maxHeight: '82%',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  previewTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  previewCloseButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  previewImage: {
+    width: '100%',
+    height: 420,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
   },
 });
