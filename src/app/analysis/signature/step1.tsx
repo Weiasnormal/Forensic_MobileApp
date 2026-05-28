@@ -113,10 +113,19 @@ export default function SignatureStep1Route() {
 
       <DraftSavedModal
         visible={showDraftSavedModal}
-        title="Save draft?"
-        message="Do you want to save this draft before leaving?"
-        primaryLabel="Save draft"
-        secondaryLabel="No"
+        title="Save Draft"
+        message="How would you like to proceed?"
+        primaryLabel="Save as Draft"
+        secondaryLabel="Discard"
+        tertiaryLabel="Go Back"
+        onSecondaryPress={() => {
+          discardSignatureDraft();
+          setShowDraftSavedModal(false);
+          nav.back();
+        }}
+        onTertiaryPress={() => {
+          setShowDraftSavedModal(false);
+        }}
         onContinue={() => {
           setShowDraftSavedModal(false);
           nav.back();

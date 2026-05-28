@@ -133,10 +133,11 @@ export default function UserProfileScreen() {
 
 			<DraftSavedModal
 				visible={showSignOutModal}
-				title="Sign out?"
-				message="Are you sure you want to sign out?"
-				primaryLabel="Sign out"
-				secondaryLabel="No"
+				title="Logout Confirmation"
+				message="Are you sure you want to logout your account?"
+				primaryLabel="Log out"
+				secondaryLabel="Cancel"
+				onSecondaryPress={() => setShowSignOutModal(false)}
 				onContinue={() => {
 					setShowSignOutModal(false);
 					router.replace('/_login/SignInPage');
