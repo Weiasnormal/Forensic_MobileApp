@@ -1,4 +1,4 @@
-export const DEFAULT_API_BASE_URL = 'https://avera-api.lemonwave-c38ebe4d.southeastasia.azurecontainerapps.io';
+export const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL;
 export const API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL;
 
 export function buildApiUrl(path: string) {

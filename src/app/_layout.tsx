@@ -41,9 +41,6 @@ function applyGlobalFontDefaults() {
   if (fontsApplied) {
     return;
   }
-  // Set defaultProps.style for Text and TextInput so all usages receive Sora by default.
-  // Overriding React.createElement doesn't work with the automatic JSX runtime, so
-  // using defaultProps is more reliable across the app.
   const textAny = Text as any;
   const inputAny = TextInput as any;
 

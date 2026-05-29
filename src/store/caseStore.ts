@@ -9,7 +9,6 @@ import {
     type MockSignatureAnalysisResult,
 } from '@/services/mockSignatureAnalysis';
 
-// Debug logger for case store
 const caseLog = {
   info: (tag: string, message: string, data?: any) => {
     const timestamp = new Date().toISOString();
