@@ -21,7 +21,7 @@ import { useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 import UploadSlot from '../analysis/UploadSlot';
 
-const ACCENT = '#16803C';
+const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#F5FCF7';
 
 const documentOptions = [

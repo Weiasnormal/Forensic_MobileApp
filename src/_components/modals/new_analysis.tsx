@@ -32,7 +32,7 @@ const options: Array<{
 		title: 'Signature Analysis',
 		subtitle: 'Compare 4 references - detect forgeries',
 		icon: 'brush-outline',
-		iconBackground: '#1F5DA8',
+		iconBackground: '#1E6FD9',
 		borderColor: '#DDEBFF',
 	},
 	{

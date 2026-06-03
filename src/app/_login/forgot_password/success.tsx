@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
 		width: '100%',
 	},
 	primaryButton: {
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 		borderRadius: 12,
 		paddingVertical: 13,
 		alignItems: 'center',

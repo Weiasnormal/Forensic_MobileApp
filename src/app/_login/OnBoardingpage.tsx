@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
 	},
 	progressSegmentActive: {
 		width: 18,
-		backgroundColor: '#1F6FE5',
+		backgroundColor: '#1E6FD9',
 	},
 	buttonRow: {
 		flexDirection: 'row',
@@ -209,10 +209,10 @@ const styles = StyleSheet.create({
 		flex: 1,
 		height: 52,
 		borderRadius: 14,
-		backgroundColor: '#1F6FE5',
+		backgroundColor: '#1E6FD9',
 		alignItems: 'center',
 		justifyContent: 'center',
-		shadowColor: '#1F6FE5',
+		shadowColor: '#1E6FD9',
 		shadowOpacity: 0.2,
 		shadowRadius: 14,
 		shadowOffset: { width: 0, height: 8 },

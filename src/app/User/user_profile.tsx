@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
 		paddingBottom: 28,
 	},
  	heroCard: {
- 		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
  		paddingHorizontal: 16,
  		paddingTop: 20,
  		paddingBottom: 20,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	toggleOn: {
-		backgroundColor: '#1F6FE5',
+		backgroundColor: '#1E6FD9',
 	},
 	toggleOff: {
 		backgroundColor: '#D7DEE9',

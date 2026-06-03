@@ -22,7 +22,7 @@ export function useRippleTransition({
 	brandFadeDuration = 380,
 	brandLiftDuration = 420,
 	startScale = 0.02,
-	rippleColor = '#2A71D8',
+	rippleColor = '#1E6FD9',
 }: UseRippleTransitionOptions) {
 	const [stage, setStage] = useState<RippleIntroStage>('splash');
 	const rippleProgress = useRef(new Animated.Value(0)).current;

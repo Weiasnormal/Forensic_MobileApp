@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#ffffff',
 	},
 	hero: {
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 		paddingHorizontal: 16,
 		paddingTop: 38,
 		paddingBottom: 20,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	roleTabActive: {
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 	},
 	roleTabText: {
 		color: '#3F3F3F',
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#E9EEF5',
 	},
 	passwordWrapFocused: {
-		borderColor: '#2D72D1',
+		borderColor: '#1E6FD9',
 		backgroundColor: '#F5F9FF',
 	},
 	passwordWrapError: {
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	primaryButton: {
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 		borderRadius: 12,
 		paddingVertical: 13,
 		alignItems: 'center',

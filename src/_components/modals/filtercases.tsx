@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     borderColor: '#E6EEF9',
   },
   chipSelected: {
-    backgroundColor: '#1F5DA8',
+    backgroundColor: '#1E6FD9',
   },
   chipText: { fontSize: 13, fontWeight: '800' },
   chipTextOutline: { color: '#0F172A' },
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pillOutline: { backgroundColor: '#FFFFFF', borderColor: '#E6EEF9' },
-  pillSelected: { backgroundColor: '#1F5DA8', borderColor: '#1F5DA8' },
+  pillSelected: { backgroundColor: '#1E6FD9', borderColor: '#1E6FD9' },
   pillText: { fontSize: 13, fontWeight: '700' },
   pillTextOutline: { color: '#0F172A' },
   pillTextSelected: { color: '#FFFFFF' },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   applyButton: {
     marginTop: 14,
     width: '100%',
-    backgroundColor: '#1F5DA8',
+    backgroundColor: '#1E6FD9',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',

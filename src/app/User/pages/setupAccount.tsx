@@ -112,12 +112,26 @@ export default function SetupAccount() {
 
         <View style={styles.field}>
           <FieldLabel label="Role" />
-          <TextInput style={styles.input} value={role} onChangeText={setRole} placeholder="Role (e.g., Examiner)" placeholderTextColor="#CBD5E1" />
+          <TextInput
+            style={[styles.input, styles.inputDisabled]}
+            value={role}
+            editable={false}
+            selectTextOnFocus={false}
+            placeholder="Role (e.g., Examiner)"
+            placeholderTextColor="#94A3B8"
+          />
         </View>
 
         <View style={styles.field}>
           <FieldLabel label="Organization" />
-          <TextInput style={styles.input} value={organization} onChangeText={setOrganization} placeholder="Organization" placeholderTextColor="#CBD5E1" />
+          <TextInput
+            style={[styles.input, styles.inputDisabled]}
+            value={organization}
+            editable={false}
+            selectTextOnFocus={false}
+            placeholder="Organization"
+            placeholderTextColor="#94A3B8"
+          />
         </View>
 
       </ScrollView>
@@ -199,7 +213,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#1F6FE5',
+    backgroundColor: '#1E6FD9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -230,6 +244,10 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     backgroundColor: '#FFFFFF',
   },
+  inputDisabled: {
+    backgroundColor: '#F1F5F9',
+    color: '#64748B',
+  },
   buttonContainer: {
     position: 'absolute',
     bottom: 0,
@@ -256,7 +274,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     borderRadius: 12,
-    backgroundColor: '#1F6FE5',
+    backgroundColor: '#1E6FD9',
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',

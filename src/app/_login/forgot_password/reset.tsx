@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#ffffff',
 	},
 	hero: {
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 		paddingHorizontal: 16,
 		paddingTop: 38,
 		paddingBottom: 20,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
 		borderColor: '#D0DAE8',
 	},
 	passwordInputWrapFocused: {
-		borderColor: '#2D72D1',
+		borderColor: '#1E6FD9',
 		backgroundColor: '#F5F9FF',
 	},
 	passwordInputWrapError: {
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
 		marginTop: 'auto',
 	},
 	primaryButton: {
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 		borderRadius: 12,
 		paddingVertical: 13,
 		alignItems: 'center',

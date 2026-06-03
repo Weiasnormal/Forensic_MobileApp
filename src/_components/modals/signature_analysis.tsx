@@ -21,7 +21,7 @@ import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
 
-const ACCENT = '#1F5DA8';
+const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#ffffff';
 
 const viewModes = ['Heatmap', 'Bounding box', 'Stroke diff'] as const;
@@ -157,7 +157,7 @@ export function SignatureProcessingView() {
           style={{
             paddingVertical: 14,
             paddingHorizontal: 16,
-            backgroundColor: '#1F5DA8',
+            backgroundColor: '#1E6FD9',
             borderRadius: 14,
             alignItems: 'center',
           }}

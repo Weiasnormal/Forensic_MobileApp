@@ -9,7 +9,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const ACCENT = '#1F5DA8';
+const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#FFFFFF';
 
 export default function SignatureUploadsRoute() {
@@ -148,15 +148,6 @@ export default function SignatureUploadsRoute() {
                         <Ionicons name="checkmark-circle" size={24} color={ACCENT} />
                       </View>
                       <Pressable
-                        style={styles.changeImageButton}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          handleCameraPress('reference', index);
-                        }}
-                      >
-                        <Ionicons name="camera-outline" size={14} color="#0F172A" />
-                      </Pressable>
-                      <Pressable
                         style={styles.clearImageButton}
                         onPress={(event) => {
                           event.stopPropagation();
@@ -204,15 +195,7 @@ export default function SignatureUploadsRoute() {
               <View style={styles.uploadCheckBadgeLarge}>
                 <Ionicons name="checkmark-circle" size={28} color="#D97706" />
               </View>
-              <Pressable
-                style={styles.changeImageButton}
-                onPress={(event) => {
-                  event.stopPropagation();
-                  handleCameraPress('suspect');
-                }}
-              >
-                <Ionicons name="camera-outline" size={14} color="#0F172A" />
-              </Pressable>
+              {/* change button removed to prevent replacement; use Remove (trash) to clear first */}
               <Pressable
                 style={styles.clearImageButtonLarge}
                 onPress={(event) => {

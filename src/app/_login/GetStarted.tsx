@@ -70,11 +70,11 @@ export default function GetStartedPage() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#2A71D8',
+		backgroundColor: '#1E6FD9',
 	},
 	container: {
 		flex: 1,
-		backgroundColor: '#2A71D8',
+		backgroundColor: '#1E6FD9',
 		overflow: 'hidden',
 		paddingHorizontal: 26,
 		paddingTop: 18,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	primaryButtonText: {
-		color: '#2A71D8',
+		color: '#1E6FD9',
 		fontSize: 18,
 		fontWeight: '800',
 		fontFamily: 'Sora_800ExtraBold',

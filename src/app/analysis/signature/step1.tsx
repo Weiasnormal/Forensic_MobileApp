@@ -8,7 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import DraftSavedModal from '@/_components/modals/draft_saved';
 
-const ACCENT = '#1F5DA8';
+const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#FFFFFF';
 const documentOptions = ['Bank cheque', 'Legal contract', 'Government form', 'Insurance document', 'Payroll statement'];
 const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
@@ -97,8 +97,8 @@ export default function SignatureStep1Route() {
             {priorities.map((priority) => {
               const selected = draftCase.priority === priority;
               return (
-                <Pressable key={priority} onPress={() => updateDraftCase('priority', priority)} style={[styles.priorityChip, selected && { backgroundColor: ACCENT, borderColor: ACCENT }]}>
-                  <Text style={[styles.priorityText, selected && { color: '#FFFFFF' }]}>{priority}</Text>
+                <Pressable key={priority} onPress={() => updateDraftCase('priority', priority)} style={[styles.priorityChip, selected && { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                  <Text style={[styles.priorityText, selected && { color: '#1E6FD9' }]}>{priority}</Text>
                 </Pressable>
               );
             })}
@@ -245,7 +245,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#64748B',
-    textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   caseIdBox: {
@@ -326,8 +325,8 @@ const styles = StyleSheet.create({
   priorityChip: {
     borderWidth: 1,
     borderColor: '#D8E3EF',
-    borderRadius: 999,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingHorizontal: 22,
     paddingVertical: 9,
     backgroundColor: '#FFFFFF',
   },
@@ -338,7 +337,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     borderRadius: 12,
-    backgroundColor: ACCENT,
+    backgroundColor:  ACCENT,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',

@@ -2,12 +2,16 @@ import type * as zTypes from 'zod';
 
 const { z } = require('zod') as { z: typeof import('zod').z };
 
-export const nameSchema = z
-  .string()
-  .trim()
-  .min(2, 'Name must be at least 2 characters long')
-  .max(50, 'Name must be at most 50 characters long')
-  .regex(/^[A-Za-z][A-Za-z\s.'-]*$/, 'Use letters only');
+function createNameSchema(fieldLabel: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, `${fieldLabel} is required`)
+    .max(50, `${fieldLabel} must be 50 characters or fewer`)
+    .regex(/^[A-Za-z][A-Za-z\s.'-]*$/, `${fieldLabel} contains invalid characters.`);
+}
+
+export const nameSchema = createNameSchema('Name');
 
 export const emailSchema = z
   .string()
@@ -38,8 +42,8 @@ export const verificationCodeSchema = z.object({
 
 export const signUpSchema = z
   .object({
-    firstName: nameSchema,
-    lastName: nameSchema,
+    firstName: createNameSchema('First name'),
+    lastName: createNameSchema('Last name'),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: confirmPasswordSchema,

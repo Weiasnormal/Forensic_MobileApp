@@ -17,7 +17,7 @@ export default function MediaSourcePicker({ visible, onSelect, onCancel, title =
         <View style={styles.card}>
           <View style={styles.headerRow}>
             <View style={styles.iconWrap}>
-              <Ionicons name="images" size={22} color="#1F5DA8" />
+              <Ionicons name="images" size={22} color="#1E6FD9" />
             </View>
             <View style={styles.headerTextWrap}>
               <Text style={styles.title}>{title}</Text>
@@ -35,7 +35,7 @@ export default function MediaSourcePicker({ visible, onSelect, onCancel, title =
 
             <Pressable style={[styles.optionButton, styles.secondaryOption]} onPress={() => onSelect('gallery')}>
               <View style={styles.boxContent}>
-                <Ionicons name="images" size={28} color="#1F5DA8" />
+                <Ionicons name="images" size={28} color="#1E6FD9" />
                 <Text style={styles.secondaryButtonText}>Gallery</Text>
               </View>
             </Pressable>
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 6,
     borderRadius: 12,
-    backgroundColor: '#1F5DA8',
+    backgroundColor: '#1E6FD9',
     paddingVertical: 12,
     alignItems: 'center',
   },
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryOption: {
-    backgroundColor: '#1F5DA8',
+    backgroundColor: '#1E6FD9',
   },
   secondaryOption: {
     backgroundColor: '#FFFFFF',
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   secondaryButtonText: {
-    color: '#1F5DA8',
+    color: '#1E6FD9',
     fontSize: 15,
     fontWeight: '800',
   },

@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
 		width: 50,
 		height: 50,
 		borderRadius: 25,
-		backgroundColor: '#2D72D1',
+		backgroundColor: '#1E6FD9',
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginTop: -24,
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
 	newLabel: {
 		marginTop: 3,
 		fontSize: 10,
-		color: '#2D72D1',
+		color: '#1E6FD9',
 		fontWeight: '700',
 	},
 	navItemActive: {
@@ -126,6 +126,6 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 	},
 	navLabelActive: {
-		color: '#2D72D1',
+		color: '#1E6FD9',
 	},
 });

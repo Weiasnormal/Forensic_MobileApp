@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   countBadgeText: {
-    color: '#1F5DA8',
+    color: '#1E6FD9',
     fontSize: 12,
     fontWeight: '800',
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   clearSearchText: {
   fontSize: 12,
   fontWeight: '700',
-  color: '#1F5DA8',
+  color: '#1E6FD9',
   },
   filterButton: {
     width: 44,
@@ -361,8 +361,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   chipActive: {
-    backgroundColor: '#1F5DA8',
-    borderColor: '#1F5DA8',
+    backgroundColor: '#1E6FD9',
+    borderColor: '#1E6FD9',
   },
   chipText: {
     color: '#475569',
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   paddingHorizontal: 14,
   paddingVertical: 10,
   borderRadius: 999,
-  backgroundColor: '#1F5DA8',
+  backgroundColor: '#1E6FD9',
   },
   clearSearchTextLarge: {
   fontSize: 13,
