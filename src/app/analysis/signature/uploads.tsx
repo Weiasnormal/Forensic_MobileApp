@@ -10,7 +10,7 @@ import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Te
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ACCENT = '#1E6FD9';
-const SCREEN_BG = '#FFFFFF';
+const SCREEN_BG = '#F7F9FC';
 
 export default function SignatureUploadsRoute() {
   const router = useRouter();
@@ -137,7 +137,7 @@ export default function SignatureUploadsRoute() {
                   {!uri ? (
                     <View style={styles.uploadSlotContent}>
                       <View style={styles.uploadButton}>
-                        <Ionicons name="add" size={24} color="#94A3B8" />
+                        <Ionicons name="add" size={18} color="#94A3B8" />
                       </View>
                       <Text style={styles.uploadSlotText}>Add photo</Text>
                     </View>
@@ -446,8 +446,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   uploadButton: {
-    width: 44,
-    height: 44,
+    width: 34,
+    height: 34,
     borderRadius: 999,
     backgroundColor: '#E8EBF0',
     alignItems: 'center',
@@ -542,8 +542,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   suspectUploadButton: {
-    width: 56,
-    height: 56,
+    width: 46,
+    height: 46,
     borderRadius: 999,
     backgroundColor: '#FCD34D',
     alignItems: 'center',
