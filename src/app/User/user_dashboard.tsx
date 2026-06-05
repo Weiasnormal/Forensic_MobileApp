@@ -1,7 +1,7 @@
 import CasesScreen from '@/app/User/user_cases';
 import StatsScreen from '@/app/User/user_stats';
+import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@/store/userStore';
-import { Image as ExpoImage } from 'expo-image';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,7 +14,6 @@ import { formatAnalysisTypeLabel, getPendingCards, type SavedCase, useCaseStore 
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
 const useRouter2 = useRouter;
-const signattureIcon = require('../../../assets/expo.icon/Assets/signature_icon.webp');
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
 
@@ -114,7 +113,6 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
   const latestCases = [...cases]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 5);
-  const noCasesImage = require('../../../assets/expo.icon/Assets/noCase.webp');
 
   const goToCaseDestination = (item: SavedCase) => {
     setActiveSignatureCaseId(item.caseId);
@@ -141,7 +139,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
     <>
       <TouchableOpacity style={styles.analysisBanner} activeOpacity={0.9} onPress={onStartAnalysis}>
         <View style={styles.analysisBannerIcon}>
-          <ExpoImage source={signattureIcon} style={styles.icon} resizeMode="contain" />
+          <Ionicons name="pencil-outline" size={24} color="#1E6FD9" />
         </View>
 
         <View style={styles.analysisBannerCopy}>
@@ -212,7 +210,11 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 
       {(!cases || cases.length === 0) ? (
         <View style={styles.emptyArea}>
-          <ExpoImage source={noCasesImage} style={styles.emptyImage} contentFit="contain" />
+          <View style={styles.emptyBadge}>
+            <Ionicons name="folder-open-outline" size={34} color="#94A3B8" />
+          </View>
+          <Text style={styles.emptyTitle}>No cases yet</Text>
+          <Text style={styles.emptySubtitle}>Start a new analysis to populate the dashboard.</Text>
         </View>
       ) : null}
     </>
@@ -351,6 +353,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     includeFontPadding: false,
   },
+  emptyArea: {
+    marginTop: 24,
+    marginHorizontal: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E6EEF9',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    gap: 10,
+  },
+  emptyBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyTitle: {
+    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptySubtitle: {
+    color: '#64748B',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
   sectionDivider: {
     height: 1,
     backgroundColor: '#E2E8F0',
@@ -379,17 +414,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#185FA5',
     fontWeight: '700',
-  },
-  icon: {
-    width: 24,
-    height: 24,
-  },
-  emptyArea: {
-    marginTop: -2,
-    alignItems: 'center',
-  },
-  emptyImage: {
-    width: 420,
-    height: 180,
   },
 });

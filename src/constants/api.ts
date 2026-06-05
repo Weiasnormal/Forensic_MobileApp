@@ -12,13 +12,18 @@ export function buildApiUrl(path: string) {
 
 export const API_ENDPOINTS = {
   auth: {
-    signIn: '/auth/sign-in',
-    signUp: '/auth/sign-up',
-    verifySignupCode: '/auth/sign-up/verify-code',
-    resendSignupCode: '/auth/sign-up/resend-code',
-    forgotPassword: '/auth/password/forgot',
+    login: '/auth/login',
+    register: '/auth/register',
+    verifySignupCode: '/auth/verify-email',
+    resendSignupCode: '/auth/refresh',
+    forgotPassword: '/auth/forgot-password',
     verifyResetCode: '/auth/password/verify-code',
-    resetPassword: '/auth/password/reset',
+    resetPassword: '/auth/reset-password',
+    logout: '/auth/logout',
+    refresh: '/auth/refresh',
+    validateInviteCode: (code: string) => `/auth/validate-invite-code/${code}`,
+    registerAdmin: '/auth/register-admin',
+    google: '/auth/google',
   },
   cases: {
     list: '/cases',
@@ -35,17 +40,17 @@ export const API_ENDPOINTS = {
   },
   signatures: {
     uploadReference: (caseId: string) => `/cases/${caseId}/signatures/reference`,
-    uploadSuspect: (caseId: string) => `/cases/${caseId}/signatures/suspect`,
+    uploadSuspected: (caseId: string) => `/cases/${caseId}/signatures/suspected`,
     getReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
-    getSuspect: (caseId: string) => `/cases/${caseId}/signatures/suspect`,
+    getSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
     getAll: (caseId: string) => `/cases/${caseId}/signatures`,
     deleteReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
-    deleteSuspect: (caseId: string) => `/cases/${caseId}/signatures/suspect`,
+    deleteSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
   },
   analysis: {
     start: (caseId: string) => `/cases/${caseId}/analysis`,
-    getStatus: (caseId: string) => `/cases/${caseId}/analysis/status`,
-    getResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
+    getStatus: () => `/ml/health`,
+    getResults: (caseId: string) => `/cases/${caseId}/results`,
     updateResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
   },
 } as const;

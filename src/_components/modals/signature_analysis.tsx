@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Asset } from 'expo-asset';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
+import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,14 +9,12 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
     createMockSignatureAnalysisResult,
-    getMockSignatureAnalysisAssets,
-    getMockSignatureAnalysisPdf,
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
     type MockSignatureAnalysisResult,
     type SignatureAnalysisViewMode,
-} from '../../services/mockSignatureAnalysis';
+} from '@/services/mockSignatureAnalysis';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
@@ -113,9 +111,7 @@ function buildSignaturePdfHtml(result: MockSignatureAnalysisResult, verdictLabel
   `;
 }
 
-// NOTE: Removed static require for a bundled PDF/image to avoid bundling errors when the
-// asset isn't present. If you add a real PDF under
-// `assets/expo.icon/Assets/SampleTest/pdf/`, update this function to return its URI.
+/* Bundled sample assets were removed so analysis renders uploaded images and generated report data only. */
 
 export function SignatureProcessingView() {
   const router = useRouter();
@@ -182,7 +178,7 @@ export function SignatureResultsScreen() {
     currentCaseId ? state.cases.find((c) => c.caseId === currentCaseId) : undefined,
   );
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
-  const [previewSource, setPreviewSource] = useState<number | { uri: string } | null>(null);
+  const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
   const mockTemplateNumber = currentCase?.mockTemplateNumber ?? 1;
 
@@ -199,7 +195,6 @@ export function SignatureResultsScreen() {
   // Build a mock result based on the stored case status (Suspected/Genuine)
   const forcedVerdict = currentCase?.status === 'Suspected' ? 'FORGED' : 'GENUINE';
   const activeResult = analysisResult ?? createMockSignatureAnalysisResult(mockTemplateNumber, forcedVerdict as any);
-  const caseAssets = getMockSignatureAnalysisAssets(mockTemplateNumber, activeView);
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
   const verdictLabel = getSignatureAnalysisVerdictLabel(activeResult.verdict);
@@ -243,25 +238,17 @@ export function SignatureResultsScreen() {
 
   const handleExportPdf = async () => {
     try {
-      const pdfModule = getMockSignatureAnalysisPdf(mockTemplateNumber);
+      const { uri } = await Print.printToFileAsync({
+        html: buildSignaturePdfHtml(activeResult, verdictLabel),
+      });
 
-      if (!pdfModule) {
-        Alert.alert('Export failed', 'Unable to locate the PDF report.');
-        return;
-      }
-
-      const pdfAsset = Asset.fromModule(pdfModule);
-      await pdfAsset.downloadAsync();
-
-      const localUri = pdfAsset.localUri ?? pdfAsset.uri;
-
-      if (!localUri) {
+      if (!uri) {
         Alert.alert('Export failed', 'Unable to prepare the PDF report.');
         return;
       }
 
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(localUri, {
+        await Sharing.shareAsync(uri, {
           mimeType: 'application/pdf',
           dialogTitle: 'Export PDF Report',
           UTI: 'com.adobe.pdf',
@@ -269,9 +256,9 @@ export function SignatureResultsScreen() {
         return;
       }
 
-      Alert.alert('PDF ready', `Saved to: ${localUri}`);
+      Alert.alert('PDF ready', `Saved to: ${uri}`);
     } catch (error) {
-      console.warn('Failed to export bundled PDF report:', error);
+      console.warn('Failed to export PDF report:', error);
       Alert.alert('Export failed', 'Unable to create the PDF report.');
     }
   };
@@ -289,7 +276,7 @@ export function SignatureResultsScreen() {
   }, [activeView]);
 
   const insets = useSafeAreaInsets();
-  const openPreview = (source: number | { uri: string }, label: string) => {
+  const openPreview = (source: { uri: string }, label: string) => {
     setPreviewSource(source);
     setPreviewLabel(label);
   };
@@ -298,6 +285,8 @@ export function SignatureResultsScreen() {
     setPreviewSource(null);
     setPreviewLabel('');
   };
+
+  const referenceSlots = [0, 1, 2, 3] as const;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -327,19 +316,46 @@ export function SignatureResultsScreen() {
 
         <View style={styles.thumbsGrid}>
           <View style={styles.smallThumbsGrid}>
-            {[0, 1, 2, 3].map((i) => (
-              <Pressable key={`r-${i}`} style={styles.thumbCardSmall} onPress={() => openPreview(caseAssets.references[i], `Reference ${String(i + 1).padStart(2, '0')}`)}>
-                <ExpoImage source={caseAssets.references[i]} style={styles.thumbPreview} contentFit="cover" />
-                <Text style={styles.thumbLabel}>{`SIG ${String(i + 1).padStart(2, '0')}`}</Text>
-                <Text style={styles.thumbTag}>Reference</Text>
-              </Pressable>
-            ))}
+            {referenceSlots.map((i) => {
+              const uri = uploadedReferences[i];
+              const referenceLabel = `SIG ${String(i + 1).padStart(2, '0')}`;
+
+              if (uri) {
+                return (
+                  <Pressable key={`r-${i}`} style={styles.thumbCardSmall} onPress={() => openPreview({ uri }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}>
+                    <ExpoImage source={{ uri }} style={styles.thumbPreview} contentFit="cover" />
+                    <Text style={styles.thumbLabel}>{referenceLabel}</Text>
+                    <Text style={styles.thumbTag}>Reference</Text>
+                  </Pressable>
+                );
+              }
+
+              return (
+                <View key={`r-${i}`} style={[styles.thumbCardSmall, styles.thumbPlaceholderCard, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
+                  <View style={[styles.thumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
+                    <Ionicons name="image-outline" size={24} color={activeTone.badge} />
+                  </View>
+                  <Text style={styles.thumbLabel}>{referenceLabel}</Text>
+                  <Text style={styles.thumbTag}>Upload pending</Text>
+                </View>
+              );
+            })}
           </View>
 
-          <Pressable style={styles.largeThumbWrap} onPress={() => openPreview(caseAssets.suspect, `Suspect · ${activeView}`)}>
-            <ExpoImage source={caseAssets.suspect} style={styles.largeThumbPreview} contentFit="cover" />
-            <Text style={styles.suspectLabel}>{activeView.toUpperCase()}</Text>
-          </Pressable>
+          {uploadedSuspect ? (
+            <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
+              <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="cover" />
+              <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
+            </Pressable>
+          ) : (
+            <View style={[styles.largeThumbWrap, styles.largeThumbPlaceholder, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
+              <View style={[styles.largeThumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
+                <Ionicons name="scan-outline" size={28} color={activeTone.badge} />
+              </View>
+              <Text style={styles.suspectLabel}>{activeView.toUpperCase()}</Text>
+              <Text style={styles.suspectHint}>Upload the suspect image to preview it here.</Text>
+            </View>
+          )}
         </View>
 
         {(uploadedReferences.some(Boolean) || uploadedSuspect) ? (
@@ -756,11 +772,15 @@ const styles = StyleSheet.create({
   },
   smallThumbsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   thumbCardSmall: { borderRadius: 12, borderWidth: 1, borderColor: '#EEF2F7', padding: 10, backgroundColor: '#FFFFFF', width: '48%' , marginBottom: 8},
+  thumbPlaceholderCard: { alignItems: 'center', justifyContent: 'center', minHeight: 118, gap: 6 },
+  thumbPlaceholderIconWrap: { width: 56, height: 56, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.65)' },
   thumbPreview: { height: 56, borderRadius: 8, backgroundColor: '#F8FAFC', marginBottom: 8, overflow: 'hidden' },
   thumbLabel: { fontSize: 12, fontWeight: '800', color: '#0F172A' },
   thumbTag: { fontSize: 11, color: '#10B981', fontWeight: '700', marginTop: 4 },
 
   largeThumbWrap: { borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9', backgroundColor: '#FFFFFF', padding: 12, alignItems: 'center', justifyContent: 'center' },
+  largeThumbPlaceholder: { minHeight: 166, gap: 6 },
+  largeThumbPlaceholderIconWrap: { width: 72, height: 72, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)' },
   largeThumbPreview: { width: '100%', height: 120, borderRadius: 8, backgroundColor: '#F8FAFB', marginBottom: 10, overflow: 'hidden' },
   suspectLabel: { color: '#EF4444', fontSize: 12, fontWeight: '800' },
   suspectHint: { color: '#F97316', fontSize: 12, marginTop: 4 },

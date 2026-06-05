@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -83,7 +82,6 @@ export default function UserCasesScreen() {
     };
   }, [activeFilter, casesToUse, debouncedQuery]);
   const { totalCases } = getCaseSummary(cases);
-  const noCasesImage = require('../../../assets/expo.icon/Assets/noCase.webp');
   const hasSearchQuery = debouncedQuery.trim().length > 0;
   const showSearchFeedback = isSearchFocused || query.trim().length > 0;
 
@@ -171,7 +169,11 @@ export default function UserCasesScreen() {
 
       {totalCases === 0 ? (
         <View style={styles.emptyArea}>
-          <ExpoImage source={noCasesImage} style={styles.emptyImage} contentFit="contain" />
+          <View style={styles.emptyBadge}>
+            <Ionicons name="document-text-outline" size={34} color="#94A3B8" />
+          </View>
+          <Text style={styles.emptyTitle}>No cases yet</Text>
+          <Text style={styles.emptySubtitle}>Run a new analysis to see cases appear here.</Text>
         </View>
       ) : sections.length === 0 ? (
         <View style={styles.emptySearchArea}>
@@ -326,6 +328,35 @@ const styles = StyleSheet.create({
   color: '#64748B',
   fontWeight: '600',
   },
+  emptyArea: {
+  flex: 1,
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingHorizontal: 24,
+  paddingTop: 160,
+  gap: 10,
+  },
+  emptyBadge: {
+  width: 72,
+  height: 72,
+  borderRadius: 22,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#F8FAFC',
+  borderWidth: 1,
+  borderColor: '#E2E8F0',
+  },
+  emptyTitle: {
+  color: '#0F172A',
+  fontSize: 17,
+  fontWeight: '800',
+  },
+  emptySubtitle: {
+  color: '#64748B',
+  fontSize: 12,
+  textAlign: 'center',
+  lineHeight: 17,
+  },
   clearSearchButton: {
   paddingHorizontal: 10,
   paddingVertical: 6,
@@ -388,11 +419,6 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     letterSpacing: 0.5,
   },
-  emptyArea: {
-    paddingTop: 180,
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
   emptySearchArea: {
   flex: 1,
   alignItems: 'center',
@@ -423,9 +449,5 @@ const styles = StyleSheet.create({
   fontSize: 13,
   fontWeight: '800',
   color: '#FFFFFF',
-  },
-  emptyImage: {
-    width: 420,
-    height: 180,
   },
 });

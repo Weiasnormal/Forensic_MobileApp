@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -12,24 +13,24 @@ interface PendingCardProps {
 
 const statusStyles: Record<
 	PendingCardStatus,
-	{ icon: () => number; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }
+	{ iconName: keyof typeof Ionicons.glyphMap; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }
 > = {
 	'result-ready': {
-		icon: () => require('../../../assets/expo.icon/Assets/pendingCards/resultready.webp') as number,
+		iconName: 'checkmark-done-outline',
 		statusText: 'RESULT READY',
 		statusColor: '#2E9F5C',
 		bgColor: '#ffffff',
 		iconBgColor: '#F1FAF4',
 	},
 	draft: {
-		icon: () => require('../../../assets/expo.icon/Assets/pendingCards/draft.webp') as number,
+		iconName: 'document-outline',
 		statusText: 'DRAFT',
 		statusColor: '#94A3B8',
 		bgColor: '#ffffff',
 		iconBgColor: '#EFEFEF',
 	},
 	processing: {
-		icon: () => require('../../../assets/expo.icon/Assets/pendingCards/processing.webp') as number,
+		iconName: 'sync-outline',
 		statusText: 'PROCESSING',
 		statusColor: '#2D72D1',
 		bgColor: '#ffffff',
@@ -47,11 +48,7 @@ export default function PendingCard({ id, name, status, onPress }: PendingCardPr
 			onPress={onPress}
 		>
 			<View style={[styles.iconContainer, { backgroundColor: style.iconBgColor }]}>
-				<Image
-					source={style.icon()}
-					style={styles.icon}
-					contentFit="contain"
-				/>
+				<Ionicons name={style.iconName} size={24} color={style.statusColor} />
 			</View>
 
 			<View style={styles.content}>
@@ -89,10 +86,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginRight: 12,
-	},
-	icon: {
-		width: 42,
-		height: 42,
 	},
 	content: {
 		flex: 1,

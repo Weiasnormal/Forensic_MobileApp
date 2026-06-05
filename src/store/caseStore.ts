@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { fetchBackendCases } from '@/services/backendCases';
+import { API_ENDPOINTS, buildApiUrl } from '@/constants/api';
 import {
     createMockSignatureAnalysisResult,
     getSignatureAnalysisCaseStatus,
@@ -29,6 +30,8 @@ export type AnalysisType = 'SIG' | 'HW' | 'DOC';
 export type CaseStatus = 'Processing' | 'Genuine' | 'Suspected';
 export type DraftUploadType = 'reference' | 'suspect';
 export type PendingCardStatus = 'draft' | 'processing' | 'result-ready';
+
+const DEFAULT_ANALYSIS_TYPE: AnalysisType = 'SIG';
 
 export interface DraftUploads {
   references: Array<string | null>;
@@ -374,10 +377,9 @@ export const useCaseStore = create<CaseStore>()(
 
         submitNewCase: async () => {
           const startTime = performance.now();
-          caseLog.info('CaseStore:Submit', 'Submitting new case');
-          
+          caseLog.info('CaseStore:Submit', 'Submitting new case (networked)');
+
           const currentDraft = get().draftSignatureCase;
-          const mockTemplateNumber = get().nextMockTemplateNumber;
 
           if (!currentDraft.subjectName.trim() || !currentDraft.examiner.trim()) {
             throw createMockError('Subject name and examiner are required before submission.');
@@ -388,51 +390,148 @@ export const useCaseStore = create<CaseStore>()(
           }
 
           set({ isSubmitting: true });
-          caseLog.info('CaseStore:Submit', 'Validation passed, starting submission simulation');
+
+          // helper to generate a random GUID (v4)
+          function generateGuid() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              const r = (Math.random() * 16) | 0;
+              const v = c === 'x' ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            });
+          }
 
           try {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            // Use a random GUID for Examiner (no auth available)
+            const examinerGuid = generateGuid();
 
+            const createRequest = {
+              SubjectName: currentDraft.subjectName,
+              Examiner: examinerGuid,
+              Priority: currentDraft.priority,
+              AnalysisType: DEFAULT_ANALYSIS_TYPE,
+            } as any;
+
+            caseLog.info('CaseStore:Submit', 'Creating case on backend', { SubjectName: createRequest.SubjectName });
+
+            const createRes = await fetch(buildApiUrl(API_ENDPOINTS.cases.create), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+              body: JSON.stringify(createRequest),
+            });
+
+            if (!createRes.ok) {
+              throw new Error(`Create case failed (${createRes.status})`);
+            }
+
+            // Try to read returned id from JSON body, otherwise from Location header
+            let caseId: string | null = null;
+            try {
+              const json = await createRes.json();
+              if (json && (json.id || json)) {
+                caseId = (json.id ?? json).toString();
+              }
+            } catch (_) {
+              // ignore
+            }
+
+            if (!caseId) {
+              const loc = createRes.headers.get('Location') || createRes.headers.get('location');
+              if (loc) {
+                const parts = loc.split('/');
+                caseId = parts[parts.length - 1];
+              }
+            }
+
+            if (!caseId) {
+              throw new Error('Unable to determine created case id from response');
+            }
+
+            caseLog.info('CaseStore:Submit', 'Uploading images for case', { caseId });
+
+            // Upload reference images sequentially
+            for (let i = 0; i < currentDraft.uploads.references.length; i++) {
+              const uri = currentDraft.uploads.references[i];
+              if (!uri) continue;
+
+              const fd = new FormData();
+              // @ts-ignore - React Native FormData file object
+              fd.append('file', { uri, name: `reference-${i + 1}.jpg`, type: 'image/jpeg' } as any);
+              fd.append('index', String(i));
+
+              const uploadPath = buildApiUrl(API_ENDPOINTS.signatures.uploadReference(caseId));
+
+              const upRes = await fetch(uploadPath, {
+                method: 'POST',
+                headers: {
+                  Accept: 'application/json',
+                },
+                body: fd as any,
+              });
+
+              if (!upRes.ok) {
+                throw new Error(`Reference upload failed (${upRes.status})`);
+              }
+            }
+
+            // Upload suspected image
+            if (currentDraft.uploads.suspect) {
+              const fd = new FormData();
+              // @ts-ignore
+              fd.append('file', { uri: currentDraft.uploads.suspect, name: 'suspect.jpg', type: 'image/jpeg' } as any);
+              fd.append('index', '0');
+
+              const upPath = buildApiUrl(API_ENDPOINTS.signatures.uploadSuspected(caseId));
+              const upRes = await fetch(upPath, {
+                method: 'POST',
+                headers: {
+                  Accept: 'application/json',
+                },
+                body: fd as any,
+              });
+
+              if (!upRes.ok) {
+                throw new Error(`Suspect upload failed (${upRes.status})`);
+              }
+            }
+
+            caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
+            await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
+
+            caseLog.info('CaseStore:Submit', 'Fetching analysis results', { caseId });
+            const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
+            let analysisResult: any = null;
+            if (resultsRes.ok) {
+              try { analysisResult = await resultsRes.json(); } catch (_) { analysisResult = null; }
+            }
+
+            // update local store with created case
             const savedCase: SavedCase = {
               ...currentDraft,
               createdAt: new Date().toISOString(),
               status: 'Processing',
-              analysisType: 'SIG',
+              analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
-              mockTemplateNumber,
+              mockTemplateNumber: get().nextMockTemplateNumber,
             };
-            const mockResult = createMockSignatureAnalysisResult(savedCase.mockTemplateNumber ?? 1);
 
-            caseLog.info('CaseStore:Submit', 'Case created, updating store');
             set((state) => {
-              const nextCases: SavedCase[] = mergeCasesById([savedCase], state.cases).map((item) => {
-                if (item.caseId === savedCase.caseId) {
-                  return {
-                    ...item,
-                    status: getSignatureAnalysisCaseStatus(mockResult),
-                  };
-                }
-
-                return item;
-              });
+              const nextCases: SavedCase[] = mergeCasesById([savedCase], state.cases);
               const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
 
               return {
                 cases: nextCases,
-                signatureAnalysisResults: {
-                  ...state.signatureAnalysisResults,
-                  [savedCase.caseId]: mockResult,
-                },
                 draftSignatureCase: createInitialDraft(nextCaseNumber),
                 nextCaseNumber,
-                nextMockTemplateNumber: mockTemplateNumber + 1,
+                nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
                 activeSignatureCaseId: savedCase.caseId,
               };
             });
 
-            const submitTime = (performance.now() - startTime).toFixed(2);
-            caseLog.info('CaseStore:Submit', `✓ Case submitted successfully (${submitTime}ms)`, { caseId: savedCase.caseId });
-            
+            caseLog.info('CaseStore:Submit', `✓ Case submitted successfully`, { caseId, analysisResult });
+
             return savedCase;
           } catch (e) {
             const error = e as Error;
