@@ -50,7 +50,7 @@ export const API_ENDPOINTS = {
   analysis: {
     start: (caseId: string) => `/cases/${caseId}/analysis`,
     getStatus: () => `/ml/health`,
-    getResults: (caseId: string) => `/cases/${caseId}/results`,
-    updateResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
+    getResults: (caseId: string) => `/ml/results/${caseId}`
+    //updateResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
   },
 } as const;
