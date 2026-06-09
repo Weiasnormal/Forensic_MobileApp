@@ -71,3 +71,5 @@ export const ROLE_SETTINGS = {
 export function resolveRole(role?: string): AppRole {
   return role === 'admin' ? 'admin' : DEFAULT_ROLE;
 }
+
+
