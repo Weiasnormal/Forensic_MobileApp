@@ -35,6 +35,7 @@ export default function UserDashboardScreen() {
   const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
   const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
   const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
+  const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend); //added method to refresh cases from backend
   const { user, load } = useUser();
 
   React.useEffect(() => {
@@ -43,7 +44,8 @@ export default function UserDashboardScreen() {
 
   React.useEffect(() => {
     load();
-  }, [load]);
+    refreshCasesFromBackend();
+  }, [load, refreshCasesFromBackend]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
