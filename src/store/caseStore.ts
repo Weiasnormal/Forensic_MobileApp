@@ -498,24 +498,45 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
-            await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
+            //Changed method from GET to POST
+            await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'POST' });
 
             caseLog.info('CaseStore:Submit', 'Fetching analysis results', { caseId });
             const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
             let analysisResult: any = null;
+            let finalStatus: CaseStatus = 'Processing';
+
             if (resultsRes.ok) {
-              try { analysisResult = await resultsRes.json(); } catch (_) { analysisResult = null; }
+              try { 
+                analysisResult = await resultsRes.json(); 
+                // Map the backend verdict to the frontend status
+                if (analysisResult && analysisResult.verdict) {
+                  finalStatus = analysisResult.verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+                }
+              } catch (_) { 
+                analysisResult = null; 
+              }
             }
 
             // update local store with created case
             const savedCase: SavedCase = {
               ...currentDraft,
               createdAt: new Date().toISOString(),
-              status: 'Processing',
+              status: finalStatus, // Now uses the actual result status instead of hardcoding 'Processing'
               analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
               mockTemplateNumber: get().nextMockTemplateNumber,
             };
+            
+            //  Store the actual signature result if it exists
+            if (analysisResult) {
+                set((state) => ({
+                    signatureAnalysisResults: {
+                        ...state.signatureAnalysisResults,
+                        [caseId]: analysisResult
+                    }
+                }));
+            }
 
             set((state) => {
               const nextCases: SavedCase[] = mergeCasesById([savedCase], state.cases);
