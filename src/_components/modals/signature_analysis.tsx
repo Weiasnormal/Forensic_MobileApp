@@ -8,13 +8,12 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-    createMockSignatureAnalysisResult,
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
-    type MockSignatureAnalysisResult,
+    type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
-} from '@/services/mockSignatureAnalysis';
+} from '@/services/signatureAnalysis';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
@@ -65,7 +64,7 @@ function statusColors(status: 'ok' | 'warning' | 'bad') {
   return { bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' };
 }
 
-function buildPayloadRows(result: MockSignatureAnalysisResult, verdictLabel: string) {
+function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string) {
   return [
     { metric: 'General information', value: result.case_name },
     { metric: 'Relation to Baseline', value: result.verdict === 'FORGED' ? 'Inconsistent' : 'Simulated Writing' },
@@ -75,7 +74,7 @@ function buildPayloadRows(result: MockSignatureAnalysisResult, verdictLabel: str
   ];
 }
 
-function buildSignaturePdfHtml(result: MockSignatureAnalysisResult, verdictLabel: string) {
+function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string) {
   const confidence = getSignatureAnalysisConfidence(result).toFixed(1);
 
   return `
@@ -192,12 +191,24 @@ export function SignatureResultsScreen() {
     return null;
   }
 
-  // Build a mock result based on the stored case status (Suspected/Genuine)
-  const forcedVerdict = currentCase?.status === 'Suspected' ? 'FORGED' : 'GENUINE';
-  const activeResult = analysisResult ?? createMockSignatureAnalysisResult(mockTemplateNumber, forcedVerdict as any);
+  if (!analysisResult) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <TopBar title="Analysis Error" step="" onBackPress={() => nav.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, color: '#EF4444' }}>Error: No analysis results found from the server.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Use the REAL result directly!
+  const activeResult = analysisResult; 
+  
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
-  const verdictLabel = getSignatureAnalysisVerdictLabel(activeResult.verdict);
+
+  const verdictLabel = getSignatureAnalysisVerdictLabel(activeResult.verdict || activeResult.Verdict || 'FORGED');
   const confidenceValue = getSignatureAnalysisConfidence(activeResult);
   const payloadRows = useMemo(() => buildPayloadRows(activeResult, verdictLabel), [activeResult, verdictLabel]);
   const isSuspected = verdictLabel === 'SUSPECTED';

@@ -5,10 +5,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl } from '@/constants/api';
 import {
-    createMockSignatureAnalysisResult,
     getSignatureAnalysisCaseStatus,
-    type MockSignatureAnalysisResult,
-} from '@/services/mockSignatureAnalysis';
+    type SignatureAnalysisResult,
+} from '@/services/signatureAnalysis';
 
 const caseLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -65,10 +64,10 @@ interface CaseStore {
   nextMockTemplateNumber: number;
   activeSignatureCaseId: string | null;
   hiddenSavedCases: SavedCase[] | null;
-  signatureAnalysisResults: Record<string, MockSignatureAnalysisResult>;
+  signatureAnalysisResults: Record<string, SignatureAnalysisResult>;
   markCaseResultViewed: (caseId: string) => void;
   updateCaseStatus: (caseId: string, status: CaseStatus) => void;
-  setSignatureAnalysisResult: (caseId: string, result: MockSignatureAnalysisResult) => void;
+  setSignatureAnalysisResult: (caseId: string, result: SignatureAnalysisResult) => void;
   setActiveSignatureCaseId: (caseId: string | null) => void;
   refreshCasesFromBackend: () => Promise<boolean>;
   stashSavedCases: () => void;
