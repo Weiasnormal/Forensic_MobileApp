@@ -8,13 +8,14 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE_URL, API_ENDPOINTS } from '../../constants/api';
-
+import Svg, { Rect } from 'react-native-svg';
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
+    type SignatureBoundingBox,
 } from '@/services/signatureAnalysis';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
@@ -53,6 +54,44 @@ const processingSteps: ProcessingStep[] = [
     detail: 'Building forensic output',
   },
 ];
+
+function normalizeBoxCoord(value: number) {
+  // Supports both 0-1 normalized and 0-1000 normalized coordinate outputs
+  return value > 1 ? value / 1000 : value;
+}
+
+function BoundingBoxOverlay({ boxes, color }: { boxes: SignatureBoundingBox[]; color: string }) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setSize({ width, height });
+      }}
+    >
+      {size.width > 0 && size.height > 0 && (
+        <Svg width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`}>
+          {boxes.map((box, index) => (
+            <Rect
+              key={`bbox-${index}`}
+              x={normalizeBoxCoord(box.x) * size.width}
+              y={normalizeBoxCoord(box.y) * size.height}
+              width={normalizeBoxCoord(box.width) * size.width}
+              height={normalizeBoxCoord(box.height) * size.height}
+              stroke={color}
+              strokeWidth={2}
+              rx={4}
+              fill="none"
+            />
+          ))}
+        </Svg>
+      )}
+    </View>
+  );
+}
 
 function statusColors(status: 'ok' | 'warning' | 'bad') {
   if (status === 'ok') {
@@ -408,7 +447,12 @@ export function SignatureResultsScreen() {
 
           {uploadedSuspect ? (
             <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
-              <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="cover" />
+              <View style={styles.imageOverlayWrap}>
+                <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="cover" />
+                {activeView === 'Bounding box' && activeResult.boxes && activeResult.boxes.length > 0 ? (
+                  <BoundingBoxOverlay boxes={activeResult.boxes} color={activeTone.badge} />
+                ) : null}
+              </View>
               <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
             </Pressable>
           ) : (
@@ -914,4 +958,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E8EBF0',
   },
+  imageOverlayWrap: {
+  position: 'relative',
+  width: '100%',
+},
+imageOverlayWrapSmall: {
+  position: 'relative',
+  width: '100%',
+},
 });

@@ -1,11 +1,23 @@
 export type SignatureAnalysisVerdict = 'GENUINE' | 'FORGED';
 
+export interface SignatureBoundingBox {
+  x: number;      
+  y: number;
+  width: number;
+  height: number;
+  label?: string;
+}
+
 export interface SignatureAnalysisResult {
   case_name?: string;
   confidence_forged: number;
   confidence_genuine: number;
   distance: number;
   gradcam_blob_id?: string;
+
+  //bounding boxes from output.json
+  boxes?: SignatureBoundingBox[];            
+  reference_boxes?: SignatureBoundingBox[][]; 
   
   threshold?: number;
   Threshold?: number; 
