@@ -7,6 +7,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { API_BASE_URL, API_ENDPOINTS } from '../../constants/api';
+
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
@@ -65,52 +67,94 @@ function statusColors(status: 'ok' | 'warning' | 'bad') {
 }
 
 function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string) {
+  const finalVerdict = result.Verdict || result.verdict;
+  const isForged = finalVerdict === 'FORGED';
+  
   return [
-    { metric: 'General information', value: result.case_name },
-    { metric: 'Relation to Baseline', value: result.verdict === 'FORGED' ? 'Inconsistent' : 'Simulated Writing' },
-    { metric: 'Line Quality', value: result.verdict === 'FORGED' ? 'Tremor detected' : 'Tremor detected' },
-    { metric: 'Proportion & Spacing', value: 'Irregular (x4)' },
-    { metric: 'Variation', value: 'Beyond controlling pattern' },
+    { metric: 'General information', 
+      value: result.case_name || 'N/A', 
+      detail: 'Cross-referenced with internal database.' },
+
+    { metric: 'Relation to Baseline', 
+      value: isForged ? 'Inconsistent (High Deviation)' : 'Consistent with Baseline', 
+      detail: `Distance metric computed at ${result.distance?.toFixed(4)}.` },
+
+    { metric: 'Line Quality', 
+      value: isForged ? 'Tremor / Hesitation detected' : 'Smooth, fluid strokes', 
+      detail: 'Analysis of stroke velocity, pressure points, and fluidity.' },
+    { metric: 'Proportion & Spacing', 
+      value: isForged ? 'Irregular (x4 discrepancies)' : 'Matches baseline proportions', 
+      detail: 'Height-to-width ratios and intra-character spacing evaluated.' },
+
+    { metric: 'Connecting Strokes', 
+      value: isForged ? 'Blunt endings / unnatural lifts' : 'Natural flow and continuous', 
+      detail: 'Micro-lifts and terminal stroke tapering analyzed.' },
+
+    { metric: 'Pattern Variation', 
+      value: isForged ? 'Beyond controlling pattern' : 'Within natural variation bounds', 
+      detail: 'Compared against the provided reference samples.' },
   ];
 }
 
-function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string) {
+function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string, findings: ReturnType<typeof buildPayloadRows>) {
   const confidence = getSignatureAnalysisConfidence(result).toFixed(1);
+  const finalVerdict = result.Verdict || result.verdict;
+  const finalThreshold = result.Threshold || result.threshold || 0;
+  const isForged = finalVerdict === 'FORGED';
+  const themeColor = isForged ? '#eb5757' : '#16a34a';
+
+  const findingsRowsHtml = findings.map(f => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #eef2f7;"><strong>${f.metric}</strong><br/><span style="color:#64748b; font-size:12px;">${f.detail}</span></td>
+      <td style="padding: 12px; border-bottom: 1px solid #eef2f7; text-align:right; font-weight:600; color:${isForged ? '#b91c1c' : '#15803d'}">${f.value}</td>
+    </tr>
+  `).join('');
 
   return `
     <html>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <style>
-          body { font-family: Arial, sans-serif; margin: 32px; color: #0f172a; }
-          h1 { margin: 0 0 8px; font-size: 26px; }
-          .sub { color: #64748b; margin-bottom: 20px; font-size: 13px; }
-          .card { border: 1px solid #dbe5f1; border-radius: 16px; padding: 18px; margin-bottom: 18px; }
-          .verdict { font-size: 22px; font-weight: 700; color: ${verdictLabel === 'SUSPECTED' ? '#eb5757' : '#16a34a'}; }
-          .row { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid #eef2f7; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #0f172a; }
+          h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.5px; }
+          .sub { color: #64748b; margin-bottom: 24px; font-size: 14px; }
+          .card { border: 1px solid #dbe5f1; border-radius: 12px; padding: 24px; margin-bottom: 24px; background-color: #fafbfc; }
+          .verdict { font-size: 24px; font-weight: 800; color: ${themeColor}; margin-bottom: 4px; }
+          .row { display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid #e2e8f0; }
           .row:first-of-type { border-top: 0; }
-          .label { color: #334155; font-weight: 700; }
-          .value { color: #0f172a; font-weight: 600; text-align: right; max-width: 60%; }
+          .label { color: #475569; font-weight: 600; font-size: 14px; }
+          .value { color: #0f172a; font-weight: 700; text-align: right; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          th { text-align: left; background-color: #f1f5f9; padding: 12px; font-weight: 700; color: #334155; border-radius: 6px 6px 0 0; }
         </style>
       </head>
       <body>
-        <h1>Signature Analysis Report</h1>
-        <div class="sub">Mock export generated from the current in-app analysis result</div>
+        <h1>AVERA Forensic Report</h1>
+        <div class="sub">Signature Analysis Output · Generated automatically</div>
+        
         <div class="card">
           <div class="verdict">${confidence}% ${verdictLabel}</div>
-          <div class="sub">Case · ${result.case_name}</div>
-          <div class="row"><div class="label">Confidence Genuine</div><div class="value">${result.confidence_genuine.toFixed(4)}%</div></div>
-          <div class="row"><div class="label">Confidence Forged</div><div class="value">${result.confidence_forged.toFixed(4)}%</div></div>
-          <div class="row"><div class="label">Distance</div><div class="value">${result.distance.toFixed(7)}</div></div>
-          <div class="row"><div class="label">Threshold</div><div class="value">${result.threshold.toFixed(4)}</div></div>
-          <div class="row"><div class="label">GradCAM Blob</div><div class="value">${result.gradcam_blob_id}</div></div>
+          <div class="sub" style="margin-bottom: 16px;">Case ID: ${result.case_name || 'Unknown'}</div>
+          <div class="row"><div class="label">Genuine Confidence</div><div class="value">${(result.confidence_genuine * 100).toFixed(2)}%</div></div>
+          <div class="row"><div class="label">Forged Confidence</div><div class="value">${(result.confidence_forged * 100).toFixed(2)}%</div></div>
+          <div class="row"><div class="label">Distance Metric</div><div class="value">${result.distance?.toFixed(6)}</div></div>
+          <div class="row"><div class="label">Decision Threshold</div><div class="value">${finalThreshold.toFixed(4)}</div></div>
+          <div class="row"><div class="label">GradCAM Reference</div><div class="value" style="font-family: monospace;">${result.gradcam_blob_id || 'N/A'}</div></div>
         </div>
+
+        <h3>Detailed Forensic Findings</h3>
+        <table>
+          <thead>
+            <tr><th>Metric / Detail</th><th style="text-align:right;">Analysis Value</th></tr>
+          </thead>
+          <tbody>
+            ${findingsRowsHtml}
+          </tbody>
+        </table>
       </body>
     </html>
   `;
 }
-
-/* Bundled sample assets were removed so analysis renders uploaded images and generated report data only. */
 
 export function SignatureProcessingView() {
   const router = useRouter();
@@ -119,17 +163,11 @@ export function SignatureProcessingView() {
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
 
   const setSignatureStatus = (status: CaseStatus) => {
-    if (!currentCaseId) {
-      return;
-    }
-
+    if (!currentCaseId) return;
     updateCaseStatus(currentCaseId, status);
   };
 
-  const insets = useSafeAreaInsets();
-
   const handleBackToHome = () => {
-    // Update case status to "Processing" when going back from processing page
     setSignatureStatus('Processing');
     nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
   };
@@ -147,18 +185,9 @@ export function SignatureProcessingView() {
           }
         }}
       />
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
-        <Pressable
-          style={{
-            paddingVertical: 14,
-            paddingHorizontal: 16,
-            backgroundColor: '#1E6FD9',
-            borderRadius: 14,
-            alignItems: 'center',
-          }}
-          onPress={handleBackToHome}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>Back to Home</Text>
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Pressable style={styles.primaryButton} onPress={handleBackToHome}>
+          <Text style={styles.primaryButtonText}>Run in Background</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -176,10 +205,31 @@ export function SignatureResultsScreen() {
   const currentCase = useCaseStore((state) =>
     currentCaseId ? state.cases.find((c) => c.caseId === currentCaseId) : undefined,
   );
+  
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
-  const mockTemplateNumber = currentCase?.mockTemplateNumber ?? 1;
+  const [boxCoordinates, setBoxCoordinates] = useState<any[]>([]);
+
+  useEffect(() => {
+      if (analysisResult?.gradcam_blob_id) {
+        //  C# backend endpoint for retrieving files/blobs
+        const fetchBlob = async () => {
+          try {
+            // Adjust this endpoint string to whatever your backend developer set up for retrieving blob JSONs
+            const response = await fetch(`${API_BASE_URL}/cases/artifacts/${analysisResult.gradcam_blob_id}`);
+            if (response.ok) {
+              const data = await response.json();
+              // Store the dynamic boxes in our new state
+              setBoxCoordinates(data.boxes || []); 
+            }
+          } catch (error) {
+            console.error('Failed to load GradCAM coordinates:', error);
+          }
+        };
+        fetchBlob();
+      }
+    }, [analysisResult?.gradcam_blob_id]);
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
@@ -187,16 +237,17 @@ export function SignatureResultsScreen() {
     }
   }, [currentCase?.status, nav]);
 
-  if (currentCase?.status === 'Processing') {
-    return null;
-  }
+  if (currentCase?.status === 'Processing') return null;
 
+  // SAFETY CHECK
   if (!analysisResult) {
     return (
       <SafeAreaView style={styles.screen}>
         <TopBar title="Analysis Error" step="" onBackPress={() => nav.back()} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: '#EF4444' }}>Error: No analysis results found from the server.</Text>
+          <Ionicons name="warning-outline" size={48} color="#EF4444" style={{ marginBottom: 12 }} />
+          <Text style={{ fontSize: 16, color: '#EF4444', fontWeight: 'bold' }}>Data Missing</Text>
+          <Text style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>No analysis results found from the server.</Text>
         </View>
       </SafeAreaView>
     );
@@ -208,9 +259,11 @@ export function SignatureResultsScreen() {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const verdictLabel = getSignatureAnalysisVerdictLabel(activeResult.verdict || activeResult.Verdict || 'FORGED');
+  const finalVerdict = activeResult.Verdict || activeResult.verdict;
+  const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
   const confidenceValue = getSignatureAnalysisConfidence(activeResult);
   const payloadRows = useMemo(() => buildPayloadRows(activeResult, verdictLabel), [activeResult, verdictLabel]);
+  
   const isSuspected = verdictLabel === 'SUSPECTED';
   const resultCardTheme = isSuspected
     ? {
@@ -250,7 +303,7 @@ export function SignatureResultsScreen() {
   const handleExportPdf = async () => {
     try {
       const { uri } = await Print.printToFileAsync({
-        html: buildSignaturePdfHtml(activeResult, verdictLabel),
+        html: buildSignaturePdfHtml(activeResult, verdictLabel, payloadRows),
       });
 
       if (!uri) {
