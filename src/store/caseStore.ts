@@ -497,23 +497,20 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
-            //Changed method from GET to POST
-            await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'POST' });
+            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'POST' });
 
-            caseLog.info('CaseStore:Submit', 'Fetching analysis results', { caseId });
-            const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
             let analysisResult: any = null;
             let finalStatus: CaseStatus = 'Processing';
 
-            if (resultsRes.ok) {
-              try { 
-                analysisResult = await resultsRes.json(); 
-                // Map the backend verdict to the frontend status
-                if (analysisResult && analysisResult.verdict) {
-                  finalStatus = analysisResult.verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+            if (analysisRes.ok) {
+              try {
+                analysisResult = await analysisRes.json();
+                const verdict = analysisResult?.Verdict ?? analysisResult?.verdict;
+                if (verdict) {
+                  finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
                 }
-              } catch (_) { 
-                analysisResult = null; 
+              } catch (_) {
+                analysisResult = null;
               }
             }
 
