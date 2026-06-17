@@ -220,66 +220,111 @@ export default function SignatureUploadsRoute() {
       <MediaSourcePicker
         visible={showSourcePicker}
         onCancel={() => setShowSourcePicker(false)}
-          onSelect={async (choice) => {
-            setShowSourcePicker(false);
-            if (choice === 'camera') {
-              setCameraVisible(true);
-              return;
-            }
+        onSelect={async (choice) => {
+        setShowSourcePicker(false);
+        if (choice === 'camera') {
+          setCameraVisible(true);
+          return;
+        }
 
-            try {
-              const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-              if (!perm.granted) {
-                Alert.alert('Permission required', 'Gallery access is required to pick images.');
+        try {
+          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!perm.granted) {
+            Alert.alert('Permission required', 'Gallery access is required to pick images.');
+            return;
+          }
+
+            // duplicate Checker
+          const isDuplicate = (asset: any) => {
+            // Create a unique fingerprint using iOS assetId, Android fileName, or fileSize as a fallback
+            const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
+            if (!identifier) return false;
+
+            const searchStr = `?id=${encodeURIComponent(identifier)}`;
+
+            // Check if this unique ID is already anywhere in our uploads
+            const isRefDup = uploads.references.some((uri) => uri?.includes(searchStr));
+            const isSuspectDup = uploads.suspect?.includes(searchStr);
+
+            return isRefDup || isSuspectDup;
+          };
+
+          if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+            const remainingSlots = 4 - currentReferenceIndex;
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsMultipleSelection: true,
+              allowsEditing: false,
+              selectionLimit: Math.max(1, remainingSlots),
+              quality: 0.9,
+            });
+
+            if (result && !result.canceled) {
+              const assets = result.assets || [];
+              let addedCount = 0;
+              let duplicateCount = 0;
+
+              for (let i = 0; i < assets.length; i++) {
+                const asset = assets[i];
+                if (!asset || !asset.uri) continue;
+
+                if (isDuplicate(asset)) {
+                  duplicateCount++;
+                  continue; 
+                }
+
+                const slotIndex = currentReferenceIndex + addedCount;
+                if (slotIndex > 3) break; 
+
+                // Attach the fingerprint to the URI before saving to the global store
+                const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
+                const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
+
+                setDraftUpload('reference', slotIndex, finalUri);
+                addedCount++;
+              }
+
+              if (duplicateCount > 0) {
+                Alert.alert(
+                  'Duplicate Detected',
+                  `${duplicateCount} image(s) were skipped because they are already selected in this case.`
+                );
+              }
+            }
+            return;
+          }
+
+          // SUSPECT SIGNATURE 
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: false,
+            quality: 0.9,
+          });
+
+          if (result && !result.canceled) {
+            const asset = result.assets?.[0];
+            if (asset && asset.uri) {
+              if (isDuplicate(asset)) {
+                // Instantly alert the user if they pick a duplicate for the Suspect slot
+                Alert.alert('Already Selected', 'This image is already being used as a reference signature.');
                 return;
               }
 
-              // If selecting references, allow multiple selection and assign sequentially
+              const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
+              const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
+
               if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-                const remainingSlots = 4 - currentReferenceIndex;
-                const result = await ImagePicker.launchImageLibraryAsync({
-                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                  allowsMultipleSelection: true,
-                  allowsEditing: false,
-                  selectionLimit: Math.max(1, remainingSlots),
-                  quality: 0.9,
-                });
-
-                if (result && !(result as any).cancelled) {
-                  const assets = (result as any).assets ?? ((result as any).uri ? [{ uri: (result as any).uri }] : []);
-                  // Fill sequential reference slots starting at currentReferenceIndex
-                  for (let i = 0; i < assets.length; i++) {
-                    const slotIndex = currentReferenceIndex + i;
-                    if (slotIndex > 3) break; // only 4 slots
-                    const aUri = assets[i]?.uri ?? null;
-                    if (aUri) setDraftUpload('reference', slotIndex, aUri);
-                  }
-                }
-
-                return;
+                setDraftUpload('reference', currentReferenceIndex, finalUri);
+              } else if (currentUploadTarget === 'suspect') {
+                setDraftUpload('suspect', 0, finalUri);
               }
-
-              // Default: single selection for suspect or other flows
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: false,
-                quality: 0.9,
-              });
-
-              const uri = (result as any).uri ?? (result as any).assets?.[0]?.uri;
-
-              if (result && !(result as any).cancelled && uri) {
-                if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-                  setDraftUpload('reference', currentReferenceIndex, uri);
-                } else if (currentUploadTarget === 'suspect') {
-                  setDraftUpload('suspect', 0, uri);
-                }
-              }
-            } catch (e) {
-              console.warn('Gallery pick failed', e);
-              Alert.alert('Error', 'Unable to pick image from gallery.');
             }
-          }}
+          }
+        } catch (e) {
+          console.warn('Gallery pick failed', e);
+          Alert.alert('Error', 'Unable to pick image from gallery.');
+        }
+      }}
       />
       {cameraVisible && (
         <View style={styles.cameraOverlay}>
