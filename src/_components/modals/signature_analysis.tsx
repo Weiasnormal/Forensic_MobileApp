@@ -248,27 +248,27 @@ export function SignatureResultsScreen() {
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
-  const [boxCoordinates, setBoxCoordinates] = useState<any[]>([]);
 
-  useEffect(() => {
-      if (analysisResult?.gradcam_blob_id) {
-        //  C# backend endpoint for retrieving files/blobs
-        const fetchBlob = async () => {
-          try {
-            // Adjust this endpoint string to whatever your backend developer set up for retrieving blob JSONs
-            const response = await fetch(`${API_BASE_URL}/cases/artifacts/${analysisResult.gradcam_blob_id}`);
-            if (response.ok) {
-              const data = await response.json();
-              // Store the dynamic boxes in our new state
-              setBoxCoordinates(data.boxes || []); 
-            }
-          } catch (error) {
-            console.error('Failed to load GradCAM coordinates:', error);
-          }
-        };
-        fetchBlob();
-      }
-    }, [analysisResult?.gradcam_blob_id]);
+  const insets = useSafeAreaInsets();
+
+  const activeTone = useMemo(() => {
+    if (activeView === 'Heatmap') {
+      return { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' };
+    }
+
+    if (activeView === 'Bounding box') {
+      return { bg: '#E0F2FE', edge: '#38BDF8', badge: '#0369A1' };
+    }
+
+    return { bg: '#E2E8F0', edge: '#94A3B8', badge: '#334155' };
+  }, [activeView]);
+
+  const payloadRows = useMemo(() => {
+    if (!analysisResult) return []; 
+    const finalVerdict = analysisResult.Verdict || analysisResult.verdict;
+    const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
+    return buildPayloadRows(analysisResult, verdictLabel);
+  }, [analysisResult]);
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
@@ -301,7 +301,7 @@ export function SignatureResultsScreen() {
   const finalVerdict = activeResult.Verdict || activeResult.verdict;
   const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
   const confidenceValue = getSignatureAnalysisConfidence(activeResult);
-  const payloadRows = useMemo(() => buildPayloadRows(activeResult, verdictLabel), [activeResult, verdictLabel]);
+  
   
   const isSuspected = verdictLabel === 'SUSPECTED';
   const resultCardTheme = isSuspected
@@ -366,19 +366,9 @@ export function SignatureResultsScreen() {
     }
   };
 
-  const activeTone = useMemo(() => {
-    if (activeView === 'Heatmap') {
-      return { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' };
-    }
+  
 
-    if (activeView === 'Bounding box') {
-      return { bg: '#E0F2FE', edge: '#38BDF8', badge: '#0369A1' };
-    }
-
-    return { bg: '#E2E8F0', edge: '#94A3B8', badge: '#334155' };
-  }, [activeView]);
-
-  const insets = useSafeAreaInsets();
+ 
   const openPreview = (source: { uri: string }, label: string) => {
     setPreviewSource(source);
     setPreviewLabel(label);
@@ -448,7 +438,8 @@ export function SignatureResultsScreen() {
           {uploadedSuspect ? (
             <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
               <View style={styles.imageOverlayWrap}>
-                <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="cover" />
+                <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="contain" />
+
                 {activeView === 'Bounding box' && activeResult.boxes && activeResult.boxes.length > 0 ? (
                   <BoundingBoxOverlay boxes={activeResult.boxes} color={activeTone.badge} />
                 ) : null}

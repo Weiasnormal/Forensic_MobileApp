@@ -504,12 +504,18 @@ export const useCaseStore = create<CaseStore>()(
 
             if (analysisRes.ok) {
               try {
-                analysisResult = await analysisRes.json();
-                const verdict = analysisResult?.Verdict ?? analysisResult?.verdict;
-                if (verdict) {
-                  finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+                //Fetch the actual results payload from the GET endpoint
+                const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
+                
+                if (resultsRes.ok) {
+                  analysisResult = await resultsRes.json();
+                  const verdict = analysisResult?.Verdict ?? analysisResult?.verdict;
+                  if (verdict) {
+                    finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+                  }
                 }
-              } catch (_) {
+              } catch (error) {
+                caseLog.error('CaseStore:Submit', 'Failed to fetch results JSON stream', error);
                 analysisResult = null;
               }
             }
