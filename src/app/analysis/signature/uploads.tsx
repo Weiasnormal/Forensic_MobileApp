@@ -92,9 +92,9 @@ export default function SignatureUploadsRoute() {
     try {
       await submitNewCase();
       nav.replace('/analysis/signature/processing');
-    } catch (error) {
+    } catch (error: any) {
       console.warn('Unable to submit new case:', error);
-      Alert.alert('Submit failed', 'Please complete the case details and try again.');
+      Alert.alert('Submit failed', error?.message || 'An unexpected error occurred during submission.');
     }
   };
 

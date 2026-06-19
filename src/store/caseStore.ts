@@ -84,6 +84,7 @@ const DEFAULT_DOCUMENT_TYPE = 'Bank cheque';
 const DEFAULT_PRIORITY: AnalysisPriority = 'Medium';
 const STORAGE_KEY = 'avera_mock_case_store';
 
+
 function buildCaseId(sequence: number) {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -214,6 +215,14 @@ function createMockError(message: string) {
   caseLog.error('CaseStore:Error', message);
   return new Error(message);
 }
+
+const PRIORITY_MAP: Record<AnalysisPriority, number> = {
+  Low: 0, Medium: 1, High: 2, Urgent: 3,
+};
+
+const ANALYSIS_TYPE_MAP: Record<AnalysisType, number> = {
+  SIG: 0, HW: 1, DOC: 2,
+};
 
 export const useCaseStore = create<CaseStore>()(
   persist(
@@ -373,6 +382,7 @@ export const useCaseStore = create<CaseStore>()(
             };
           });
         },
+        
 
         submitNewCase: async () => {
           const startTime = performance.now();
@@ -404,11 +414,11 @@ export const useCaseStore = create<CaseStore>()(
             const examinerGuid = generateGuid();
 
             const createRequest = {
-              SubjectName: currentDraft.subjectName,
-              Examiner: examinerGuid,
-              Priority: currentDraft.priority,
-              AnalysisType: DEFAULT_ANALYSIS_TYPE,
-            } as any;
+            SubjectName: currentDraft.subjectName,
+            Examiner: examinerGuid,
+            Priority: PRIORITY_MAP[currentDraft.priority],
+            AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
+            };
 
             caseLog.info('CaseStore:Submit', 'Creating case on backend', { SubjectName: createRequest.SubjectName });
 
@@ -497,7 +507,7 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
-            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'POST' });
+            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
 
             let analysisResult: any = null;
             let finalStatus: CaseStatus = 'Processing';
@@ -549,7 +559,7 @@ export const useCaseStore = create<CaseStore>()(
                 draftSignatureCase: createInitialDraft(nextCaseNumber),
                 nextCaseNumber,
                 nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
-                activeSignatureCaseId: savedCase.caseId,
+                activeSignatureCaseId: caseId,
               };
             });
 
