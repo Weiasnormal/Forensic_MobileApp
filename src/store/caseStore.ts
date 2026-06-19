@@ -24,6 +24,11 @@ const caseLog = {
   },
 };
 
+function stripFingerprintSuffix(uri: string): string {
+  const idx = uri.indexOf('?id=');
+  return idx !== -1 ? uri.slice(0, idx) : uri;
+}
+
 export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type AnalysisType = 'SIG' | 'HW' | 'DOC';
 export type CaseStatus = 'Processing' | 'Genuine' | 'Suspected';
@@ -465,12 +470,11 @@ export const useCaseStore = create<CaseStore>()(
               const uri = currentDraft.uploads.references[i];
               if (!uri) continue;
 
+              
+              const cleanUri = stripFingerprintSuffix(uri);  
               const fd = new FormData();
-              // @ts-ignore - React Native FormData file object
-              fd.append('file', { uri, name: `reference-${i + 1}.jpg`, type: 'image/jpeg' } as any);
-              fd.append('index', String(i));
-
-              const uploadPath = buildApiUrl(API_ENDPOINTS.signatures.uploadReference(caseId));
+              fd.append('file', { uri: cleanUri, name: `reference-${i + 1}.jpg`, type: 'image/jpeg' } as any);
+              const uploadPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadReference(caseId)}?index=${i}`);
 
               const upRes = await fetch(uploadPath, {
                 method: 'POST',
@@ -486,20 +490,18 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             // Upload suspected image
-            if (currentDraft.uploads.suspect) {
-              const fd = new FormData();
-              // @ts-ignore
-              fd.append('file', { uri: currentDraft.uploads.suspect, name: 'suspect.jpg', type: 'image/jpeg' } as any);
-              fd.append('index', '0');
-
-              const upPath = buildApiUrl(API_ENDPOINTS.signatures.uploadSuspected(caseId));
-              const upRes = await fetch(upPath, {
-                method: 'POST',
-                headers: {
-                  Accept: 'application/json',
-                },
-                body: fd as any,
-              });
+            if (currentDraft.uploads.suspect) {          
+                const cleanSuspect = stripFingerprintSuffix(currentDraft.uploads.suspect);  
+                const fd = new FormData();
+                fd.append('file', { uri: cleanSuspect, name: 'suspect.jpg', type: 'image/jpeg' } as any);
+                const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=0`);
+                const upRes = await fetch(upPath, {
+                  method: 'POST',
+                  headers: {
+                    Accept: 'application/json',
+                  },
+                  body: fd as any,
+                });
 
               if (!upRes.ok) {
                 throw new Error(`Suspect upload failed (${upRes.status})`);
