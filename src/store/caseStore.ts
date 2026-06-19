@@ -57,6 +57,11 @@ export interface SavedCase extends DraftCase {
   status: CaseStatus;
   analysisType: AnalysisType;
   resultViewed?: boolean;
+
+  verdict?: string;
+  Verdict?: string;
+  confidence?: number;
+  Confidence?: number;
 }
 
 type DraftEditableField = 'subjectName' | 'examiner' | 'documentType' | 'priority';
@@ -526,8 +531,17 @@ export const useCaseStore = create<CaseStore>()(
                     finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
                   }
                 }
+                const caseRes = await fetch(buildApiUrl(API_ENDPOINTS.cases.get(caseId)), { method: 'GET' });
+                if (caseRes.ok) {
+                  const updatedCaseData = await caseRes.json();
+                  
+                  // Update the global store so the UI instantly sees the new numbers
+                  set((state) => ({
+                    cases: state.cases.map(c => c.caseId === caseId ? { ...c, ...updatedCaseData } : c)
+                  }));
+                }
               } catch (error) {
-                caseLog.error('CaseStore:Submit', 'Failed to fetch results JSON stream', error);
+                caseLog.error('CaseStore:Submit', 'Failed to fetch results', error);
                 analysisResult = null;
               }
             }

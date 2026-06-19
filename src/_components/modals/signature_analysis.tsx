@@ -105,8 +105,8 @@ function statusColors(status: 'ok' | 'warning' | 'bad') {
   return { bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' };
 }
 
-function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string) {
-  const finalVerdict = result.Verdict || result.verdict;
+function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string, currentCase: any) {
+  const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
   const isForged = finalVerdict === 'FORGED';
   
   return [
@@ -116,7 +116,7 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string)
 
     { metric: 'Relation to Baseline', 
       value: isForged ? 'Inconsistent (High Deviation)' : 'Consistent with Baseline', 
-      detail: `Distance metric computed at ${result.distance?.toFixed(4)}.` },
+      detail: `Distance metric computed at ${ (result.distance || 0).toFixed(4) + '%'}.` },
 
     { metric: 'Line Quality', 
       value: isForged ? 'Tremor / Hesitation detected' : 'Smooth, fluid strokes', 
@@ -135,10 +135,12 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string)
   ];
 }
 
-function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string, findings: ReturnType<typeof buildPayloadRows>) {
-  const confidence = getSignatureAnalysisConfidence(result).toFixed(1);
-  const finalVerdict = result.Verdict || result.verdict;
-  const finalThreshold = result.Threshold || result.threshold || 0;
+function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string, findings: ReturnType<typeof buildPayloadRows>, currentCase: any) {
+  const confidence = getSignatureAnalysisConfidence(result || 0).toFixed(1) + '%';
+  const rawConfidence = currentCase?.confidence || currentCase?.Confidence || 0;
+  const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
+
+  const finalThreshold = currentCase?.threshold || currentCase?.Threshold || 0;
   const isForged = finalVerdict === 'FORGED';
   const themeColor = isForged ? '#eb5757' : '#16a34a';
 
@@ -174,10 +176,11 @@ function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: st
         <div class="card">
           <div class="verdict">${confidence}% ${verdictLabel}</div>
           <div class="sub" style="margin-bottom: 16px;">Case ID: ${result.case_name || 'Unknown'}</div>
-          <div class="row"><div class="label">Genuine Confidence</div><div class="value">${(result.confidence_genuine * 100).toFixed(2)}%</div></div>
-          <div class="row"><div class="label">Forged Confidence</div><div class="value">${(result.confidence_forged * 100).toFixed(2)}%</div></div>
-          <div class="row"><div class="label">Distance Metric</div><div class="value">${result.distance?.toFixed(6)}</div></div>
-          <div class="row"><div class="label">Decision Threshold</div><div class="value">${finalThreshold.toFixed(4)}</div></div>
+          <div class="row"><div class="label">Genuine Confidence</div><div class="value">${(result.confidence_genuine * 100 || 0).toFixed(2) + '%'}</div></div>
+          <div class="row"><div class="label">Forged Confidence</div><div class="value">${(result.confidence_forged * 100 || 0).toFixed(2) + '%'}
+</div></div>
+          <div class="row"><div class="label">Distance Metric</div><div class="value">${(result.distance || 0).toFixed(6)+'%'}</div></div>
+          <div class="row"><div class="label">Decision Threshold</div><div class="value">${(finalThreshold || 0).toFixed(4)+ '%'}</div></div>
           <div class="row"><div class="label">GradCAM Reference</div><div class="value" style="font-family: monospace;">${result.gradcam_blob_id || 'N/A'}</div></div>
         </div>
 
@@ -246,10 +249,11 @@ export function SignatureResultsScreen() {
   );
   
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
+  const insets = useSafeAreaInsets();
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
 
-  const insets = useSafeAreaInsets();
+  
 
   const activeTone = useMemo(() => {
     if (activeView === 'Heatmap') {
@@ -265,10 +269,10 @@ export function SignatureResultsScreen() {
 
   const payloadRows = useMemo(() => {
     if (!analysisResult) return []; 
-    const finalVerdict = analysisResult.Verdict || analysisResult.verdict;
+    const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
     const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
-    return buildPayloadRows(analysisResult, verdictLabel);
-  }, [analysisResult]);
+    return buildPayloadRows(analysisResult, verdictLabel, currentCase);
+  }, [analysisResult, currentCase]);
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
@@ -298,10 +302,9 @@ export function SignatureResultsScreen() {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const finalVerdict = activeResult.Verdict || activeResult.verdict;
+  const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
   const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
-  const confidenceValue = getSignatureAnalysisConfidence(activeResult);
-  
+  const confidenceValue = currentCase?.confidence || currentCase?.Confidence || 0;
   
   const isSuspected = verdictLabel === 'SUSPECTED';
   const resultCardTheme = isSuspected
@@ -342,7 +345,7 @@ export function SignatureResultsScreen() {
   const handleExportPdf = async () => {
     try {
       const { uri } = await Print.printToFileAsync({
-        html: buildSignaturePdfHtml(activeResult, verdictLabel, payloadRows),
+        html: buildSignaturePdfHtml(activeResult, verdictLabel, payloadRows, currentCase),
       });
 
       if (!uri) {
@@ -391,7 +394,7 @@ export function SignatureResultsScreen() {
             <Ionicons name={resultCardTheme.iconName} size={28} color={resultCardTheme.iconColor} />
           </View>
           <View style={styles.heroTextWrap}>
-            <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>{confidenceValue.toFixed(1)}% <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>{verdictLabel}</Text></Text>
+            <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>{(confidenceValue || 0).toFixed(1)+ '%'} <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>{verdictLabel}</Text></Text>
             <Text style={[styles.heroCase, { color: resultCardTheme.subtleText }]}>VERDICT · {activeResult.case_name}</Text>
           </View>
         </View>
