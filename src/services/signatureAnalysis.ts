@@ -30,7 +30,7 @@ export interface SignatureAnalysisResult {
 
 export type FrontendCaseStatus = 'Processing' | 'Genuine' | 'Suspected';
 
-export type SignatureAnalysisViewMode = 'Heatmap' | 'Bounding box' | 'Stroke diff';
+export type SignatureAnalysisViewMode = 'Heatmap' | 'Bounding Box' | 'Stroke Diff';
 
 export function getSignatureAnalysisVerdictLabel(verdict: SignatureAnalysisVerdict) {
   return verdict === 'FORGED' ? 'SUSPECTED' : 'GENUINE';

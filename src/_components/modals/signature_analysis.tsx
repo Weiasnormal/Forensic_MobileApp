@@ -24,7 +24,7 @@ import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScr
 const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#ffffff';
 
-const viewModes = ['Heatmap', 'Bounding box', 'Stroke diff'] as const;
+const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
 type ViewMode = SignatureAnalysisViewMode;
 
 const processingSteps: ProcessingStep[] = [
@@ -353,13 +353,26 @@ export function SignatureResultsScreen() {
   const nav = router as any;
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+
+  const safeCaseId = String(currentCaseId).trim();
   const analysisResult = useCaseStore((state) =>
-    currentCaseId ? state.signatureAnalysisResults[currentCaseId] : undefined,
+    safeCaseId ? state.signatureAnalysisResults[safeCaseId] : undefined,
   );
   const currentCase = useCaseStore((state) =>
-    currentCaseId ? state.cases.find((c) => c.caseId === currentCaseId) : undefined,
+    safeCaseId ? state.cases.find((c) => String(c.caseId) === safeCaseId) : undefined,
   );
-  
+  const allCases = useCaseStore((state) => state.cases);
+
+  console.log("===== DEBUGGING RESULTS PAGE =====");
+  console.log("1. Clean Safe Case ID:", safeCaseId);
+  console.log("2. Did we find the case in the store?:", !!currentCase);
+  console.log("3. ALL IDs currently in store:", allCases.map(c => c.caseId));
+  if (currentCase) {
+    console.log("4. Uploads object exists?:", !!currentCase.uploads);
+    console.log("5. Suspect Image inside store:", currentCase.uploads?.suspect);
+  }
+  console.log("==================================");
+
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
   const insets = useSafeAreaInsets();
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
@@ -372,7 +385,7 @@ export function SignatureResultsScreen() {
       return { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' };
     }
 
-    if (activeView === 'Bounding box') {
+    if (activeView === 'Bounding Box') {
       return { bg: '#E0F2FE', edge: '#38BDF8', badge: '#0369A1' };
     }
 
@@ -560,10 +573,14 @@ export function SignatureResultsScreen() {
 
           {uploadedSuspect ? (
           <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
-            <View style={styles.imageOverlayWrap}>
-              <ExpoImage source={{ uri: uploadedSuspect.split('?')[0] }} style={styles.largeThumbPreview} contentFit="contain" />
+            <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', borderRadius: 8 }]}>
+              <ExpoImage 
+                source={{ uri: uploadedSuspect.split('?')[0] }} 
+                style={StyleSheet.absoluteFill} 
+                contentFit="contain" 
+              />
 
-              {activeView === 'Bounding box' && activeResult.ink_bbox && (
+              {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
                 <BoundingBoxOverlay 
                   boxes={[{
                     x: (activeResult.ink_bbox as any).x ?? 0,
@@ -575,11 +592,11 @@ export function SignatureResultsScreen() {
                 />
               )}
 
-              {activeView === 'Heatmap' && activeResult.cam_grid && (
+              {activeView === 'Heatmap' && activeResult?.cam_grid && (
                 <HeatmapOverlay cam_grid={activeResult.cam_grid} />
               )}
 
-              {activeView === 'Stroke diff' && activeResult.stroke_markers && (
+              {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
                 <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
               )}
             </View>
@@ -595,45 +612,6 @@ export function SignatureResultsScreen() {
             </View>
           )}
         </View>
-
-        {(uploadedReferences.some(Boolean) || uploadedSuspect) ? (
-          <View style={styles.uploadedSection}>
-            <View style={styles.findingsHeaderRow}>
-              <Text style={styles.findingsTitle}>Uploaded Signatures</Text>
-              <Text style={styles.findingsTap}>Tap to enlarge</Text>
-            </View>
-
-            <View style={styles.smallThumbsGrid}>
-              {uploadedReferences.map((uri, index) => {
-                if (!uri) {
-                  return null;
-                }
-
-                return (
-                  <Pressable
-                    key={`uploaded-ref-${index}`}
-                    style={styles.thumbCardSmall}
-                    onPress={() => openPreview({ uri }, `Uploaded Reference ${String(index + 1).padStart(2, '0')}`)}
-                  >
-                    <ExpoImage source={{ uri: uri.split('?')[0] }} style={styles.thumbPreview} contentFit="cover" />
-                    <Text style={styles.thumbLabel}>{`SIG ${String(index + 1).padStart(2, '0')}`}</Text>
-                    <Text style={styles.thumbTag}>Uploaded Reference</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {uploadedSuspect ? (
-              <Pressable
-                style={styles.largeThumbWrap}
-                onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}
-              >
-                <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="cover" />
-                <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
 
         <View style={styles.findingsContainer}>
           <View style={styles.findingsHeaderRow}>

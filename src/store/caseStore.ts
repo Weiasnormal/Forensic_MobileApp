@@ -149,7 +149,14 @@ function mergeCasesById(existingCases: SavedCase[], incomingCases: SavedCase[]) 
   });
 
   incomingCases.forEach((item) => {
-    mergedCases.set(item.caseId, item);
+    
+    const existing = mergedCases.get(item.caseId);
+    
+    // PREVENT WIPING OUT LOCAL IMAGES: If the local case has images, 
+    // but the incoming backend case does not, keep the local images!
+    if (existing && existing.uploads && existing.uploads.suspect) {
+        item.uploads = existing.uploads;
+    }
   });
 
   return Array.from(mergedCases.values());
@@ -579,12 +586,19 @@ export const useCaseStore = create<CaseStore>()(
             // update local store with created case
             const savedCase: SavedCase = {
               ...currentDraft,
+              caseId: caseId,
               createdAt: new Date().toISOString(),
               status: finalStatus, // Now uses the actual result status instead of hardcoding 'Processing'
               analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
               mockTemplateNumber: get().nextMockTemplateNumber,
             };
+            console.log("===== DEBUGGING STORE SAVE =====");
+            console.log("A. Draft ID being replaced:", currentDraft.caseId);
+            console.log("B. New Backend ID being saved:", caseId);
+            console.log("C. Are uploads attached to this save?:", !!savedCase.uploads);
+            console.log("D. Suspect attached?:", savedCase.uploads?.suspect);
+            console.log("================================");
             
             //  Store the actual signature result if it exists
             if (analysisResult) {
@@ -612,15 +626,22 @@ export const useCaseStore = create<CaseStore>()(
                 : (analysisResult?.confidence_genuine ?? 0),
             };
 
-            const nextCases: SavedCase[] = mergeCasesById([savedCaseWithUploads], state.cases);
-            const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
-
-            return {
-              cases: nextCases,
-              draftSignatureCase: createInitialDraft(nextCaseNumber),
-              nextCaseNumber,
-              nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
-              activeSignatureCaseId: caseId,
+            const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
+              
+              const nextCases: SavedCase[] = [...filteredCases, savedCase];
+              
+              const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+              return {
+                cases: nextCases,
+                draftSignatureCase: createInitialDraft(nextCaseNumber),
+                nextCaseNumber,
+                nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
+                activeSignatureCaseId: caseId,
+                
+                signatureAnalysisResults: {
+                  ...state.signatureAnalysisResults,
+                  [caseId]: analysisResult 
+                }
             };
           });
 
