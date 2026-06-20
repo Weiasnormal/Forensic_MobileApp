@@ -212,9 +212,8 @@ function HeatmapOverlay({ cam_grid }: { cam_grid: any }) {
   const cells: { x: number; y: number; w: number; h: number; opacity: number }[] = useMemo(() => {
     if (!cam_grid || !size.width || !size.height) return [];
 
-    const values: number[][] = cam_grid.values;
-    const gridSize: number = cam_grid.grid_size ?? values.length;
-
+    const values: number[][] = Array.isArray(cam_grid) ? cam_grid : (cam_grid?.values || []);
+    const gridSize: number = cam_grid?.grid_size ?? values.length;
     if (!values || !gridSize) return [];
 
     const cellW = size.width / gridSize;
@@ -539,8 +538,8 @@ export function SignatureResultsScreen() {
 
               if (uri) {
                 return (
-                  <Pressable key={`r-${i}`} style={styles.thumbCardSmall} onPress={() => openPreview({ uri }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}>
-                    <ExpoImage source={{ uri }} style={styles.thumbPreview} contentFit="cover" />
+                  <Pressable key={`r-${i}`} style={styles.thumbCardSmall} onPress={() => openPreview({ uri: uri.split('?')[0] }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}>
+                    <ExpoImage source={{ uri: uri.split('?')[0] }} style={styles.thumbPreview} contentFit="cover" />
                     <Text style={styles.thumbLabel}>{referenceLabel}</Text>
                     <Text style={styles.thumbTag}>Reference</Text>
                   </Pressable>
@@ -562,15 +561,15 @@ export function SignatureResultsScreen() {
           {uploadedSuspect ? (
           <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
             <View style={styles.imageOverlayWrap}>
-              <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="contain" />
+              <ExpoImage source={{ uri: uploadedSuspect.split('?')[0] }} style={styles.largeThumbPreview} contentFit="contain" />
 
               {activeView === 'Bounding box' && activeResult.ink_bbox && (
                 <BoundingBoxOverlay 
                   boxes={[{
-                    x: (activeResult.ink_bbox as any).x,
-                    y: (activeResult.ink_bbox as any).y,
-                    width: (activeResult.ink_bbox as any).w,
-                    height: (activeResult.ink_bbox as any).h,
+                    x: (activeResult.ink_bbox as any).x ?? 0,
+                    y: (activeResult.ink_bbox as any).y ?? 0,
+                    width: (activeResult.ink_bbox as any).w ?? (activeResult.ink_bbox as any).width ?? 0,
+                    height: (activeResult.ink_bbox as any).h ?? (activeResult.ink_bbox as any).height ?? 0,
                   }]}
                   color={activeTone.badge} 
                 />
@@ -616,7 +615,7 @@ export function SignatureResultsScreen() {
                     style={styles.thumbCardSmall}
                     onPress={() => openPreview({ uri }, `Uploaded Reference ${String(index + 1).padStart(2, '0')}`)}
                   >
-                    <ExpoImage source={{ uri }} style={styles.thumbPreview} contentFit="cover" />
+                    <ExpoImage source={{ uri: uri.split('?')[0] }} style={styles.thumbPreview} contentFit="cover" />
                     <Text style={styles.thumbLabel}>{`SIG ${String(index + 1).padStart(2, '0')}`}</Text>
                     <Text style={styles.thumbTag}>Uploaded Reference</Text>
                   </Pressable>
@@ -923,7 +922,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
-  /* --- New styles for results layout --- */
   topBarWrapperCustom: {
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
@@ -1017,13 +1015,46 @@ const styles = StyleSheet.create({
   thumbLabel: { fontSize: 12, fontWeight: '800', color: '#0F172A' },
   thumbTag: { fontSize: 11, color: '#10B981', fontWeight: '700', marginTop: 4 },
 
-  largeThumbWrap: { borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9', backgroundColor: '#FFFFFF', padding: 12, alignItems: 'center', justifyContent: 'center' },
-  largeThumbPlaceholder: { minHeight: 166, gap: 6 },
-  largeThumbPlaceholderIconWrap: { width: 72, height: 72, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)' },
-  largeThumbPreview: { width: '100%', height: 120, borderRadius: 8, backgroundColor: '#F8FAFB', marginBottom: 10, overflow: 'hidden' },
-  suspectLabel: { color: '#EF4444', fontSize: 12, fontWeight: '800' },
-  suspectHint: { color: '#F97316', fontSize: 12, marginTop: 4 },
-
+  largeThumbWrap: { 
+    borderRadius: 12,
+    borderWidth: 1, 
+    borderColor: '#F1F5F9', 
+    backgroundColor: '#FFFFFF', 
+    padding: 12, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  largeThumbPlaceholder: { 
+    minHeight: 166, 
+    gap: 6 
+  },
+  largeThumbPlaceholderIconWrap: { 
+    width: 72, 
+    height: 72, 
+    borderRadius: 22, 
+    borderWidth: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    backgroundColor: 'rgba(255,255,255,0.7)' 
+  },
+  largeThumbPreview: { 
+    width: '100%', 
+    height: 2, 
+    borderRadius: 8, 
+    backgroundColor: '#F8FAFB', 
+    marginBottom: 10, 
+    overflow: 'hidden' 
+  },
+  suspectLabel: { 
+    color: '#EF4444', 
+    fontSize: 12, 
+    fontWeight: '800' 
+  },
+  suspectHint: { 
+    color: '#F97316', 
+    fontSize: 12, 
+    marginTop: 4 
+  },
   previewBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.82)',
