@@ -15,12 +15,15 @@ export interface SignatureAnalysisResult {
   distance: number;
   gradcam_blob_id?: string;
 
-  //bounding boxes from output.json
-  boxes?: SignatureBoundingBox[];            
-  reference_boxes?: SignatureBoundingBox[][]; 
-  
+  cam_grid?: number[][];
+  ink_bbox?: SignatureBoundingBox | SignatureBoundingBox[];
+  stroke_markers?: any[];
+
+  boxes?: SignatureBoundingBox[];
+  reference_boxes?: SignatureBoundingBox[][];
+
   threshold?: number;
-  Threshold?: number; 
+  Threshold?: number;
   verdict?: SignatureAnalysisVerdict;
   Verdict?: SignatureAnalysisVerdict;
 }

@@ -521,27 +521,57 @@ export const useCaseStore = create<CaseStore>()(
 
             if (analysisRes.ok) {
               try {
-                //Fetch the actual results payload from the GET endpoint
-                const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
-                
-                if (resultsRes.ok) {
-                  analysisResult = await resultsRes.json();
-                  const verdict = analysisResult?.Verdict ?? analysisResult?.verdict;
-                  if (verdict) {
-                    finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+                const processResponse = await analysisRes.json();
+                caseLog.info('CaseStore:Submit', 'ProcessResponse received', processResponse);
+
+                const verdict = processResponse?.Verdict ?? processResponse?.verdict;
+                const confidenceForged = processResponse?.ConfidenceForged ?? processResponse?.confidence_forged ?? 0;
+                const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
+                const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
+                const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
+                const gradcamBlobId = processResponse?.GradcamBlobId ?? processResponse?.gradcam_blob_id ?? '';
+
+                if (verdict) {
+                  finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+                }
+
+                analysisResult = {
+                  case_name: processResponse?.CaseName ?? processResponse?.case_name ?? caseId,
+                  confidence_forged: confidenceForged,
+                  confidence_genuine: confidenceGenuine,
+                  distance,
+                  gradcam_blob_id: gradcamBlobId,
+                  threshold,
+                  verdict: verdict as any,
+                  Verdict: verdict as any,
+
+                  cam_grid: undefined,
+                  ink_bbox: undefined,
+                  stroke_markers: undefined,
+                  boxes: undefined,
+                  reference_boxes: undefined,
+                };
+
+                // Optionally fetch output.json for bounding box / heatmap overlay coords
+                try {
+                  const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
+                  if (resultsRes.ok) {
+                    const outputJson = await resultsRes.json();
+                    caseLog.info('CaseStore:Submit', 'output.json received', outputJson);
+                    analysisResult.cam_grid = outputJson?.cam_grid ?? undefined;
+                    analysisResult.ink_bbox = outputJson?.ink_bbox ?? undefined;
+                    analysisResult.stroke_markers = outputJson?.stroke_markers ?? undefined;
+
+                    // also wire to boxes for the existing BoundingBoxOverlay component
+                    analysisResult.boxes = outputJson?.ink_bbox ?? undefined;
+                    analysisResult.reference_boxes = outputJson?.stroke_markers ?? undefined;;
                   }
+                } catch (outputErr) {
+                  caseLog.warn('CaseStore:Submit', 'output.json fetch failed (non-critical)', outputErr);
                 }
-                const caseRes = await fetch(buildApiUrl(API_ENDPOINTS.cases.get(caseId)), { method: 'GET' });
-                if (caseRes.ok) {
-                  const updatedCaseData = await caseRes.json();
-                  
-                  // Update the global store so the UI instantly sees the new numbers
-                  set((state) => ({
-                    cases: state.cases.map(c => c.caseId === caseId ? { ...c, ...updatedCaseData } : c)
-                  }));
-                }
+
               } catch (error) {
-                caseLog.error('CaseStore:Submit', 'Failed to fetch results', error);
+                caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
                 analysisResult = null;
               }
             }
@@ -566,18 +596,33 @@ export const useCaseStore = create<CaseStore>()(
                 }));
             }
 
-            set((state) => {
-              const nextCases: SavedCase[] = mergeCasesById([savedCase], state.cases);
-              const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+            const isSuspected = (analysisResult?.Verdict ?? analysisResult?.verdict) === 'FORGED';
 
-              return {
-                cases: nextCases,
-                draftSignatureCase: createInitialDraft(nextCaseNumber),
-                nextCaseNumber,
-                nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
-                activeSignatureCaseId: caseId,
-              };
-            });
+            set((state) => {
+            const savedCaseWithUploads: SavedCase = {
+              ...savedCase,
+              uploads: {
+                references: [...currentDraft.uploads.references],
+                suspect: currentDraft.uploads.suspect,
+              },
+              verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
+              Verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
+              confidence: isSuspected
+                ? (analysisResult?.confidence_forged ?? 0)
+                : (analysisResult?.confidence_genuine ?? 0),
+            };
+
+            const nextCases: SavedCase[] = mergeCasesById([savedCaseWithUploads], state.cases);
+            const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+
+            return {
+              cases: nextCases,
+              draftSignatureCase: createInitialDraft(nextCaseNumber),
+              nextCaseNumber,
+              nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
+              activeSignatureCaseId: caseId,
+            };
+          });
 
             caseLog.info('CaseStore:Submit', `✓ Case submitted successfully`, { caseId, analysisResult });
 

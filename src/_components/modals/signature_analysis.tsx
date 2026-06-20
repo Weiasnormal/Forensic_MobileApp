@@ -8,7 +8,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE_URL, API_ENDPOINTS } from '../../constants/api';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Rect, Circle } from 'react-native-svg';
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
@@ -116,7 +116,7 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string,
 
     { metric: 'Relation to Baseline', 
       value: isForged ? 'Inconsistent (High Deviation)' : 'Consistent with Baseline', 
-      detail: `Distance metric computed at ${ (result.distance || 0).toFixed(4) + '%'}.` },
+      detail: `Distance metric computed at ${(result.distance || 0).toFixed(4)}.` },
 
     { metric: 'Line Quality', 
       value: isForged ? 'Tremor / Hesitation detected' : 'Smooth, fluid strokes', 
@@ -136,11 +136,20 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string,
 }
 
 function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string, findings: ReturnType<typeof buildPayloadRows>, currentCase: any) {
-  const confidence = getSignatureAnalysisConfidence(result || 0).toFixed(1) + '%';
-  const rawConfidence = currentCase?.confidence || currentCase?.Confidence || 0;
-  const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
+  const finalVerdict = currentCase?.verdict 
+    ?? currentCase?.Verdict 
+    ?? result?.Verdict 
+    ?? result?.verdict 
+    ?? 'UNKNOWN';
+  const isForgedPdf = finalVerdict === 'FORGED';
+  const confidenceRaw = currentCase?.confidence 
+    ?? currentCase?.Confidence 
+    ?? (isForgedPdf 
+      ? (result.confidence_forged ?? 0)
+      : (result.confidence_genuine ?? 0));
+  const confidence = confidenceRaw.toFixed(1) + '%';
 
-  const finalThreshold = currentCase?.threshold || currentCase?.Threshold || 0;
+  const finalThreshold = currentCase?.threshold ?? currentCase?.Threshold ?? result?.threshold ?? result?.Threshold ?? 0;
   const isForged = finalVerdict === 'FORGED';
   const themeColor = isForged ? '#eb5757' : '#16a34a';
 
@@ -176,11 +185,10 @@ function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: st
         <div class="card">
           <div class="verdict">${confidence}% ${verdictLabel}</div>
           <div class="sub" style="margin-bottom: 16px;">Case ID: ${result.case_name || 'Unknown'}</div>
-          <div class="row"><div class="label">Genuine Confidence</div><div class="value">${(result.confidence_genuine * 100 || 0).toFixed(2) + '%'}</div></div>
-          <div class="row"><div class="label">Forged Confidence</div><div class="value">${(result.confidence_forged * 100 || 0).toFixed(2) + '%'}
-</div></div>
-          <div class="row"><div class="label">Distance Metric</div><div class="value">${(result.distance || 0).toFixed(6)+'%'}</div></div>
-          <div class="row"><div class="label">Decision Threshold</div><div class="value">${(finalThreshold || 0).toFixed(4)+ '%'}</div></div>
+          <div class="row"><div class="label">Genuine Confidence</div><div class="value">${((result.confidence_genuine ?? 0)).toFixed(2)}%</div></div>
+          <div class="row"><div class="label">Forged Confidence</div><div class="value">${((result.confidence_forged ?? 0)).toFixed(2)}%</div></div>
+          <div class="row"><div class="label">Distance Metric</div><div class="value">${(result.distance ?? 0).toFixed(6)}</div></div>
+          <div class="row"><div class="label">Decision Threshold</div><div class="value">${(finalThreshold ?? 0).toFixed(4)}</div></div>
           <div class="row"><div class="label">GradCAM Reference</div><div class="value" style="font-family: monospace;">${result.gradcam_blob_id || 'N/A'}</div></div>
         </div>
 
@@ -196,6 +204,111 @@ function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: st
       </body>
     </html>
   `;
+}
+
+function HeatmapOverlay({ cam_grid }: { cam_grid: any }) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const cells: { x: number; y: number; w: number; h: number; opacity: number }[] = useMemo(() => {
+    if (!cam_grid || !size.width || !size.height) return [];
+
+    const values: number[][] = cam_grid.values;
+    const gridSize: number = cam_grid.grid_size ?? values.length;
+
+    if (!values || !gridSize) return [];
+
+    const cellW = size.width / gridSize;
+    const cellH = size.height / gridSize;
+    const result: { x: number; y: number; w: number; h: number; opacity: number }[] = [];
+
+    values.forEach((row: number[], rowIndex: number) => {
+      row.forEach((intensity: number, colIndex: number) => {
+        if (intensity > 0.1) {
+          result.push({
+            x: colIndex * cellW,
+            y: rowIndex * cellH,
+            w: cellW,
+            h: cellH,
+            opacity: Math.min(intensity, 0.85),
+          });
+        }
+      });
+    });
+
+    return result;
+  }, [cam_grid, size]);
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setSize({ width, height });
+      }}
+    >
+      <Svg width={size.width} height={size.height}>
+        {cells.map((cell, i) => (
+          <Rect
+            key={`hm-${i}`}
+            x={cell.x}
+            y={cell.y}
+            width={cell.w}
+            height={cell.h}
+            fill="red"
+            fillOpacity={cell.opacity}
+          />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+function StrokeDiffOverlay({ stroke_markers, color }: { stroke_markers: any; color: string }) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const markers: { cx: number; cy: number; id: string }[] = useMemo(() => {
+    if (!stroke_markers?.markers) return [];
+    return stroke_markers.markers.map((m: any) => ({
+      cx: (m.cx_norm ?? m.cx ?? 0) * size.width,
+      cy: (m.cy_norm ?? m.cy ?? 0) * size.height,
+      id: String(m.id ?? ''),
+    }));
+  }, [stroke_markers, size]);
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setSize({ width, height });
+      }}
+    >
+      {size.width > 0 && size.height > 0 && (
+        <Svg width={size.width} height={size.height}>
+          {markers.map((m, i) => (
+            <React.Fragment key={`sd-${i}`}>
+              <Circle
+                cx={m.cx}
+                cy={m.cy}
+                r={8}
+                stroke={color}
+                strokeWidth={2}
+                fill="none"
+              />
+              <Circle
+                cx={m.cx}
+                cy={m.cy}
+                r={3}
+                fill={color}
+              />
+            </React.Fragment>
+          ))}
+        </Svg>
+      )}
+    </View>
+  );
 }
 
 export function SignatureProcessingView() {
@@ -302,11 +415,19 @@ export function SignatureResultsScreen() {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
+  const finalVerdict = currentCase?.verdict 
+    ?? currentCase?.Verdict 
+    ?? activeResult?.Verdict 
+    ?? activeResult?.verdict 
+    ?? 'UNKNOWN';
   const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
-  const confidenceValue = currentCase?.confidence || currentCase?.Confidence || 0;
-  
   const isSuspected = verdictLabel === 'SUSPECTED';
+  const confidenceValue = currentCase?.confidence 
+    ?? currentCase?.Confidence 
+    ?? (isSuspected 
+      ? (activeResult.confidence_forged ?? 0) 
+      : (activeResult.confidence_genuine ?? 0));
+
   const resultCardTheme = isSuspected
     ? {
         cardBg: '#FEF1F1',
@@ -439,16 +560,32 @@ export function SignatureResultsScreen() {
           </View>
 
           {uploadedSuspect ? (
-            <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
-              <View style={styles.imageOverlayWrap}>
-                <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="contain" />
+          <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
+            <View style={styles.imageOverlayWrap}>
+              <ExpoImage source={{ uri: uploadedSuspect }} style={styles.largeThumbPreview} contentFit="contain" />
 
-                {activeView === 'Bounding box' && activeResult.boxes && activeResult.boxes.length > 0 ? (
-                  <BoundingBoxOverlay boxes={activeResult.boxes} color={activeTone.badge} />
-                ) : null}
-              </View>
-              <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
-            </Pressable>
+              {activeView === 'Bounding box' && activeResult.ink_bbox && (
+                <BoundingBoxOverlay 
+                  boxes={[{
+                    x: (activeResult.ink_bbox as any).x,
+                    y: (activeResult.ink_bbox as any).y,
+                    width: (activeResult.ink_bbox as any).w,
+                    height: (activeResult.ink_bbox as any).h,
+                  }]}
+                  color={activeTone.badge} 
+                />
+              )}
+
+              {activeView === 'Heatmap' && activeResult.cam_grid && (
+                <HeatmapOverlay cam_grid={activeResult.cam_grid} />
+              )}
+
+              {activeView === 'Stroke diff' && activeResult.stroke_markers && (
+                <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
+              )}
+            </View>
+            <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
+          </Pressable>
           ) : (
             <View style={[styles.largeThumbWrap, styles.largeThumbPlaceholder, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
               <View style={[styles.largeThumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
