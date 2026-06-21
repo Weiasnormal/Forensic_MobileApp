@@ -8,7 +8,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE_URL, API_ENDPOINTS } from '../../constants/api';
-import Svg, { Rect, Circle } from 'react-native-svg';
+import Svg, { Rect, Circle, Line, Text as SvgText } from 'react-native-svg';
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
@@ -56,41 +56,7 @@ const processingSteps: ProcessingStep[] = [
 ];
 
 function normalizeBoxCoord(value: number) {
-  // Supports both 0-1 normalized and 0-1000 normalized coordinate outputs
   return value > 1 ? value / 1000 : value;
-}
-
-function BoundingBoxOverlay({ boxes, color }: { boxes: SignatureBoundingBox[]; color: string }) {
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  return (
-    <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents="none"
-      onLayout={(event) => {
-        const { width, height } = event.nativeEvent.layout;
-        setSize({ width, height });
-      }}
-    >
-      {size.width > 0 && size.height > 0 && (
-        <Svg width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`}>
-          {boxes.map((box, index) => (
-            <Rect
-              key={`bbox-${index}`}
-              x={normalizeBoxCoord(box.x) * size.width}
-              y={normalizeBoxCoord(box.y) * size.height}
-              width={normalizeBoxCoord(box.width) * size.width}
-              height={normalizeBoxCoord(box.height) * size.height}
-              stroke={color}
-              strokeWidth={2}
-              rx={4}
-              fill="none"
-            />
-          ))}
-        </Svg>
-      )}
-    </View>
-  );
 }
 
 function statusColors(status: 'ok' | 'warning' | 'bad') {
@@ -206,47 +172,109 @@ function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: st
   `;
 }
 
-function HeatmapOverlay({ cam_grid }: { cam_grid: any }) {
-  const [size, setSize] = useState({ width: 0, height: 0 });
+function BoundingBoxOverlay({ 
+  boxes, 
+  color,
+  width,
+  height,
+}: { 
+  boxes: SignatureBoundingBox[]; 
+  color: string;
+  width: number;
+  height: number;
+}) {
+  if (!width || !height) return null;
 
-  const cells: { x: number; y: number; w: number; h: number; opacity: number }[] = useMemo(() => {
-    if (!cam_grid || !size.width || !size.height) return [];
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width={width} height={height}>
+        {boxes.map((box, index) => {
+          const px = box.x * width;
+          const py = box.y * height;
+          const pw = box.width * width;
+          const ph = box.height * height;
+          return (
+            <Rect
+              key={`bbox-${index}`}
+              x={px}
+              y={py}
+              width={pw}
+              height={ph}
+              stroke={color}
+              strokeWidth={2.5}
+              rx={4}
+              fill="none"
+              strokeOpacity={0.9}
+            />
+          );
+        })}
+      </Svg>
+    </View>
+  );
+}
 
-    const values: number[][] = Array.isArray(cam_grid) ? cam_grid : (cam_grid?.values || []);
-    const gridSize: number = cam_grid?.grid_size ?? values.length;
-    if (!values || !gridSize) return [];
+function jetColormap(t: number): string {
+  // Standard jet colormap: blue(0) -> cyan -> green -> yellow -> red(1)
+  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+  let r = clamp(1.5 - Math.abs(4 * t - 3));
+  let g = clamp(1.5 - Math.abs(4 * t - 2));
+  let b = clamp(1.5 - Math.abs(4 * t - 1));
+  const ri = Math.round(r * 255);
+  const gi = Math.round(g * 255);
+  const bi = Math.round(b * 255);
+  return `rgb(${ri},${gi},${bi})`;
+}
 
-    const cellW = size.width / gridSize;
-    const cellH = size.height / gridSize;
-    const result: { x: number; y: number; w: number; h: number; opacity: number }[] = [];
+function HeatmapOverlay({ 
+  cam_grid,
+  width,
+  height,
+}: { 
+  cam_grid: any;
+  width: number;
+  height: number;
+}) {
+  const cells = useMemo(() => {
+    if (!cam_grid || !width || !height) return [];
+
+    const gridSize: number = cam_grid.grid_size ?? 7;
+    const values: number[][] = cam_grid.values ?? [];
+    if (!values.length) return [];
+
+    let maxVal = 0;
+    values.forEach((row: number[]) => 
+      row.forEach((v: number) => { if (v > maxVal) maxVal = v; })
+    );
+    if (maxVal === 0) return [];
+
+    const cellW = width / gridSize;
+    const cellH = height / gridSize;
+    const result: { x: number; y: number; w: number; h: number; color: string; opacity: number }[] = [];
 
     values.forEach((row: number[], rowIndex: number) => {
       row.forEach((intensity: number, colIndex: number) => {
-        if (intensity > 0.1) {
+        const normalized = intensity / maxVal;
+        if (normalized > 0.05) {
           result.push({
             x: colIndex * cellW,
             y: rowIndex * cellH,
             w: cellW,
             h: cellH,
-            opacity: Math.min(intensity, 0.85),
+            color: jetColormap(normalized),
+            opacity: 0.35 + normalized * 0.50,
           });
         }
       });
     });
 
     return result;
-  }, [cam_grid, size]);
+  }, [cam_grid, width, height]);
+
+  if (!width || !height) return null;
 
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents="none"
-      onLayout={(e) => {
-        const { width, height } = e.nativeEvent.layout;
-        setSize({ width, height });
-      }}
-    >
-      <Svg width={size.width} height={size.height}>
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width={width} height={height}>
         {cells.map((cell, i) => (
           <Rect
             key={`hm-${i}`}
@@ -254,7 +282,7 @@ function HeatmapOverlay({ cam_grid }: { cam_grid: any }) {
             y={cell.y}
             width={cell.w}
             height={cell.h}
-            fill="red"
+            fill={cell.color}
             fillOpacity={cell.opacity}
           />
         ))}
@@ -263,49 +291,84 @@ function HeatmapOverlay({ cam_grid }: { cam_grid: any }) {
   );
 }
 
-function StrokeDiffOverlay({ stroke_markers, color }: { stroke_markers: any; color: string }) {
-  const [size, setSize] = useState({ width: 0, height: 0 });
 
-  const markers: { cx: number; cy: number; id: string }[] = useMemo(() => {
-    if (!stroke_markers?.markers) return [];
+interface ResolvedMarker {
+  cx: number;
+  cy: number;
+  id: string;
+}
+
+function StrokeDiffOverlay({ 
+  stroke_markers, 
+  color,
+  width,
+  height,
+}: { 
+  stroke_markers: any; 
+  color: string;
+  width: number;
+  height: number;
+}) {
+  const resolvedMarkers = useMemo((): ResolvedMarker[] => {
+    if (!stroke_markers?.markers || !width || !height) return [];
     return stroke_markers.markers.map((m: any) => ({
-      cx: (m.cx_norm ?? m.cx ?? 0) * size.width,
-      cy: (m.cy_norm ?? m.cy ?? 0) * size.height,
+      cx: (m.cx_norm ?? m.cx ?? 0) * width,
+      cy: (m.cy_norm ?? m.cy ?? 0) * height,
       id: String(m.id ?? ''),
     }));
-  }, [stroke_markers, size]);
+  }, [stroke_markers, width, height]);
+
+  const lines = useMemo(() => {
+    if (resolvedMarkers.length < 2) return [];
+    const segs: { x1: number; y1: number; x2: number; y2: number }[] = [];
+    for (let i = 0; i < resolvedMarkers.length - 1; i++) {
+      segs.push({
+        x1: resolvedMarkers[i].cx,
+        y1: resolvedMarkers[i].cy,
+        x2: resolvedMarkers[i + 1].cx,
+        y2: resolvedMarkers[i + 1].cy,
+      });
+    }
+    return segs;
+  }, [resolvedMarkers]);
+
+  if (!width || !height) return null;
+
+  const CIRCLE_RADIUS = 14;
+  const FONT_SIZE = 11;
 
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      pointerEvents="none"
-      onLayout={(e) => {
-        const { width, height } = e.nativeEvent.layout;
-        setSize({ width, height });
-      }}
-    >
-      {size.width > 0 && size.height > 0 && (
-        <Svg width={size.width} height={size.height}>
-          {markers.map((m, i) => (
-            <React.Fragment key={`sd-${i}`}>
-              <Circle
-                cx={m.cx}
-                cy={m.cy}
-                r={8}
-                stroke={color}
-                strokeWidth={2}
-                fill="none"
-              />
-              <Circle
-                cx={m.cx}
-                cy={m.cy}
-                r={3}
-                fill={color}
-              />
-            </React.Fragment>
-          ))}
-        </Svg>
-      )}
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width={width} height={height}>
+        {lines.map((seg, i) => (
+          <Line
+            key={`sd-line-${i}`}
+            x1={seg.x1}
+            y1={seg.y1}
+            x2={seg.x2}
+            y2={seg.y2}
+            stroke={color}
+            strokeWidth={1.5}
+            strokeOpacity={0.75}
+          />
+        ))}
+        {resolvedMarkers.map((m: ResolvedMarker, i: number) => (
+          <React.Fragment key={`sd-marker-${i}`}>
+            <Circle cx={m.cx} cy={m.cy} r={CIRCLE_RADIUS} fill={color} fillOpacity={0.92} />
+            <Circle cx={m.cx} cy={m.cy} r={CIRCLE_RADIUS} stroke="white" strokeWidth={1.5} fill="none" />
+            <SvgText
+              x={m.cx}
+              y={m.cy + FONT_SIZE * 0.38}
+              textAnchor="middle"
+              fill="white"
+              fontSize={FONT_SIZE}
+              fontWeight="bold"
+            >
+              {m.id}
+            </SvgText>
+          </React.Fragment>
+        ))}
+      </Svg>
     </View>
   );
 }
@@ -349,6 +412,7 @@ export function SignatureProcessingView() {
 }
 
 export function SignatureResultsScreen() {
+  const [suspectImageSize, setSuspectImageSize] = useState({ width: 0, height: 0 });
   const router = useRouter();
   const nav = router as any;
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
@@ -550,37 +614,24 @@ export function SignatureResultsScreen() {
               const referenceLabel = `SIG ${String(i + 1).padStart(2, '0')}`;
 
               if (uri) {
-              return (
-                <Pressable
-                  key={`r-${i}`}
-                  style={styles.thumbCardSmall}
-                  onPress={() => openPreview({ uri: uri.split('?')[0] }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}
-                >
-                  <View style={styles.thumbImageWrap}>
-                    <ExpoImage source={{ uri: uri.split('?')[0] }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                    {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
-                      <BoundingBoxOverlay
-                        boxes={[{
-                          x: (activeResult.ink_bbox as any).x ?? 0,
-                          y: (activeResult.ink_bbox as any).y ?? 0,
-                          width: (activeResult.ink_bbox as any).w ?? (activeResult.ink_bbox as any).width ?? 0,
-                          height: (activeResult.ink_bbox as any).h ?? (activeResult.ink_bbox as any).height ?? 0,
-                        }]}
-                        color={activeTone.badge}
+                return (
+                  <Pressable
+                    key={`r-${i}`}
+                    style={styles.thumbCardSmall}
+                    onPress={() => openPreview({ uri: uri.split('?')[0] }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}
+                  >
+                    <View style={styles.thumbImageWrap}>
+                      <ExpoImage
+                        source={{ uri: uri.split('?')[0] }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
                       />
-                    )}
-                    {activeView === 'Heatmap' && activeResult?.cam_grid && (
-                      <HeatmapOverlay cam_grid={activeResult.cam_grid} />
-                    )}
-                    {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
-                      <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
-                    )}
-                  </View>
-                  <Text style={styles.thumbLabel}>{referenceLabel}</Text>
-                  <Text style={styles.thumbTag}>Reference</Text>
-                </Pressable>
-              );
-            }
+                    </View>
+                    <Text style={styles.thumbLabel}>{referenceLabel}</Text>
+                    <Text style={styles.thumbTag}>Reference</Text>
+                  </Pressable>
+                );
+              }
 
               return (
                 <View key={`r-${i}`} style={[styles.thumbCardSmall, styles.thumbPlaceholderCard, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
@@ -595,37 +646,56 @@ export function SignatureResultsScreen() {
           </View>
 
           {uploadedSuspect ? (
-            <Pressable
-              style={styles.largeThumbWrap}
-              onPress={() => openPreview({ uri: uploadedSuspect.split('?')[0] }, 'Uploaded Suspected Signature')}
-            >
-              <View style={styles.largeThumbImageWrap}>
-                <ExpoImage
-                  source={{ uri: uploadedSuspect.split('?')[0] }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="contain"
-                />
-                {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
-                  <BoundingBoxOverlay
-                    boxes={[{
-                      x: (activeResult.ink_bbox as any).x ?? 0,
-                      y: (activeResult.ink_bbox as any).y ?? 0,
-                      width: (activeResult.ink_bbox as any).w ?? (activeResult.ink_bbox as any).width ?? 0,
-                      height: (activeResult.ink_bbox as any).h ?? (activeResult.ink_bbox as any).height ?? 0,
-                    }]}
-                    color={activeTone.badge}
-                  />
-                )}
-                {activeView === 'Heatmap' && activeResult?.cam_grid && (
-                  <HeatmapOverlay cam_grid={activeResult.cam_grid} />
-                )}
-                {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
-                  <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
-                )}
-              </View>
-              <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
-            </Pressable>
-          ) : (
+                <Pressable
+                  style={styles.largeThumbWrap}
+                  onPress={() => openPreview({ uri: uploadedSuspect.split('?')[0] }, 'Uploaded Suspected Signature')}
+                >
+                  <View
+                    style={styles.largeThumbImageWrap}
+                    onLayout={(e) => {
+                      const { width, height } = e.nativeEvent.layout;
+                      setSuspectImageSize({ width, height });
+                    }}
+                  >
+                    <ExpoImage
+                      source={{ uri: uploadedSuspect.split('?')[0] }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="contain"
+                    />
+
+                    {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
+                      <BoundingBoxOverlay
+                        boxes={[{
+                          x: (activeResult.ink_bbox as any).x ?? 0,
+                          y: (activeResult.ink_bbox as any).y ?? 0,
+                          width: (activeResult.ink_bbox as any).w ?? 0,
+                          height: (activeResult.ink_bbox as any).h ?? 0,
+                        }]}
+                        color={activeTone.badge}
+                        width={suspectImageSize.width}
+                        height={suspectImageSize.height}
+                      />
+                    )}
+                    {activeView === 'Heatmap' && activeResult?.cam_grid && (
+                      <HeatmapOverlay
+                        cam_grid={activeResult.cam_grid}
+                        width={suspectImageSize.width}
+                        height={suspectImageSize.height}
+                      />
+                    )}
+                    {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
+                      <StrokeDiffOverlay
+                        stroke_markers={activeResult.stroke_markers}
+                        color={activeTone.badge}
+                        width={suspectImageSize.width}
+                        height={suspectImageSize.height}
+                      />
+                    )}
+                  </View>
+                  <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
+                </Pressable>
+              ) : (
+
             <View style={[styles.largeThumbWrap, styles.largeThumbPlaceholder, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
               <View style={[styles.largeThumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
                 <Ionicons name="scan-outline" size={28} color={activeTone.badge} />
