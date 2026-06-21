@@ -550,14 +550,37 @@ export function SignatureResultsScreen() {
               const referenceLabel = `SIG ${String(i + 1).padStart(2, '0')}`;
 
               if (uri) {
-                return (
-                  <Pressable key={`r-${i}`} style={styles.thumbCardSmall} onPress={() => openPreview({ uri: uri.split('?')[0] }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}>
-                    <ExpoImage source={{ uri: uri.split('?')[0] }} style={styles.thumbPreview} contentFit="cover" />
-                    <Text style={styles.thumbLabel}>{referenceLabel}</Text>
-                    <Text style={styles.thumbTag}>Reference</Text>
-                  </Pressable>
-                );
-              }
+              return (
+                <Pressable
+                  key={`r-${i}`}
+                  style={styles.thumbCardSmall}
+                  onPress={() => openPreview({ uri: uri.split('?')[0] }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}
+                >
+                  <View style={styles.thumbImageWrap}>
+                    <ExpoImage source={{ uri: uri.split('?')[0] }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                    {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
+                      <BoundingBoxOverlay
+                        boxes={[{
+                          x: (activeResult.ink_bbox as any).x ?? 0,
+                          y: (activeResult.ink_bbox as any).y ?? 0,
+                          width: (activeResult.ink_bbox as any).w ?? (activeResult.ink_bbox as any).width ?? 0,
+                          height: (activeResult.ink_bbox as any).h ?? (activeResult.ink_bbox as any).height ?? 0,
+                        }]}
+                        color={activeTone.badge}
+                      />
+                    )}
+                    {activeView === 'Heatmap' && activeResult?.cam_grid && (
+                      <HeatmapOverlay cam_grid={activeResult.cam_grid} />
+                    )}
+                    {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
+                      <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
+                    )}
+                  </View>
+                  <Text style={styles.thumbLabel}>{referenceLabel}</Text>
+                  <Text style={styles.thumbTag}>Reference</Text>
+                </Pressable>
+              );
+            }
 
               return (
                 <View key={`r-${i}`} style={[styles.thumbCardSmall, styles.thumbPlaceholderCard, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
@@ -572,36 +595,36 @@ export function SignatureResultsScreen() {
           </View>
 
           {uploadedSuspect ? (
-          <Pressable style={styles.largeThumbWrap} onPress={() => openPreview({ uri: uploadedSuspect }, 'Uploaded Suspected Signature')}>
-            <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', borderRadius: 8 }]}>
-              <ExpoImage 
-                source={{ uri: uploadedSuspect.split('?')[0] }} 
-                style={StyleSheet.absoluteFill} 
-                contentFit="contain" 
-              />
-
-              {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
-                <BoundingBoxOverlay 
-                  boxes={[{
-                    x: (activeResult.ink_bbox as any).x ?? 0,
-                    y: (activeResult.ink_bbox as any).y ?? 0,
-                    width: (activeResult.ink_bbox as any).w ?? (activeResult.ink_bbox as any).width ?? 0,
-                    height: (activeResult.ink_bbox as any).h ?? (activeResult.ink_bbox as any).height ?? 0,
-                  }]}
-                  color={activeTone.badge} 
+            <Pressable
+              style={styles.largeThumbWrap}
+              onPress={() => openPreview({ uri: uploadedSuspect.split('?')[0] }, 'Uploaded Suspected Signature')}
+            >
+              <View style={styles.largeThumbImageWrap}>
+                <ExpoImage
+                  source={{ uri: uploadedSuspect.split('?')[0] }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
                 />
-              )}
-
-              {activeView === 'Heatmap' && activeResult?.cam_grid && (
-                <HeatmapOverlay cam_grid={activeResult.cam_grid} />
-              )}
-
-              {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
-                <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
-              )}
-            </View>
-            <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
-          </Pressable>
+                {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
+                  <BoundingBoxOverlay
+                    boxes={[{
+                      x: (activeResult.ink_bbox as any).x ?? 0,
+                      y: (activeResult.ink_bbox as any).y ?? 0,
+                      width: (activeResult.ink_bbox as any).w ?? (activeResult.ink_bbox as any).width ?? 0,
+                      height: (activeResult.ink_bbox as any).h ?? (activeResult.ink_bbox as any).height ?? 0,
+                    }]}
+                    color={activeTone.badge}
+                  />
+                )}
+                {activeView === 'Heatmap' && activeResult?.cam_grid && (
+                  <HeatmapOverlay cam_grid={activeResult.cam_grid} />
+                )}
+                {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
+                  <StrokeDiffOverlay stroke_markers={activeResult.stroke_markers} color={activeTone.badge} />
+                )}
+              </View>
+              <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
+            </Pressable>
           ) : (
             <View style={[styles.largeThumbWrap, styles.largeThumbPlaceholder, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
               <View style={[styles.largeThumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
@@ -993,6 +1016,22 @@ const styles = StyleSheet.create({
   thumbLabel: { fontSize: 12, fontWeight: '800', color: '#0F172A' },
   thumbTag: { fontSize: 11, color: '#10B981', fontWeight: '700', marginTop: 4 },
 
+  thumbImageWrap: {
+  width: '100%',
+  height: 90,          
+  borderRadius: 8,
+  overflow: 'hidden',
+  marginBottom: 8,
+  backgroundColor: '#F8FAFC',
+},
+largeThumbImageWrap: {
+  width: '100%',
+  height: 200,         
+  borderRadius: 8,
+  overflow: 'hidden',
+  marginBottom: 8,
+  backgroundColor: '#F8FAFC',
+},
   largeThumbWrap: { 
     borderRadius: 12,
     borderWidth: 1, 
