@@ -412,6 +412,7 @@ export function SignatureProcessingView() {
 }
 
 export function SignatureResultsScreen() {
+  const [previewImageSize, setPreviewImageSize] = useState({ width: 0, height: 0 });
   const [suspectImageSize, setSuspectImageSize] = useState({ width: 0, height: 0 });
   const router = useRouter();
   const nav = router as any;
@@ -660,7 +661,7 @@ export function SignatureResultsScreen() {
                     <ExpoImage
                       source={{ uri: uploadedSuspect.split('?')[0] }}
                       style={StyleSheet.absoluteFill}
-                      contentFit="contain"
+                      contentFit="fill"
                     />
 
                     {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
@@ -743,7 +744,52 @@ export function SignatureResultsScreen() {
               </Pressable>
             </View>
             {previewSource !== null ? (
-              <ExpoImage source={previewSource} style={styles.previewImage} contentFit="contain" />
+              <View
+                style={[styles.previewImage, { overflow: 'hidden' }]}
+                onLayout={(e) => {
+                  const { width, height } = e.nativeEvent.layout;
+                  setPreviewImageSize({ width, height });
+                }}
+              >
+                <ExpoImage
+                  source={previewSource}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="fill"
+                />
+
+                {uploadedSuspect && previewSource.uri === uploadedSuspect.split('?')[0] && (
+                  <>
+                    {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
+                      <BoundingBoxOverlay
+                        boxes={[{
+                          x: (activeResult.ink_bbox as any).x ?? 0,
+                          y: (activeResult.ink_bbox as any).y ?? 0,
+                          width: (activeResult.ink_bbox as any).w ?? 0,
+                          height: (activeResult.ink_bbox as any).h ?? 0,
+                        }]}
+                        color={activeTone.badge}
+                        width={previewImageSize.width}
+                        height={previewImageSize.height}
+                      />
+                    )}
+                    {activeView === 'Heatmap' && activeResult?.cam_grid && (
+                      <HeatmapOverlay
+                        cam_grid={activeResult.cam_grid}
+                        width={previewImageSize.width}
+                        height={previewImageSize.height}
+                      />
+                    )}
+                    {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
+                      <StrokeDiffOverlay
+                        stroke_markers={activeResult.stroke_markers}
+                        color={activeTone.badge}
+                        width={previewImageSize.width}
+                        height={previewImageSize.height}
+                      />
+                    )}
+                  </>
+                )}
+              </View>
             ) : null}
           </Pressable>
         </Pressable>
@@ -1177,7 +1223,7 @@ largeThumbImageWrap: {
   },
   previewImage: {
     width: '100%',
-    height: 300,
+    aspectRatio: 2, 
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
   },
