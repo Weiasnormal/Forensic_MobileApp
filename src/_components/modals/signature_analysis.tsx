@@ -214,7 +214,6 @@ function BoundingBoxOverlay({
 }
 
 function jetColormap(t: number): string {
-  // Standard jet colormap: blue(0) -> cyan -> green -> yellow -> red(1)
   const clamp = (v: number) => Math.max(0, Math.min(1, v));
   let r = clamp(1.5 - Math.abs(4 * t - 3));
   let g = clamp(1.5 - Math.abs(4 * t - 2));
@@ -486,7 +485,7 @@ export function SignatureResultsScreen() {
     );
   }
 
-  // Use the REAL result directly!
+  // REAL result 
   const activeResult = analysisResult; 
   
   const uploadedReferences = currentCase?.uploads.references ?? [];
@@ -532,11 +531,9 @@ export function SignatureResultsScreen() {
   };
 
   const handleBackToDashboard = () => {
-    // Keep the stored case status aligned with the analysis verdict.
+   
     setSignatureStatus(getSignatureAnalysisCaseStatus(activeResult));
-    // Reset analysis type
     useAnalysisFlowStore.setState({ currentAnalysisType: null });
-    // Navigate to dashboard
     nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
   };
 
@@ -567,9 +564,6 @@ export function SignatureResultsScreen() {
     }
   };
 
-  
-
- 
   const openPreview = (source: { uri: string }, label: string) => {
     setPreviewSource(source);
     setPreviewLabel(label);
