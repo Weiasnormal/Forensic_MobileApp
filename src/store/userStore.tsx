@@ -49,8 +49,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     log.info('UserProvider', '🚀 Provider mounted, checking AsyncStorage availability');
-    
-    // Verify AsyncStorage is available
+ 
     if (!AsyncStorage) {
       log.error('UserProvider', 'AsyncStorage is not available - native module may not be linked');
       return;
@@ -65,7 +64,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       log.info('UserStore', 'Starting load operation', { storageKey: KEY });
       
-      // Check AsyncStorage availability
       if (!AsyncStorage) {
         throw new Error('AsyncStorage is null - native module not properly linked');
       }

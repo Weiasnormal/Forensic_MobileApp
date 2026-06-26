@@ -152,8 +152,6 @@ function mergeCasesById(existingCases: SavedCase[], incomingCases: SavedCase[]) 
     
     const existing = mergedCases.get(item.caseId);
     
-    // PREVENT WIPING OUT LOCAL IMAGES: If the local case has images, 
-    // but the incoming backend case does not, keep the local images!
     if (existing && existing.uploads && existing.uploads.suspect) {
         item.uploads = existing.uploads;
     }
