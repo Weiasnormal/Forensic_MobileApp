@@ -13,7 +13,6 @@ export default function CaseResultByIdRoute() {
     }
 
     return () => {
-      // clear active on unmount
       setActive(null);
     };
   }, [params.caseId, setActive]);
