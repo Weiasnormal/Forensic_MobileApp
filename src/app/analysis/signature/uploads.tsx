@@ -47,7 +47,6 @@ export default function SignatureUploadsRoute() {
       return;
     }
 
-    // Prevent uploading a suspect image until all 4 reference signatures are present
     if (target === 'suspect') {
       const allRefsFilled = uploads.references.every(Boolean);
       if (!allRefsFilled) {
@@ -64,7 +63,6 @@ export default function SignatureUploadsRoute() {
       setCurrentReferenceIndex(refIndex);
     }
 
-    // show custom source picker modal
     setShowSourcePicker(true);
   };
 
@@ -195,7 +193,6 @@ export default function SignatureUploadsRoute() {
               <View style={styles.uploadCheckBadgeLarge}>
                 <Ionicons name="checkmark-circle" size={28} color="#D97706" />
               </View>
-              {/* change button removed to prevent replacement; use Remove (trash) to clear first */}
               <Pressable
                 style={styles.clearImageButtonLarge}
                 onPress={(event) => {
