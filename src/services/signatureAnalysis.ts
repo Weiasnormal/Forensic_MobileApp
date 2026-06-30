@@ -48,13 +48,18 @@ export function getSignatureAnalysisCaseStatus(result: SignatureAnalysisResult):
 
 export type OverlayVariant = 'original' | 'heatmap' | 'overlay' | 'bbox' | 'stroke_diff';
 
+export interface BlobImageRef {
+  folder: string;
+  fileName: string;
+}
+
 export interface ParsedGradcamSlots {
-  references: Record<OverlayVariant, string | null>[]; // index 0-3
-  suspect: Record<OverlayVariant, string | null>;
+  references: Record<OverlayVariant, BlobImageRef | null>[];
+  suspect: Record<OverlayVariant, BlobImageRef | null>;
 }
 
 export function parseGradcamBlobIds(blobIds: string[]): ParsedGradcamSlots {
-  const empty = (): Record<OverlayVariant, string | null> => ({
+  const empty = (): Record<OverlayVariant, BlobImageRef | null> => ({
     original: null, heatmap: null, overlay: null, bbox: null, stroke_diff: null,
   });
 
@@ -62,20 +67,22 @@ export function parseGradcamBlobIds(blobIds: string[]): ParsedGradcamSlots {
   const suspect = empty();
 
   for (const path of blobIds) {
-    if (!path.endsWith('.png')) continue; // skip the pdf entry
+    if (!path.endsWith('.png')) continue;
     const segments = path.split('/');
-    const folder = segments[segments.length - 2]; // genuine_1 | suspected
-    const filename = segments[segments.length - 1]; // G1_heatmap.png
+    const folder = segments[segments.length - 2];
+    const fileName = segments[segments.length - 1];
 
-    const variantMatch = filename.match(/_(original|heatmap|overlay|bbox|stroke_diff)\.png$/i);
+    const variantMatch = fileName.match(/_(original|heatmap|overlay|bbox|stroke_diff)\.png$/i);
     if (!variantMatch) continue;
     const variant = variantMatch[1] as OverlayVariant;
 
+    const ref: BlobImageRef = { folder, fileName };
+
     if (folder === 'suspected') {
-      suspect[variant] = path;
+      suspect[variant] = ref;
     } else {
       const idx = Number(folder.replace('genuine_', '')) - 1;
-      if (idx >= 0 && idx <= 3) references[idx][variant] = path;
+      if (idx >= 0 && idx <= 3) references[idx][variant] = ref;
     }
   }
 

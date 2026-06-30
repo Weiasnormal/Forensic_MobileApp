@@ -257,12 +257,24 @@ export function SignatureResultsScreen() {
     [analysisResult],
   );
 
-  const suspectOverlayUri = useMemo(() => {
-  const path = gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]];
-  return currentCaseId && path
-    ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, path))
+const suspectOverlayUri = useMemo(() => {
+  const ref = gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]];
+  return currentCaseId && ref
+    ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.folder, ref.fileName))
     : null;
 }, [currentCaseId, gradcamSlots, activeView]);
+
+  useEffect(() => {
+  const refs = currentCase?.uploads.references ?? [];
+  const urisToPrefetch = [
+    ...refs.filter(Boolean).map((uri) => uri!.split('?')[0]),
+    suspectOverlayUri,
+  ].filter(Boolean) as string[];
+
+  if (urisToPrefetch.length > 0) {
+    ExpoImage.prefetch(urisToPrefetch);
+  }
+}, [currentCase, suspectOverlayUri]);
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
