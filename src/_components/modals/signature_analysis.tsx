@@ -7,16 +7,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { API_BASE_URL, API_ENDPOINTS } from '../../constants/api';
-import Svg, { Rect, Circle, Line, Text as SvgText } from 'react-native-svg';
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
+    parseGradcamBlobIds,
+    type OverlayVariant,
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
-    type SignatureBoundingBox,
 } from '@/services/signatureAnalysis';
+import { API_BASE_URL, API_ENDPOINTS, buildApiUrl } from '../../constants/api';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
@@ -54,22 +54,6 @@ const processingSteps: ProcessingStep[] = [
     detail: 'Building forensic output',
   },
 ];
-
-function normalizeBoxCoord(value: number) {
-  return value > 1 ? value / 1000 : value;
-}
-
-function statusColors(status: 'ok' | 'warning' | 'bad') {
-  if (status === 'ok') {
-    return { bg: '#ECFDF3', text: '#15803D', border: '#BBF7D0' };
-  }
-
-  if (status === 'warning') {
-    return { bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' };
-  }
-
-  return { bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' };
-}
 
 function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string, currentCase: any) {
   const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
@@ -155,8 +139,8 @@ function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: st
           <div class="row"><div class="label">Forged Confidence</div><div class="value">${((result.confidence_forged ?? 0)).toFixed(2)}%</div></div>
           <div class="row"><div class="label">Distance Metric</div><div class="value">${(result.distance ?? 0).toFixed(6)}</div></div>
           <div class="row"><div class="label">Decision Threshold</div><div class="value">${(finalThreshold ?? 0).toFixed(4)}</div></div>
-          <div class="row"><div class="label">GradCAM Reference</div><div class="value" style="font-family: monospace;">${result.gradcam_blob_id || 'N/A'}</div></div>
-        </div>
+          <div class="row"><div class="label">GradCAM Reference</div><div class="value" style="font-family: monospace;">${(result.gradcam_blob_ids?.[0] ?? 'N/A')}</div></div>
+          </div>
 
         <h3>Detailed Forensic Findings</h3>
         <table>
@@ -172,205 +156,6 @@ function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: st
   `;
 }
 
-function BoundingBoxOverlay({ 
-  boxes, 
-  color,
-  width,
-  height,
-}: { 
-  boxes: SignatureBoundingBox[]; 
-  color: string;
-  width: number;
-  height: number;
-}) {
-  if (!width || !height) return null;
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Svg width={width} height={height}>
-        {boxes.map((box, index) => {
-          const px = box.x * width;
-          const py = box.y * height;
-          const pw = box.width * width;
-          const ph = box.height * height;
-          return (
-            <Rect
-              key={`bbox-${index}`}
-              x={px}
-              y={py}
-              width={pw}
-              height={ph}
-              stroke={color}
-              strokeWidth={2.5}
-              rx={4}
-              fill="none"
-              strokeOpacity={0.9}
-            />
-          );
-        })}
-      </Svg>
-    </View>
-  );
-}
-
-function jetColormap(t: number): string {
-  const clamp = (v: number) => Math.max(0, Math.min(1, v));
-  let r = clamp(1.5 - Math.abs(4 * t - 3));
-  let g = clamp(1.5 - Math.abs(4 * t - 2));
-  let b = clamp(1.5 - Math.abs(4 * t - 1));
-  const ri = Math.round(r * 255);
-  const gi = Math.round(g * 255);
-  const bi = Math.round(b * 255);
-  return `rgb(${ri},${gi},${bi})`;
-}
-
-function HeatmapOverlay({ 
-  cam_grid,
-  width,
-  height,
-}: { 
-  cam_grid: any;
-  width: number;
-  height: number;
-}) {
-  const cells = useMemo(() => {
-    if (!cam_grid || !width || !height) return [];
-
-    const gridSize: number = cam_grid.grid_size ?? 7;
-    const values: number[][] = cam_grid.values ?? [];
-    if (!values.length) return [];
-
-    let maxVal = 0;
-    values.forEach((row: number[]) => 
-      row.forEach((v: number) => { if (v > maxVal) maxVal = v; })
-    );
-    if (maxVal === 0) return [];
-
-    const cellW = width / gridSize;
-    const cellH = height / gridSize;
-    const result: { x: number; y: number; w: number; h: number; color: string; opacity: number }[] = [];
-
-    values.forEach((row: number[], rowIndex: number) => {
-      row.forEach((intensity: number, colIndex: number) => {
-        const normalized = intensity / maxVal;
-        if (normalized > 0.05) {
-          result.push({
-            x: colIndex * cellW,
-            y: rowIndex * cellH,
-            w: cellW,
-            h: cellH,
-            color: jetColormap(normalized),
-            opacity: 0.35 + normalized * 0.50,
-          });
-        }
-      });
-    });
-
-    return result;
-  }, [cam_grid, width, height]);
-
-  if (!width || !height) return null;
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Svg width={width} height={height}>
-        {cells.map((cell, i) => (
-          <Rect
-            key={`hm-${i}`}
-            x={cell.x}
-            y={cell.y}
-            width={cell.w}
-            height={cell.h}
-            fill={cell.color}
-            fillOpacity={cell.opacity}
-          />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-
-interface ResolvedMarker {
-  cx: number;
-  cy: number;
-  id: string;
-}
-
-function StrokeDiffOverlay({ 
-  stroke_markers, 
-  color,
-  width,
-  height,
-}: { 
-  stroke_markers: any; 
-  color: string;
-  width: number;
-  height: number;
-}) {
-  const resolvedMarkers = useMemo((): ResolvedMarker[] => {
-    if (!stroke_markers?.markers || !width || !height) return [];
-    return stroke_markers.markers.map((m: any) => ({
-      cx: (m.cx_norm ?? m.cx ?? 0) * width,
-      cy: (m.cy_norm ?? m.cy ?? 0) * height,
-      id: String(m.id ?? ''),
-    }));
-  }, [stroke_markers, width, height]);
-
-  const lines = useMemo(() => {
-    if (resolvedMarkers.length < 2) return [];
-    const segs: { x1: number; y1: number; x2: number; y2: number }[] = [];
-    for (let i = 0; i < resolvedMarkers.length - 1; i++) {
-      segs.push({
-        x1: resolvedMarkers[i].cx,
-        y1: resolvedMarkers[i].cy,
-        x2: resolvedMarkers[i + 1].cx,
-        y2: resolvedMarkers[i + 1].cy,
-      });
-    }
-    return segs;
-  }, [resolvedMarkers]);
-
-  if (!width || !height) return null;
-
-  const CIRCLE_RADIUS = 14;
-  const FONT_SIZE = 11;
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Svg width={width} height={height}>
-        {lines.map((seg, i) => (
-          <Line
-            key={`sd-line-${i}`}
-            x1={seg.x1}
-            y1={seg.y1}
-            x2={seg.x2}
-            y2={seg.y2}
-            stroke={color}
-            strokeWidth={1.5}
-            strokeOpacity={0.75}
-          />
-        ))}
-        {resolvedMarkers.map((m: ResolvedMarker, i: number) => (
-          <React.Fragment key={`sd-marker-${i}`}>
-            <Circle cx={m.cx} cy={m.cy} r={CIRCLE_RADIUS} fill={color} fillOpacity={0.92} />
-            <Circle cx={m.cx} cy={m.cy} r={CIRCLE_RADIUS} stroke="white" strokeWidth={1.5} fill="none" />
-            <SvgText
-              x={m.cx}
-              y={m.cy + FONT_SIZE * 0.38}
-              textAnchor="middle"
-              fill="white"
-              fontSize={FONT_SIZE}
-              fontWeight="bold"
-            >
-              {m.id}
-            </SvgText>
-          </React.Fragment>
-        ))}
-      </Svg>
-    </View>
-  );
-}
 
 export function SignatureProcessingView() {
   const router = useRouter();
@@ -442,8 +227,6 @@ export function SignatureResultsScreen() {
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
 
-  
-
   const activeTone = useMemo(() => {
     if (activeView === 'Heatmap') {
       return { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' };
@@ -456,12 +239,30 @@ export function SignatureResultsScreen() {
     return { bg: '#E2E8F0', edge: '#94A3B8', badge: '#334155' };
   }, [activeView]);
 
+  const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
+  'Heatmap': 'heatmap',
+  'Bounding Box': 'bbox',
+  'Stroke Diff': 'stroke_diff',
+  };
+
   const payloadRows = useMemo(() => {
     if (!analysisResult) return []; 
     const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
     const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
     return buildPayloadRows(analysisResult, verdictLabel, currentCase);
   }, [analysisResult, currentCase]);
+
+  const gradcamSlots = useMemo(
+    () => parseGradcamBlobIds(analysisResult?.gradcam_blob_ids ?? []),
+    [analysisResult],
+  );
+
+  const suspectOverlayUri = useMemo(() => {
+  const path = gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]];
+  return currentCaseId && path
+    ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, path))
+    : null;
+}, [currentCaseId, gradcamSlots, activeView]);
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
@@ -487,7 +288,7 @@ export function SignatureResultsScreen() {
 
   // REAL result 
   const activeResult = analysisResult; 
-  
+ 
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
@@ -602,7 +403,7 @@ export function SignatureResultsScreen() {
           })}
         </View>
 
-        <View style={styles.thumbsGrid}>
+      <View style={styles.thumbsGrid}>
           <View style={styles.smallThumbsGrid}>
             {referenceSlots.map((i) => {
               const uri = uploadedReferences[i];
@@ -627,7 +428,6 @@ export function SignatureResultsScreen() {
                   </Pressable>
                 );
               }
-
               return (
                 <View key={`r-${i}`} style={[styles.thumbCardSmall, styles.thumbPlaceholderCard, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
                   <View style={[styles.thumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
@@ -639,58 +439,33 @@ export function SignatureResultsScreen() {
               );
             })}
           </View>
-
+         
           {uploadedSuspect ? (
-                <Pressable
-                  style={styles.largeThumbWrap}
-                  onPress={() => openPreview({ uri: uploadedSuspect.split('?')[0] }, 'Uploaded Suspected Signature')}
-                >
-                  <View
-                    style={styles.largeThumbImageWrap}
-                    onLayout={(e) => {
-                      const { width, height } = e.nativeEvent.layout;
-                      setSuspectImageSize({ width, height });
-                    }}
-                  >
-                    <ExpoImage
-                      source={{ uri: uploadedSuspect.split('?')[0] }}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="fill"
-                    />
-
-                    {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
-                      <BoundingBoxOverlay
-                        boxes={[{
-                          x: (activeResult.ink_bbox as any).x ?? 0,
-                          y: (activeResult.ink_bbox as any).y ?? 0,
-                          width: (activeResult.ink_bbox as any).w ?? 0,
-                          height: (activeResult.ink_bbox as any).h ?? 0,
-                        }]}
-                        color={activeTone.badge}
-                        width={suspectImageSize.width}
-                        height={suspectImageSize.height}
-                      />
-                    )}
-                    {activeView === 'Heatmap' && activeResult?.cam_grid && (
-                      <HeatmapOverlay
-                        cam_grid={activeResult.cam_grid}
-                        width={suspectImageSize.width}
-                        height={suspectImageSize.height}
-                      />
-                    )}
-                    {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
-                      <StrokeDiffOverlay
-                        stroke_markers={activeResult.stroke_markers}
-                        color={activeTone.badge}
-                        width={suspectImageSize.width}
-                        height={suspectImageSize.height}
-                      />
-                    )}
-                  </View>
-                  <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
-                </Pressable>
+            <Pressable
+              style={styles.largeThumbWrap}
+              onPress={() => openPreview(
+              { uri: gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]] ? suspectOverlayUri! : uploadedSuspect.split('?')[0] },
+              'Uploaded Suspected Signature')}
+            >
+              <View style={styles.largeThumbImageWrap}>
+                {gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]] ? (
+                <ExpoImage
+                  source={{ uri: suspectOverlayUri! }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
+                />
               ) : (
+                <ExpoImage
+                  source={{ uri: uploadedSuspect.split('?')[0] }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
+                />
+              )}
+          </View>
 
+              <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
+            </Pressable>
+          ) : (
             <View style={[styles.largeThumbWrap, styles.largeThumbPlaceholder, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
               <View style={[styles.largeThumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
                 <Ionicons name="scan-outline" size={28} color={activeTone.badge} />
@@ -738,53 +513,10 @@ export function SignatureResultsScreen() {
               </Pressable>
             </View>
             {previewSource !== null ? (
-              <View
-                style={[styles.previewImage, { overflow: 'hidden' }]}
-                onLayout={(e) => {
-                  const { width, height } = e.nativeEvent.layout;
-                  setPreviewImageSize({ width, height });
-                }}
-              >
-                <ExpoImage
-                  source={previewSource}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="fill"
-                />
-
-                {uploadedSuspect && previewSource.uri === uploadedSuspect.split('?')[0] && (
-                  <>
-                    {activeView === 'Bounding Box' && activeResult?.ink_bbox && (
-                      <BoundingBoxOverlay
-                        boxes={[{
-                          x: (activeResult.ink_bbox as any).x ?? 0,
-                          y: (activeResult.ink_bbox as any).y ?? 0,
-                          width: (activeResult.ink_bbox as any).w ?? 0,
-                          height: (activeResult.ink_bbox as any).h ?? 0,
-                        }]}
-                        color={activeTone.badge}
-                        width={previewImageSize.width}
-                        height={previewImageSize.height}
-                      />
-                    )}
-                    {activeView === 'Heatmap' && activeResult?.cam_grid && (
-                      <HeatmapOverlay
-                        cam_grid={activeResult.cam_grid}
-                        width={previewImageSize.width}
-                        height={previewImageSize.height}
-                      />
-                    )}
-                    {activeView === 'Stroke Diff' && activeResult?.stroke_markers && (
-                      <StrokeDiffOverlay
-                        stroke_markers={activeResult.stroke_markers}
-                        color={activeTone.badge}
-                        width={previewImageSize.width}
-                        height={previewImageSize.height}
-                      />
-                    )}
-                  </>
-                )}
-              </View>
-            ) : null}
+            <View style={[styles.previewImage, { overflow: 'hidden' }]}>
+              <ExpoImage source={previewSource} style={StyleSheet.absoluteFill} contentFit="contain" />
+            </View>
+          ) : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -797,8 +529,8 @@ export function SignatureResultsScreen() {
           <Text style={styles.backButtonSecondaryText}>Back to Dashboard</Text>
         </Pressable>
       </View>
-
     </SafeAreaView>
+   
   );
 }
 
@@ -818,23 +550,6 @@ function TopBar({ title, step, onBackPress }: { title: string; step: string; onB
   );
 }
 
-function StepHeader({
-  title,
-  subtitle,
-  accentColor,
-}: {
-  title: string;
-  subtitle: string;
-  accentColor: string;
-}) {
-  return (
-    <View style={styles.headerWrap}>
-      <Text style={styles.headerTitle}>{title}</Text>
-      <Text style={styles.headerSubtitle}>{subtitle}</Text>
-      <View style={[styles.headerBar, { backgroundColor: accentColor }]} />
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   screen: {

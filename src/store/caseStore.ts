@@ -534,7 +534,7 @@ export const useCaseStore = create<CaseStore>()(
                 const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
                 const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
                 const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
-                const gradcamBlobId = processResponse?.GradcamBlobId ?? processResponse?.gradcam_blob_id ?? '';
+                const gradcamBlobIds = processResponse?.GradcamBlobIds ?? processResponse?.gradcam_blob_ids ?? [];
 
                 if (verdict) {
                   finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
@@ -545,48 +545,47 @@ export const useCaseStore = create<CaseStore>()(
                   confidence_forged: confidenceForged,
                   confidence_genuine: confidenceGenuine,
                   distance,
-                  gradcam_blob_id: gradcamBlobId,
+                  gradcam_blob_ids: gradcamBlobIds,
                   threshold,
                   verdict: verdict as any,
                   Verdict: verdict as any,
-
-                  cam_grid: undefined,
-                  ink_bbox: undefined,
-                  stroke_markers: undefined,
-                  boxes: undefined,
-                  reference_boxes: undefined,
-                };
-
-                // Optionally fetch output.json for bounding box / heatmap overlay coords
-                try {
-                  const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
-                  if (resultsRes.ok) {
-                    const outputJson = await resultsRes.json();
-                    caseLog.info('CaseStore:Submit', 'output.json received', outputJson);
-                    analysisResult.cam_grid = outputJson?.cam_grid ?? undefined;
-                    analysisResult.ink_bbox = outputJson?.ink_bbox ?? undefined;
-                    analysisResult.stroke_markers = outputJson?.stroke_markers ?? undefined;
-
-                    // also wire to boxes for the existing BoundingBoxOverlay component
-                    analysisResult.boxes = outputJson?.ink_bbox ?? undefined;
-                    analysisResult.reference_boxes = outputJson?.stroke_markers ?? undefined;;
-                  }
-                } catch (outputErr) {
-                  caseLog.warn('CaseStore:Submit', 'output.json fetch failed (non-critical)', outputErr);
-                }
-
-              } catch (error) {
-                caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
-                analysisResult = null;
-              }
+              };
+            } catch (error) {
+              caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
+              analysisResult = null;
             }
+          }
+                //NO COORDINATES ANYMORE
+            //     // Optionally fetch output.json for bounding box / heatmap overlay coords
+            //     try {
+            //       const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
+            //       if (resultsRes.ok) {
+            //         const outputJson = await resultsRes.json();
+            //         caseLog.info('CaseStore:Submit', 'output.json received', outputJson);
+            //         analysisResult.cam_grid = outputJson?.cam_grid ?? undefined;
+            //         analysisResult.ink_bbox = outputJson?.ink_bbox ?? undefined;
+            //         analysisResult.stroke_markers = outputJson?.stroke_markers ?? undefined;
+
+            //         // also wire to boxes for the existing BoundingBoxOverlay component
+            //         analysisResult.boxes = outputJson?.ink_bbox ?? undefined;
+            //         analysisResult.reference_boxes = outputJson?.stroke_markers ?? undefined;;
+            //       }
+            //     } catch (outputErr) {
+            //       caseLog.warn('CaseStore:Submit', 'output.json fetch failed (non-critical)', outputErr);
+            //     }
+
+            //   } catch (error) {
+            //     caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
+            //     analysisResult = null;
+            //   }
+            // }
 
             // update local store with created case
             const savedCase: SavedCase = {
               ...currentDraft,
               caseId: caseId,
               createdAt: new Date().toISOString(),
-              status: finalStatus, // Now uses the actual result status instead of hardcoding 'Processing'
+              status: finalStatus, 
               analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
               mockTemplateNumber: get().nextMockTemplateNumber,
@@ -653,7 +652,7 @@ export const useCaseStore = create<CaseStore>()(
           } finally {
             set({ isSubmitting: false });
           }
-        },
+            },
 
         resetMockDatabase: () => {
           caseLog.warn('CaseStore:Reset', 'Resetting mock database to initial state');
