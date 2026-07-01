@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-
+import * as ImageManipulator from 'expo-image-manipulator';
 import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl } from '@/constants/api';
 import {
@@ -475,22 +475,29 @@ export const useCaseStore = create<CaseStore>()(
 
             caseLog.info('CaseStore:Submit', 'Uploading images for case', { caseId });
 
+            async function normalizeToPng(uri: string): Promise<string> {
+                const result = await ImageManipulator.manipulateAsync(
+                  uri,
+                  [], // no resize/crop — format conversion only
+                  { format: ImageManipulator.SaveFormat.PNG },
+                );
+                return result.uri;
+              }
             // Upload reference images sequentially
             for (let i = 0; i < currentDraft.uploads.references.length; i++) {
               const uri = currentDraft.uploads.references[i];
               if (!uri) continue;
 
-              
-              const cleanUri = stripFingerprintSuffix(uri);  
+              const cleanUri = stripFingerprintSuffix(uri);
+              const pngUri = await normalizeToPng(cleanUri);
+
               const fd = new FormData();
-              fd.append('file', { uri: cleanUri, name: `reference-${i + 1}.jpg`, type: 'image/jpeg' } as any);
-              const uploadPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadReference(caseId)}?index=${i + 1}`); // STARTS THE INDEX AT 1 FOR THE BACKEND
+              fd.append('file', { uri: pngUri, name: `reference-${i + 1}.png`, type: 'image/png' } as any);
+              const uploadPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadReference(caseId)}?index=${i + 1}`);
 
               const upRes = await fetch(uploadPath, {
                 method: 'POST',
-                headers: {
-                  Accept: 'application/json',
-                },
+                headers: { Accept: 'application/json' },
                 body: fd as any,
               });
 
@@ -501,10 +508,12 @@ export const useCaseStore = create<CaseStore>()(
 
             // Upload suspected image
             if (currentDraft.uploads.suspect) {          
-                const cleanSuspect = stripFingerprintSuffix(currentDraft.uploads.suspect);  
-                const fd = new FormData();
-                fd.append('file', { uri: cleanSuspect, name: 'suspect.jpg', type: 'image/jpeg' } as any);
-                const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=1`);
+              const cleanSuspect = stripFingerprintSuffix(currentDraft.uploads.suspect);
+              const pngSuspect = await normalizeToPng(cleanSuspect);
+
+              const fd = new FormData();
+              fd.append('file', { uri: pngSuspect, name: 'suspect.png', type: 'image/png' } as any);
+              const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=1`);
                 const upRes = await fetch(upPath, {
                   method: 'POST',
                   headers: {
