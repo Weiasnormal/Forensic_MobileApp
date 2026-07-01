@@ -9,7 +9,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
     getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
     parseGradcamBlobIds,
     type OverlayVariant,
@@ -25,6 +24,11 @@ const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#ffffff';
 
 const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
+const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
+  'Heatmap': 'heatmap',
+  'Bounding Box': 'bbox',
+  'Stroke Diff': 'stroke_diff',
+  };
 type ViewMode = SignatureAnalysisViewMode;
 
 const processingSteps: ProcessingStep[] = [
@@ -196,8 +200,6 @@ export function SignatureProcessingView() {
 }
 
 export function SignatureResultsScreen() {
-  const [previewImageSize, setPreviewImageSize] = useState({ width: 0, height: 0 });
-  const [suspectImageSize, setSuspectImageSize] = useState({ width: 0, height: 0 });
   const router = useRouter();
   const nav = router as any;
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
@@ -239,12 +241,6 @@ export function SignatureResultsScreen() {
     return { bg: '#E2E8F0', edge: '#94A3B8', badge: '#334155' };
   }, [activeView]);
 
-  const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
-  'Heatmap': 'heatmap',
-  'Bounding Box': 'bbox',
-  'Stroke Diff': 'stroke_diff',
-  };
-
   const payloadRows = useMemo(() => {
     if (!analysisResult) return []; 
     const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
@@ -257,6 +253,15 @@ export function SignatureResultsScreen() {
     [analysisResult],
   );
 
+const referenceOverlayUris = useMemo(() => {
+  return gradcamSlots.references.map((refSlot) => {
+    const ref = refSlot[VIEW_MODE_TO_VARIANT[activeView]];
+    return currentCaseId && ref
+      ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.folder, ref.fileName))
+      : null;
+  });
+}, [currentCaseId, gradcamSlots, activeView]);
+
 const suspectOverlayUri = useMemo(() => {
   const ref = gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]];
   return currentCaseId && ref
@@ -264,17 +269,19 @@ const suspectOverlayUri = useMemo(() => {
     : null;
 }, [currentCaseId, gradcamSlots, activeView]);
 
+  //Prefetch all overlay images to reduce flicker when switching views
   useEffect(() => {
-  const refs = currentCase?.uploads.references ?? [];
-  const urisToPrefetch = [
-    ...refs.filter(Boolean).map((uri) => uri!.split('?')[0]),
-    suspectOverlayUri,
-  ].filter(Boolean) as string[];
+    const refs = currentCase?.uploads.references ?? [];
+    const urisToPrefetch = [
+      ...refs.filter(Boolean).map((uri) => uri!.split('?')[0]),
+      suspectOverlayUri,
+      ...referenceOverlayUris,
+    ].filter(Boolean) as string[];
 
-  if (urisToPrefetch.length > 0) {
-    ExpoImage.prefetch(urisToPrefetch);
-  }
-}, [currentCase, suspectOverlayUri]);
+    if (urisToPrefetch.length > 0) {
+      ExpoImage.prefetch(urisToPrefetch);
+    }
+  }, [currentCase, suspectOverlayUri, referenceOverlayUris]);
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
@@ -422,15 +429,21 @@ const suspectOverlayUri = useMemo(() => {
               const referenceLabel = `SIG ${String(i + 1).padStart(2, '0')}`;
 
               if (uri) {
+                const overlayUri = referenceOverlayUris[i];
+                const displayUri = overlayUri ?? uri.split('?')[0];
+                const previewTitle = overlayUri
+                  ? `${referenceLabel} — ${activeView}`
+                  : `Uploaded Reference ${String(i + 1).padStart(2, '0')}`;
+
                 return (
                   <Pressable
                     key={`r-${i}`}
                     style={styles.thumbCardSmall}
-                    onPress={() => openPreview({ uri: uri.split('?')[0] }, `Uploaded Reference ${String(i + 1).padStart(2, '0')}`)}
+                    onPress={() => openPreview({ uri: displayUri }, previewTitle)}
                   >
                     <View style={styles.thumbImageWrap}>
                       <ExpoImage
-                        source={{ uri: uri.split('?')[0] }}
+                        source={{ uri: displayUri }}
                         style={StyleSheet.absoluteFill}
                         contentFit="cover"
                       />
@@ -455,9 +468,13 @@ const suspectOverlayUri = useMemo(() => {
           {uploadedSuspect ? (
             <Pressable
               style={styles.largeThumbWrap}
-              onPress={() => openPreview(
-              { uri: gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]] ? suspectOverlayUri! : uploadedSuspect.split('?')[0] },
-              'Uploaded Suspected Signature')}
+              onPress={() => {
+                const hasOverlay = Boolean(gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]]);
+                openPreview(
+                  { uri: hasOverlay ? suspectOverlayUri! : uploadedSuspect.split('?')[0] },
+                  hasOverlay ? `Suspected Signature — ${activeView}` : 'Uploaded Suspected Signature'
+                );
+              }}
             >
               <View style={styles.largeThumbImageWrap}>
                 {gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]] ? (
