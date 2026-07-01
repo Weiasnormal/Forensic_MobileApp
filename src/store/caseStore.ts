@@ -484,7 +484,7 @@ export const useCaseStore = create<CaseStore>()(
               const cleanUri = stripFingerprintSuffix(uri);  
               const fd = new FormData();
               fd.append('file', { uri: cleanUri, name: `reference-${i + 1}.jpg`, type: 'image/jpeg' } as any);
-              const uploadPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadReference(caseId)}?index=${i}`);
+              const uploadPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadReference(caseId)}?index=${i + 1}`); // STARTS THE INDEX AT 1 FOR THE BACKEND
 
               const upRes = await fetch(uploadPath, {
                 method: 'POST',
@@ -504,7 +504,7 @@ export const useCaseStore = create<CaseStore>()(
                 const cleanSuspect = stripFingerprintSuffix(currentDraft.uploads.suspect);  
                 const fd = new FormData();
                 fd.append('file', { uri: cleanSuspect, name: 'suspect.jpg', type: 'image/jpeg' } as any);
-                const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=0`);
+                const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=1`);
                 const upRes = await fetch(upPath, {
                   method: 'POST',
                   headers: {
