@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import * as FileSystem from 'expo-file-system';
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisVerdictLabel,
@@ -90,69 +89,6 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string,
       detail: 'Compared against the provided reference samples.' },
   ];
 }
-
-function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string, findings: ReturnType<typeof buildPayloadRows>, currentCase: any) {
-  const { isSuspected, confidence: confidenceRaw, verdict: finalVerdict } = resolveCaseVerdict(currentCase, result);
-  const confidence = confidenceRaw.toFixed(1) + '%';
-
-  const finalThreshold = currentCase?.threshold ?? currentCase?.Threshold ?? result?.threshold ?? result?.Threshold ?? 0;
-  const isForged = isSuspected;
-  const themeColor = isForged ? '#eb5757' : '#16a34a';
-
-  const findingsRowsHtml = findings.map(f => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #eef2f7;"><strong>${f.metric}</strong><br/><span style="color:#64748b; font-size:12px;">${f.detail}</span></td>
-      <td style="padding: 12px; border-bottom: 1px solid #eef2f7; text-align:right; font-weight:600; color:${isForged ? '#b91c1c' : '#15803d'}">${f.value}</td>
-    </tr>
-  `).join('');
-
-  return `
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #0f172a; }
-          h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.5px; }
-          .sub { color: #64748b; margin-bottom: 24px; font-size: 14px; }
-          .card { border: 1px solid #dbe5f1; border-radius: 12px; padding: 24px; margin-bottom: 24px; background-color: #fafbfc; }
-          .verdict { font-size: 24px; font-weight: 800; color: ${themeColor}; margin-bottom: 4px; }
-          .row { display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid #e2e8f0; }
-          .row:first-of-type { border-top: 0; }
-          .label { color: #475569; font-weight: 600; font-size: 14px; }
-          .value { color: #0f172a; font-weight: 700; text-align: right; font-size: 14px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-          th { text-align: left; background-color: #f1f5f9; padding: 12px; font-weight: 700; color: #334155; border-radius: 6px 6px 0 0; }
-        </style>
-      </head>
-      <body>
-        <h1>AVERA Forensic Report</h1>
-        <div class="sub">Signature Analysis Output · Generated automatically</div>
-        
-        <div class="card">
-          <div class="verdict">${confidence}% ${verdictLabel}</div>
-          <div class="sub" style="margin-bottom: 16px;">Case ID: ${result.case_name || 'Unknown'}</div>
-          <div class="row"><div class="label">Genuine Confidence</div><div class="value">${((result.confidence_genuine ?? 0)).toFixed(2)}%</div></div>
-          <div class="row"><div class="label">Forged Confidence</div><div class="value">${((result.confidence_forged ?? 0)).toFixed(2)}%</div></div>
-          <div class="row"><div class="label">Distance Metric</div><div class="value">${(result.distance ?? 0).toFixed(6)}</div></div>
-          <div class="row"><div class="label">Decision Threshold</div><div class="value">${(finalThreshold ?? 0).toFixed(4)}</div></div>
-          <div class="row"><div class="label">GradCAM Reference</div><div class="value" style="font-family: monospace;">${(result.gradcam_blob_ids?.[0] ?? 'N/A')}</div></div>
-          </div>
-
-        <h3>Detailed Forensic Findings</h3>
-        <table>
-          <thead>
-            <tr><th>Metric / Detail</th><th style="text-align:right;">Analysis Value</th></tr>
-          </thead>
-          <tbody>
-            ${findingsRowsHtml}
-          </tbody>
-        </table>
-      </body>
-    </html>
-  `;
-}
-
-
 export function SignatureProcessingView() {
   const router = useRouter();
   const nav = router as any;
@@ -338,33 +274,35 @@ const suspectOverlayUri = useMemo(() => {
     useAnalysisFlowStore.setState({ currentAnalysisType: null });
     nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
   };
-
   const handleExportPdf = async () => {
-    try {
-      const { uri } = await Print.printToFileAsync({
-        html: buildSignaturePdfHtml(activeResult, verdictLabel, payloadRows, currentCase),
-      });
-
-      if (!uri) {
-        Alert.alert('Export failed', 'Unable to prepare the PDF report.');
+      if (!currentCaseId) {
+        Alert.alert('Error', 'Case ID is missing.');
         return;
       }
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Export PDF Report',
-          UTI: 'com.adobe.pdf',
-        });
-        return;
-      }
+      try {
+        const reportPdfUrl = buildApiUrl(`/cases/${currentCaseId}/results`);
+        const localUri = (FileSystem as any).documentDirectory + `AVERA_Forensic_Report_${currentCaseId}.pdf`;
 
-      Alert.alert('PDF ready', `Saved to: ${uri}`);
-    } catch (error) {
-      console.warn('Failed to export PDF report:', error);
-      Alert.alert('Export failed', 'Unable to create the PDF report.');
-    }
-  };
+        const { uri } = await FileSystem.downloadAsync(
+          reportPdfUrl,
+          localUri,
+        );
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Export Forensic PDF Report',
+            UTI: 'com.adobe.pdf', 
+          });
+        } else {
+          Alert.alert('Download Complete', `File saved to: ${uri}`);
+        }
+      } catch (error) {
+        console.warn('Failed to download PDF:', error);
+        Alert.alert('Export Failed', 'The PDF report is either still generating or unavailable.');
+      }
+    };
 
   const openPreview = (source: { uri: string }, label: string) => {
     setPreviewSource(source);
@@ -534,8 +472,9 @@ const suspectOverlayUri = useMemo(() => {
 
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
         <Pressable onPress={handleExportPdf} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Export PDF Report</Text>
+          <Text style={styles.primaryButtonText}>Export as PDF</Text>
         </Pressable>
+
         <Pressable onPress={handleBackToDashboard} style={[styles.backButtonSecondary, { marginTop: 12 }]}>
           <Text style={styles.backButtonSecondaryText}>Back to Dashboard</Text>
         </Pressable>

@@ -474,11 +474,12 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             caseLog.info('CaseStore:Submit', 'Uploading images for case', { caseId });
-
+            
+            // Helper to normalize images to PNG format
             async function normalizeToPng(uri: string): Promise<string> {
                 const result = await ImageManipulator.manipulateAsync(
                   uri,
-                  [], // no resize/crop — format conversion only
+                  [],
                   { format: ImageManipulator.SaveFormat.PNG },
                 );
                 return result.uri;
