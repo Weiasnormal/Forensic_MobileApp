@@ -9,6 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
     getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
     parseGradcamBlobIds,
     type OverlayVariant,
@@ -318,11 +319,14 @@ const suspectOverlayUri = useMemo(() => {
     ?? 'UNKNOWN';
   const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
   const isSuspected = verdictLabel === 'SUSPECTED';
+  const resolvedResultForConfidence: SignatureAnalysisResult = {
+    ...activeResult,
+    verdict: finalVerdict as any,
+    Verdict: finalVerdict as any,
+  };
   const confidenceValue = currentCase?.confidence 
     ?? currentCase?.Confidence 
-    ?? (isSuspected 
-      ? (activeResult.confidence_forged ?? 0) 
-      : (activeResult.confidence_genuine ?? 0));
+    ?? getSignatureAnalysisConfidence(resolvedResultForConfidence);
 
   const resultCardTheme = isSuspected
     ? {
