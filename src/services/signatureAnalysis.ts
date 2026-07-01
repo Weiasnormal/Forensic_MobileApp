@@ -1,13 +1,5 @@
 export type SignatureAnalysisVerdict = 'GENUINE' | 'FORGED';
 
-// export interface SignatureBoundingBox {
-//   x: number;      
-//   y: number;
-//   width: number;
-//   height: number;
-//   label?: string;
-// }
-
 export interface SignatureAnalysisResult {
   case_name?: string;
   confidence_forged: number;
@@ -15,18 +7,26 @@ export interface SignatureAnalysisResult {
   distance: number;
   gradcam_blob_ids: string[];
 
-  //cam_grid?: number[][];
-  //ink_bbox?: SignatureBoundingBox | SignatureBoundingBox[];
-  //stroke_markers?: any[];
-
-  //boxes?: SignatureBoundingBox[];
-  //reference_boxes?: SignatureBoundingBox[][];
-
   threshold?: number;
   Threshold?: number;
   verdict?: SignatureAnalysisVerdict;
   Verdict?: SignatureAnalysisVerdict;
 }
+
+export interface ResolvedCaseVerdict {
+  verdict: SignatureAnalysisVerdict | 'UNKNOWN';
+  verdictLabel: string;
+  isSuspected: boolean;
+  confidence: number;
+}
+
+type VerdictSource = {
+  verdict?: string;
+  Verdict?: string;
+  confidence?: number;
+  Confidence?: number;
+} | null | undefined;
+
 
 export type FrontendCaseStatus = 'Processing' | 'Genuine' | 'Suspected';
 
@@ -87,4 +87,36 @@ export function parseGradcamBlobIds(blobIds: string[]): ParsedGradcamSlots {
   }
 
   return { references, suspect };
+}
+
+export function resolveCaseVerdict(
+  currentCase: VerdictSource,
+  result: SignatureAnalysisResult | null | undefined,
+): ResolvedCaseVerdict {
+  const verdict = (currentCase?.verdict ??
+    currentCase?.Verdict ??
+    result?.Verdict ??
+    result?.verdict ??
+    'UNKNOWN') as SignatureAnalysisVerdict | 'UNKNOWN';
+
+  if (verdict === 'UNKNOWN') {
+    return {
+      verdict: 'UNKNOWN',
+      verdictLabel: 'UNKNOWN',
+      isSuspected: false,
+      confidence: currentCase?.confidence ?? currentCase?.Confidence ?? 0,
+    };
+  }
+
+  const verdictLabel = getSignatureAnalysisVerdictLabel(verdict);
+  const isSuspected = verdictLabel === 'SUSPECTED';
+
+  const confidence =
+    currentCase?.confidence ??
+    currentCase?.Confidence ??
+    (result
+      ? getSignatureAnalysisConfidence({ ...result, verdict, Verdict: verdict })
+      : 0);
+
+  return { verdict, verdictLabel, isSuspected, confidence };
 }

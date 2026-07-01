@@ -9,9 +9,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
     getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisConfidence,
     getSignatureAnalysisVerdictLabel,
     parseGradcamBlobIds,
+    resolveCaseVerdict,
     type OverlayVariant,
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
@@ -61,8 +61,9 @@ const processingSteps: ProcessingStep[] = [
 ];
 
 function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string, currentCase: any) {
-  const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
-  const isForged = finalVerdict === 'FORGED';
+  const { isSuspected } = resolveCaseVerdict(currentCase, result);
+  //const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
+  const isForged = isSuspected; //finalVerdict === 'FORGED';
   
   return [
     { metric: 'General information', 
@@ -91,21 +92,11 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string,
 }
 
 function buildSignaturePdfHtml(result: SignatureAnalysisResult, verdictLabel: string, findings: ReturnType<typeof buildPayloadRows>, currentCase: any) {
-  const finalVerdict = currentCase?.verdict 
-    ?? currentCase?.Verdict 
-    ?? result?.Verdict 
-    ?? result?.verdict 
-    ?? 'UNKNOWN';
-  const isForgedPdf = finalVerdict === 'FORGED';
-  const confidenceRaw = currentCase?.confidence 
-    ?? currentCase?.Confidence 
-    ?? (isForgedPdf 
-      ? (result.confidence_forged ?? 0)
-      : (result.confidence_genuine ?? 0));
+  const { isSuspected, confidence: confidenceRaw, verdict: finalVerdict } = resolveCaseVerdict(currentCase, result);
   const confidence = confidenceRaw.toFixed(1) + '%';
 
   const finalThreshold = currentCase?.threshold ?? currentCase?.Threshold ?? result?.threshold ?? result?.Threshold ?? 0;
-  const isForged = finalVerdict === 'FORGED';
+  const isForged = isSuspected;
   const themeColor = isForged ? '#eb5757' : '#16a34a';
 
   const findingsRowsHtml = findings.map(f => `
@@ -312,22 +303,9 @@ const suspectOverlayUri = useMemo(() => {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const finalVerdict = currentCase?.verdict 
-    ?? currentCase?.Verdict 
-    ?? activeResult?.Verdict 
-    ?? activeResult?.verdict 
-    ?? 'UNKNOWN';
-  const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
-  const isSuspected = verdictLabel === 'SUSPECTED';
-  const resolvedResultForConfidence: SignatureAnalysisResult = {
-    ...activeResult,
-    verdict: finalVerdict as any,
-    Verdict: finalVerdict as any,
-  };
-  const confidenceValue = currentCase?.confidence 
-    ?? currentCase?.Confidence 
-    ?? getSignatureAnalysisConfidence(resolvedResultForConfidence);
-
+  const { verdict: verdictLabel, isSuspected, confidence: confidenceValue } =
+  resolveCaseVerdict(currentCase, activeResult);
+  
   const resultCardTheme = isSuspected
     ? {
         cardBg: '#FEF1F1',
