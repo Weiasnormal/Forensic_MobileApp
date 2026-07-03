@@ -13,7 +13,7 @@ import PendingCard from '../../_components/pendingCards';
 import { formatAnalysisTypeLabel, getPendingCards, type SavedCase, useCaseStore } from '../../store/caseStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
-const useRouter2 = useRouter;
+
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
 
@@ -32,8 +32,6 @@ export default function UserDashboardScreen() {
   const router = useRouter();
   const nav = router as any;
   const cases = useCaseStore((state) => state.cases);
-  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
-  const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
   const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
   const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend); //added method to refresh cases from backend
   const { user, load } = useUser();
@@ -166,7 +164,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
             {pendingCards.map((item) => (
               <PendingCard
                 key={`${item.id}-${item.status}`}
-                id={item.id}
+                caseCode={item.id}
                 name={item.name}
                 status={item.status}
                 onPress={() => {
@@ -200,7 +198,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
         {latestCases.map((item) => (
           <CaseCard
             key={item.caseId}
-            id={item.caseId}
+            caseCode={item.caseId ?? item.caseCode}
             createdAt={item.createdAt}
             type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
             name={`${item.subjectName} · ${item.documentType}`}

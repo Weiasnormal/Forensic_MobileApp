@@ -89,7 +89,8 @@ function normalizePriority(value: unknown): AnalysisPriority {
 }
 
 function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
-  const caseId = record.caseCode?.trim() || record.id?.trim();
+  const caseId = record.id?.trim();
+  const caseCode = record.caseCode?.trim();
 
   if (!caseId || !record.createdAt) {
     return null;
@@ -97,6 +98,7 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
 
   return {
     caseId,
+    caseCode: caseCode || caseId,
     subjectName: record.subjectName?.trim() || 'No Subject',
     examiner: record.examiner?.trim() || 'Unknown',
     documentType: DEFAULT_DOCUMENT_TYPE,

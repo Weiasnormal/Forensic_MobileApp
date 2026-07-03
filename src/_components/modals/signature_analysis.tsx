@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisVerdictLabel,
@@ -239,7 +239,7 @@ const suspectOverlayUri = useMemo(() => {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const { verdict: verdictLabel, isSuspected, confidence: confidenceValue } =
+  const { verdictLabel, isSuspected, confidence: confidenceValue } =
   resolveCaseVerdict(currentCase, activeResult);
   
   const resultCardTheme = isSuspected
@@ -282,7 +282,7 @@ const suspectOverlayUri = useMemo(() => {
 
       try {
         const reportPdfUrl = buildApiUrl(`/cases/${currentCaseId}/results`);
-        const localUri = (FileSystem as any).documentDirectory + `AVERA_Forensic_Report_${currentCaseId}.pdf`;
+        const localUri = FileSystem.documentDirectory + `AVERA_Forensic_Report_${currentCaseId}.pdf`;
 
         const { uri } = await FileSystem.downloadAsync(
           reportPdfUrl,
@@ -316,20 +316,36 @@ const suspectOverlayUri = useMemo(() => {
 
   const referenceSlots = [0, 1, 2, 3] as const;
 
+  const processingTime = activeResult?.analysisTimeMs 
+    ? (activeResult.analysisTimeMs / 1000).toFixed(2) 
+    : null;
+
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar title="Upload Signatures" step={""} onBackPress={() => nav.back()} />
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(160, insets.bottom + 120) }]} showsVerticalScrollIndicator={false}>
-        <View style={[styles.heroResultWrap, { backgroundColor: resultCardTheme.cardBg }]}>
-          <View style={[styles.heroBadge, { backgroundColor: resultCardTheme.iconBg }]}>
-            <Ionicons name={resultCardTheme.iconName} size={28} color={resultCardTheme.iconColor} />
-          </View>
-          <View style={styles.heroTextWrap}>
-            <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>{(confidenceValue || 0).toFixed(1)+ '%'} <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>{verdictLabel}</Text></Text>
-            <Text style={[styles.heroCase, { color: resultCardTheme.subtleText }]}>VERDICT · {activeResult.case_name}</Text>
-          </View>
+      <View style={[styles.heroResultWrap, { backgroundColor: resultCardTheme.cardBg }]}>
+        <View style={[styles.heroBadge, { backgroundColor: resultCardTheme.iconBg }]}>
+          <Ionicons name={resultCardTheme.iconName} size={28} color={resultCardTheme.iconColor} />
         </View>
+        <View style={styles.heroTextWrap}>
+          <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>
+            {(confidenceValue || 0).toFixed(1) + '%'}{' '}
+            <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>{verdictLabel}</Text>
+          </Text>
+
+          <Text style={[styles.heroCase, { color: resultCardTheme.subtleText }]}>
+            VERDICT · {activeResult.case_name}
+          </Text>
+
+          {processingTime && (
+            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 6, fontWeight: '500' }}>
+              Analysis completed in {processingTime}s
+            </Text>
+          )}
+        </View>
+      </View>
 
         <View style={styles.viewTabsRow}>
           {viewModes.map((mode) => {

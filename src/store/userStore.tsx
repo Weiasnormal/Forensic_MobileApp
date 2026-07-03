@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type UserProfile = {
@@ -118,7 +118,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const startTime = performance.now();
     log.info('UserStore:Image', 'Starting image copy operation', { sourceUri: uri });
     
-    const documentsRoot = (FileSystem as any).documentDirectory;
+    const documentsRoot = FileSystem.documentDirectory;
 
     if (!documentsRoot) {
       log.warn('UserStore:Image', 'Document directory not available - using original URI', { uri });
@@ -145,14 +145,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       log.info('UserStore:Image', 'Creating avatar directory');
-      await (FileSystem as any).makeDirectoryAsync(avatarDirectory, { intermediates: true });
+      await FileSystem.makeDirectoryAsync(avatarDirectory, { intermediates: true });
       
       if (uri.startsWith('content://')) {
         log.info('UserStore:Image', 'Using downloadAsync for content:// URI (Android)');
-        await (FileSystem as any).downloadAsync(uri, targetUri);
+        await FileSystem.downloadAsync(uri, targetUri);
       } else {
         log.info('UserStore:Image', 'Using copyAsync for file URI');
-        await (FileSystem as any).copyAsync({ from: uri, to: targetUri });
+        await FileSystem.copyAsync({ from: uri, to: targetUri });
       }
       
       const copyTime = (performance.now() - startTime).toFixed(2);

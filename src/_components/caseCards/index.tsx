@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export type CaseStatus = 'Suspected' | 'Genuine' | 'Processing';
 
 interface CaseCardProps {
-	id: string;
+	caseCode: string;
 	type: string;
 	name: string;
 	status: CaseStatus;
@@ -33,7 +33,7 @@ const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string
 	// Completed state removed: use 'Suspected' or 'Genuine' instead
 };
 
-export default function CaseCard({ id, type, name, status, createdAt, onPress }: CaseCardProps) {
+export default function CaseCard({ caseCode, type, name, status, createdAt, onPress }: CaseCardProps) {
 	const style = statusStyles[status] ?? statusStyles.Processing;
 
 	return (
@@ -45,7 +45,7 @@ export default function CaseCard({ id, type, name, status, createdAt, onPress }:
 			<View style={[styles.accentLine, { backgroundColor: style.borderColor }]} />
 			<View style={styles.header}>
 				<View style={{ flex: 1 }}>
-					<Text style={styles.id}>{id}</Text>
+					<Text style={styles.id}>{caseCode}</Text>
 					<Text style={styles.typeLabel}>{type}</Text>
 
 				</View>

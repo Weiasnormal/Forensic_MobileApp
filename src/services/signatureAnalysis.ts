@@ -11,6 +11,9 @@ export interface SignatureAnalysisResult {
   Threshold?: number;
   verdict?: SignatureAnalysisVerdict;
   Verdict?: SignatureAnalysisVerdict;
+
+  report_filename?: string; 
+  analysisTimeMs?: number;
 }
 
 export interface ResolvedCaseVerdict {

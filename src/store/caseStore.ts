@@ -38,7 +38,7 @@ export type PendingCardStatus = 'draft' | 'processing' | 'result-ready';
 const DEFAULT_ANALYSIS_TYPE: AnalysisType = 'SIG';
 
 export interface DraftUploads {
-  references: Array<string | null>;
+  references: (string | null)[];
   suspect: string | null;
 }
 
@@ -57,7 +57,7 @@ export interface SavedCase extends DraftCase {
   status: CaseStatus;
   analysisType: AnalysisType;
   resultViewed?: boolean;
-
+  caseCode?: string; 
   verdict?: string;
   Verdict?: string;
   confidence?: number;
@@ -400,8 +400,9 @@ export const useCaseStore = create<CaseStore>()(
         
 
         submitNewCase: async () => {
-          const startTime = performance.now();
           caseLog.info('CaseStore:Submit', 'Submitting new case (networked)');
+
+          const startTime = Date.now();
 
           const currentDraft = get().draftSignatureCase;
 
@@ -450,17 +451,16 @@ export const useCaseStore = create<CaseStore>()(
               throw new Error(`Create case failed (${createRes.status})`);
             }
 
-            // Try to read returned id from JSON body, otherwise from Location header
-            let caseId: string | null = null;
-            try {
-              const json = await createRes.json();
-              if (json && (json.id || json)) {
-                caseId = (json.id ?? json).toString();
-              }
-            } catch (_) {
-              // ignore
-            }
-
+              let caseId: string | null = null;
+              let caseCode: string | null = null;
+              try {
+                const json = await createRes.json();
+                if (json) {
+                  caseId = (json.id ?? json).toString();
+                  caseCode = json.caseCode ?? json.CaseCode ?? null;
+                }
+              } catch (_) {}
+            
             if (!caseId) {
               const loc = createRes.headers.get('Location') || createRes.headers.get('location');
               if (loc) {
@@ -482,6 +482,10 @@ export const useCaseStore = create<CaseStore>()(
                   [],
                   { format: ImageManipulator.SaveFormat.PNG },
                 );
+                caseLog.info('CaseStore:Upload', 'Normalized image to PNG', {//caselog
+                  from: uri,
+                  to: result.uri,
+                });
                 return result.uri;
               }
             // Upload reference images sequentially
@@ -495,6 +499,7 @@ export const useCaseStore = create<CaseStore>()(
               const fd = new FormData();
               fd.append('file', { uri: pngUri, name: `reference-${i + 1}.png`, type: 'image/png' } as any);
               const uploadPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadReference(caseId)}?index=${i + 1}`);
+              caseLog.info('CaseStore:Submit', 'Uploading reference', { caseId, backendIndex: i + 1, localSlot: i });
 
               const upRes = await fetch(uploadPath, {
                 method: 'POST',
@@ -531,6 +536,8 @@ export const useCaseStore = create<CaseStore>()(
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
             const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
 
+            const timeTakenMs = Date.now() - startTime;
+
             let analysisResult: any = null;
             let finalStatus: CaseStatus = 'Processing';
 
@@ -559,41 +566,18 @@ export const useCaseStore = create<CaseStore>()(
                   threshold,
                   verdict: verdict as any,
                   Verdict: verdict as any,
+                  analysisTimeMs: timeTakenMs,
               };
             } catch (error) {
               caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
               analysisResult = null;
             }
           }
-                //NO COORDINATES ANYMORE
-            //     // Optionally fetch output.json for bounding box / heatmap overlay coords
-            //     try {
-            //       const resultsRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.getResults(caseId)), { method: 'GET' });
-            //       if (resultsRes.ok) {
-            //         const outputJson = await resultsRes.json();
-            //         caseLog.info('CaseStore:Submit', 'output.json received', outputJson);
-            //         analysisResult.cam_grid = outputJson?.cam_grid ?? undefined;
-            //         analysisResult.ink_bbox = outputJson?.ink_bbox ?? undefined;
-            //         analysisResult.stroke_markers = outputJson?.stroke_markers ?? undefined;
-
-            //         // also wire to boxes for the existing BoundingBoxOverlay component
-            //         analysisResult.boxes = outputJson?.ink_bbox ?? undefined;
-            //         analysisResult.reference_boxes = outputJson?.stroke_markers ?? undefined;;
-            //       }
-            //     } catch (outputErr) {
-            //       caseLog.warn('CaseStore:Submit', 'output.json fetch failed (non-critical)', outputErr);
-            //     }
-
-            //   } catch (error) {
-            //     caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
-            //     analysisResult = null;
-            //   }
-            // }
-
             // update local store with created case
             const savedCase: SavedCase = {
               ...currentDraft,
               caseId: caseId,
+              caseCode: caseCode ?? caseId,
               createdAt: new Date().toISOString(),
               status: finalStatus, 
               analysisType: DEFAULT_ANALYSIS_TYPE,
@@ -617,24 +601,22 @@ export const useCaseStore = create<CaseStore>()(
                 }));
             }
 
-            const isSuspected = (analysisResult?.Verdict ?? analysisResult?.verdict) === 'FORGED';
-
+            //const isSuspected = (analysisResult?.Verdict ?? analysisResult?.verdict) === 'FORGED';
+            
             set((state) => {
-            const savedCaseWithUploads: SavedCase = {
-              ...savedCase,
-              uploads: {
-                references: [...currentDraft.uploads.references],
-                suspect: currentDraft.uploads.suspect,
-              },
-              verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
-              Verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
-              confidence: isSuspected
-                ? (analysisResult?.confidence_forged ?? 0)
-                : (analysisResult?.confidence_genuine ?? 0),
-            };
-
-            const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
-              
+              const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
+                // const savedCaseWithUploads: SavedCase = {
+                //   ...savedCase,
+                //   uploads: {
+                //     references: [...currentDraft.uploads.references],
+                //     suspect: currentDraft.uploads.suspect,
+                //   },
+                //   verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
+                //   Verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
+                //   confidence: isSuspected
+                //     ? (analysisResult?.confidence_forged ?? 0)
+                //     : (analysisResult?.confidence_genuine ?? 0),
+                // };
               const nextCases: SavedCase[] = [...filteredCases, savedCase];
               
               const nextCaseNumber = getNextCaseNumberFromCases(nextCases);

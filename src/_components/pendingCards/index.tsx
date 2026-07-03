@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export type PendingCardStatus = 'result-ready' | 'draft' | 'processing';
 
 interface PendingCardProps {
-	id: string;
+	caseCode: string;
 	name: string;
+	
 	status: PendingCardStatus;
 	onPress?: () => void;
 }
@@ -38,7 +38,7 @@ const statusStyles: Record<
 	},
 };
 
-export default function PendingCard({ id, name, status, onPress }: PendingCardProps) {
+export default function PendingCard({ caseCode, name, status, onPress }: PendingCardProps) {
 	const style = statusStyles[status];
 
 	return (
@@ -53,7 +53,7 @@ export default function PendingCard({ id, name, status, onPress }: PendingCardPr
 
 			<View style={styles.content}>
 				<Text style={[styles.statusText, { color: style.statusColor }]}>{style.statusText}</Text>
-				<Text style={styles.id}>{id}</Text>
+				<Text style={styles.id}>{caseCode}</Text>
 				<Text style={styles.name}>{name}</Text>
 			</View>
 
