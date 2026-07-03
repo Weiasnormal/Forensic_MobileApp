@@ -43,8 +43,7 @@ export default function UserDashboardScreen() {
   React.useEffect(() => {
     load();
     refreshCasesFromBackend();
-  }, [load, refreshCasesFromBackend]);
-
+  }, []);
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 

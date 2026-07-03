@@ -8,9 +8,6 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 let ImagePicker: any;
 try {
-  // dynamically require to avoid TS errors when dependency is not installed in CI/editor
-  // runtime will still attempt to require; if expo-image-picker is unavailable, image pick is disabled
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   ImagePicker = require('expo-image-picker');
 } catch (e) {
   ImagePicker = null;
