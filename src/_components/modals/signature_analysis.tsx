@@ -340,7 +340,7 @@ const suspectOverlayUri = useMemo(() => {
           </Text>
 
           {processingTime && (
-            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 6, fontWeight: '500' }}>
+            <Text style={styles.heroProcessingTime}>
               Analysis completed in {processingTime}s
             </Text>
           )}
@@ -605,6 +605,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  heroProcessingTime: {
+  fontSize: 10,
+  color: '#64748b',
+  marginTop: 6,
+  fontWeight: '500',
+},
   toggleRow: {
     flexDirection: 'row',
     gap: 8,
