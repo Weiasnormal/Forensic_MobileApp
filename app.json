@@ -8,7 +8,10 @@
     "scheme": "forensic",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need camera access to scan forensic signatures."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,6 +20,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -44,11 +50,11 @@
           "microphonePermission": "Allow Forensic to access your microphone."
         }
       ],
-      "expo-asset"
-    ],
+      "expo-asset" 
+    ]
+  },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     }
-  }
 }
