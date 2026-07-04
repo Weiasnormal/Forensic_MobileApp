@@ -13,8 +13,8 @@ interface CaseCardProps {
 }
 const priorityColors: Record<string, string> = {
 	Urgent: '#E24B4A',
-	High: '#df8080',   
-	Medium: '#F59E0B', 
+	High: '#F59E0B',   
+	Medium: '#2a728f', 
 	Low: '#2E9F5C',    
 };
 const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string; badgeText: string; badgeBgColor: string }> = {
