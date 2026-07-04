@@ -162,7 +162,7 @@ function mergeCasesById(existingCases: SavedCase[], incomingCases: SavedCase[]) 
 
 const INITIAL_CASES: SavedCase[] = [
   createSavedCase({
-    caseId: '04-27-2026-001',
+    caseId: 'CASE-04-27-2026-001',
     mockTemplateNumber: 4,
     subjectName: 'Juan dela Cruz',
     examiner: 'Ana Rivera',
@@ -173,7 +173,7 @@ const INITIAL_CASES: SavedCase[] = [
     analysisType: 'SIG',
   }),
   createSavedCase({
-    caseId: '04-28-2026-002',
+    caseId: 'CASE-04-28-2026-002',
     mockTemplateNumber: 5,
     subjectName: 'Maria Santos',
     examiner: 'Ana Rivera',
@@ -184,7 +184,7 @@ const INITIAL_CASES: SavedCase[] = [
     analysisType: 'SIG',
   }),
   createSavedCase({
-    caseId: '04-29-2026-003',
+    caseId: 'CASE-04-29-2026-003',
     mockTemplateNumber: 6,
     subjectName: 'Pedro Reyes',
     examiner: 'Ana Rivera',
@@ -196,7 +196,7 @@ const INITIAL_CASES: SavedCase[] = [
     resultViewed: false,
   }),
   createSavedCase({
-    caseId: '04-30-2026-004',
+    caseId: 'CASE-04-30-2026-004',
     mockTemplateNumber: 7,
     subjectName: 'Elena Garcia',
     examiner: 'Ana Rivera',
@@ -208,7 +208,7 @@ const INITIAL_CASES: SavedCase[] = [
     resultViewed: false,
   }),
   createSavedCase({
-    caseId: '05-01-2026-005',
+    caseId: 'CASE-05-01-2026-005',
     mockTemplateNumber: 8,
     subjectName: 'Ricardo Mendez',
     examiner: 'Ana Rivera',
@@ -737,7 +737,9 @@ export function getCaseSummary(cases: SavedCase[]) {
 
 export interface PendingCardEntry {
   id: string;
+  caseCode?: string;
   name: string;
+  type: string;
   status: PendingCardStatus;
   sortKey: number;
 }
@@ -761,7 +763,9 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
   if (hasDraftProgress(draft)) {
     pendingCards.push({
       id: draft.caseId,
-      name: draft.subjectName.trim() || 'Draft in progress',
+      caseCode: draft.caseId,
+      name: draft.examiner.trim() || 'Draft in progress',
+      type:draft.documentType,
       status: 'draft',
       sortKey: Number.MAX_SAFE_INTEGER,
     });
@@ -771,7 +775,9 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
     if (item.status === 'Processing') {
       pendingCards.push({
         id: item.caseId,
-        name: item.subjectName,
+        caseCode: item.caseCode ?? item.caseId,
+        name: item.examiner,
+        type:item.documentType,
         status: 'processing',
         sortKey: new Date(item.createdAt).getTime(),
       });
@@ -780,7 +786,9 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
     if (item.status !== 'Processing' && !item.resultViewed) {
       pendingCards.push({
         id: item.caseId,
-        name: item.subjectName,
+        caseCode: item.caseCode ?? item.caseId,
+        name: item.examiner,
+        type:item.documentType,
         status: 'result-ready',
         sortKey: new Date(item.createdAt).getTime(),
       });

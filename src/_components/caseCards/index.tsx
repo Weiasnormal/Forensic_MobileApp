@@ -7,10 +7,16 @@ interface CaseCardProps {
 	type: string;
 	name: string;
 	status: CaseStatus;
+	priority: string;
 	createdAt: string;
 	onPress?: () => void;
 }
-
+const priorityColors: Record<string, string> = {
+	Urgent: '#E24B4A',
+	High: '#df8080',   
+	Medium: '#F59E0B', 
+	Low: '#2E9F5C',    
+};
 const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string; badgeText: string; badgeBgColor: string }> = {
 	Suspected: {
 		borderColor: '#E24B4A',
@@ -30,10 +36,9 @@ const statusStyles: Record<CaseStatus, { borderColor: string; badgeColor: string
 		badgeText: 'Processing',
 		badgeBgColor: 'rgba(45, 114, 209, 0.1)',
 	},
-	// Completed state removed: use 'Suspected' or 'Genuine' instead
 };
 
-export default function CaseCard({ caseCode, type, name, status, createdAt, onPress }: CaseCardProps) {
+export default function CaseCard({ caseCode, type, name, status, priority, createdAt, onPress }: CaseCardProps) {
 	const style = statusStyles[status] ?? statusStyles.Processing;
 
 	return (
@@ -46,8 +51,14 @@ export default function CaseCard({ caseCode, type, name, status, createdAt, onPr
 			<View style={styles.header}>
 				<View style={{ flex: 1 }}>
 					<Text style={styles.id}>{caseCode}</Text>
-					<Text style={styles.typeLabel}>{type}</Text>
-
+					<Text style={styles.typeLabel}>
+						{type}
+						{priority && (
+							<Text style={{ color: priorityColors[priority] || '#8A99AE' }}>
+								{''} {priority}
+							</Text>
+						)}
+					</Text>
 				</View>
 				<View style={[styles.badge, { backgroundColor: style.badgeBgColor }]}>
 					<Text style={[styles.badgeText, { color: style.badgeColor }]}>{style.badgeText}</Text>

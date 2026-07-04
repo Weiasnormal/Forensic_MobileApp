@@ -6,7 +6,7 @@ export type PendingCardStatus = 'result-ready' | 'draft' | 'processing';
 interface PendingCardProps {
 	caseCode: string;
 	name: string;
-	
+	type: string;
 	status: PendingCardStatus;
 	onPress?: () => void;
 }
@@ -16,7 +16,7 @@ const statusStyles: Record<
 	{ iconName: keyof typeof Ionicons.glyphMap; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }
 > = {
 	'result-ready': {
-		iconName: 'checkmark-done-outline',
+		iconName: 'checkmark-circle-outline',
 		statusText: 'RESULT READY',
 		statusColor: '#2E9F5C',
 		bgColor: '#ffffff',
@@ -38,7 +38,7 @@ const statusStyles: Record<
 	},
 };
 
-export default function PendingCard({ caseCode, name, status, onPress }: PendingCardProps) {
+export default function PendingCard({ caseCode, name, type, status, onPress }: PendingCardProps) {
 	const style = statusStyles[status];
 
 	return (
@@ -54,7 +54,9 @@ export default function PendingCard({ caseCode, name, status, onPress }: Pending
 			<View style={styles.content}>
 				<Text style={[styles.statusText, { color: style.statusColor }]}>{style.statusText}</Text>
 				<Text style={styles.id}>{caseCode}</Text>
-				<Text style={styles.name}>{name}</Text>
+				<Text style={styles.nameType}>
+                    {name} {type ? `• ${type}` : ''}
+                </Text>
 			</View>
 
 			<View style={styles.chevron}>
@@ -102,11 +104,11 @@ const styles = StyleSheet.create({
 		color: '#1F2B3E',
 		marginBottom: 2,
 	},
-	name: {
-		fontSize: 12,
-		color: '#8A99AE',
-		fontWeight: '500',
-	},
+	nameType: {
+        fontSize: 12,
+        color: '#8A99AE', 
+        fontWeight: '500',
+    },
 	chevron: {
 		padding: 8,
 	},

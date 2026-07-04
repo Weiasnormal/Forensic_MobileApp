@@ -192,9 +192,10 @@ export default function UserCasesScreen() {
         keyExtractor={(item) => item.caseId}
         renderItem={({ item }) => (
           <CaseCard
-            caseCode={item.caseId ?? item.caseCode}
+            caseCode={item.caseCode ?? item.caseId}
             createdAt={item.createdAt}
-            type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
+            type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+            priority={item.priority}
             name={`${item.subjectName} · ${item.documentType}`}
             status={item.status}
             onPress={() => {

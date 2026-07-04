@@ -163,8 +163,9 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
             {pendingCards.map((item) => (
               <PendingCard
                 key={`${item.id}-${item.status}`}
-                caseCode={item.id}
+                caseCode={item.caseCode ?? item.id}
                 name={item.name}
+                type={item.type}
                 status={item.status}
                 onPress={() => {
                   if (item.status === 'draft') {
@@ -197,9 +198,10 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
         {latestCases.map((item) => (
           <CaseCard
             key={item.caseId}
-            caseCode={item.caseId ?? item.caseCode}
+            caseCode={item.caseCode ?? item.caseId}
             createdAt={item.createdAt}
-            type={`${formatAnalysisTypeLabel(item.analysisType)} • ${item.priority}`}
+            type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+            priority={item.priority}
             name={`${item.subjectName} · ${item.documentType}`}
             status={item.status}
             onPress={() => goToCaseDestination(item)}
