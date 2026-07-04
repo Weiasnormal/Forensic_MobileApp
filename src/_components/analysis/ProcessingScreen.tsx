@@ -1,10 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -15,23 +11,21 @@ export interface ProcessingStep {
 }
 
 interface ProcessingScreenProps {
-  title: string;
-  subtitle: string;
-  accentColor: string;
+  title?: string; 
+  subtitle?: string; 
+  accentColor?: string;
   steps: ProcessingStep[];
   onComplete: () => void;
   totalDurationMs?: number;
 }
 
-const RING_SIZE = 210;
+const RING_SIZE = 160;
 const RING_STROKE = 12;
 const RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function ProcessingScreen({
-  title,
-  subtitle,
-  accentColor,
+  accentColor = '#3B82F6', 
   steps,
   onComplete,
   totalDurationMs = 7500,
@@ -42,14 +36,35 @@ export default function ProcessingScreen({
   const stepProgressWidth = 100 / steps.length;
   const activeStepIndex = Math.min(
     steps.length - 1,
-    Math.floor(progress / stepProgressWidth),
+    Math.floor(progress / stepProgressWidth)
   );
 
   const dashOffset = useMemo(
     () => CIRCUMFERENCE - (CIRCUMFERENCE * progress) / 100,
-    [progress],
+    [progress]
   );
 
+  // Dynamic Header Logic Based on Percentage
+  const { dynamicTitle, dynamicSubtitle } = useMemo(() => {
+    if (progress < 10) {
+      return { dynamicTitle: 'Initializing...', dynamicSubtitle: 'Preparing signature images' };
+    }
+    if (progress < 30) {
+      return { dynamicTitle: 'Preprocessing...', dynamicSubtitle: 'Normalizing & enhancing contrast' }; 
+    }
+    if (progress < 50) {
+      return { dynamicTitle: 'Extracting features...', dynamicSubtitle: 'Siamese network encoding' }; 
+    }
+    if (progress < 70) {
+      return { dynamicTitle: 'Scoring similarity...', dynamicSubtitle: 'Contrastive loss comparison' }; 
+    }
+    if (progress < 90) {
+      return { dynamicTitle: 'Generating heatmap...', dynamicSubtitle: 'Grad-CAM visualization' }; 
+    }
+    return { dynamicTitle: 'Compiling report...', dynamicSubtitle: 'Building forensic output' }; 
+  }, [progress]);
+
+  // Auto-increment progress logic
   useEffect(() => {
     const tickMs = Math.max(Math.round(totalDurationMs / 100), 30);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -72,6 +87,7 @@ export default function ProcessingScreen({
     };
   }, [totalDurationMs]);
 
+  // Completion trigger logic
   useEffect(() => {
     if (progress < 100 || isCompleteFired) {
       return;
@@ -87,69 +103,90 @@ export default function ProcessingScreen({
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.headerBlock}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-      </View>
+      <View style={styles.container}>
+        
+        {/* TOP SECTION: Radial Progress & Main Headers */}
+        <View style={styles.topSection}>
+          <View style={styles.ringWrap}>
+            <Svg width={RING_SIZE} height={RING_SIZE}>
+              {/* Light gray inactive track */}
+              <Circle
+                stroke="#F1F5F9"
+                fill="none"
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RADIUS}
+                strokeWidth={RING_STROKE}
+              />
+              <Circle
+                stroke={accentColor}
+                fill="none"
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RADIUS}
+                strokeWidth={RING_STROKE}
+                strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+                strokeDashoffset={dashOffset}
+                strokeLinecap="round"
+                transform={`rotate(-90, ${RING_SIZE / 2}, ${RING_SIZE / 2})`}
+              />
+            </Svg>
 
-      <View style={styles.ringWrap}>
-        <Svg width={RING_SIZE} height={RING_SIZE}>
-          <Circle
-            stroke="#E2E8F0"
-            fill="none"
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RADIUS}
-            strokeWidth={RING_STROKE}
-          />
-          <Circle
-            stroke={accentColor}
-            fill="none"
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RADIUS}
-            strokeWidth={RING_STROKE}
-            strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-            strokeDashoffset={dashOffset}
-            strokeLinecap="round"
-            transform={`rotate(-90, ${RING_SIZE / 2}, ${RING_SIZE / 2})`}
-          />
-        </Svg>
-
-        <View style={styles.ringCenter}>
-          <Text style={styles.progressText}>{progress}%</Text>
-          <Text style={styles.progressLabel}>Running AI pipeline</Text>
-        </View>
-      </View>
-
-      <View style={styles.stepsCard}>
-        {steps.map((step, index) => {
-          const isActive = index === activeStepIndex;
-          const isDone = index < activeStepIndex || progress === 100;
-
-          return (
-            <View key={step.id} style={styles.stepRow}>
-              <View
-                style={[
-                  styles.stepIcon,
-                  isDone && { backgroundColor: accentColor },
-                  isActive && !isDone && { borderColor: accentColor },
-                ]}
-              >
-                {isDone ? (
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.stepIndexText}>{index + 1}</Text>
-                )}
-              </View>
-
-              <View style={styles.stepTextWrap}>
-                <Text style={[styles.stepLabel, isActive && { color: '#0F172A' }]}>{step.label}</Text>
-                <Text style={styles.stepDetail}>{step.detail}</Text>
-              </View>
+            <View style={styles.ringCenter}>
+              <Text style={[styles.progressText, { color: '#000000' }]}>{progress}%</Text>
+              <Text style={[styles.progressLabel, { color: '#94A3B8' }]}>COMPLETE</Text>
             </View>
-          );
-        })}
+          </View>
+
+          <Text style={styles.title}>{dynamicTitle}</Text>
+          <Text style={styles.subtitle}>{dynamicSubtitle}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.checklistSection}>
+          {steps.map((step, index) => {
+            const isActive = index === activeStepIndex && progress < 100;
+            const isDone = index < activeStepIndex || progress === 100;
+            const isPending = !isActive && !isDone;
+
+            return (
+              <View key={step.id} style={styles.stepRow}>
+                
+                <View style={styles.iconContainer}>
+                  {isDone && (
+                    <View style={[styles.iconCircle, styles.iconDone]}>
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    </View>
+                  )}
+                  {isActive && (
+                    <View style={[styles.iconCircle, styles.iconActive, { borderColor: accentColor }]}>
+                      <View style={[styles.iconActiveDot, { backgroundColor: accentColor }]} />
+                    </View>
+                  )}
+                  {isPending && (
+                    <View style={[styles.iconCircle, styles.iconPending]} />
+                  )}
+                </View>
+
+                <View style={styles.stepTextWrap}>
+                  <Text style={[styles.stepTitle, (isActive || isDone) ? styles.stepTitleActive : styles.stepTitlePending]}>
+                    {step.label}
+                  </Text>
+                  <Text style={styles.stepSubtitle}>
+                    {step.detail}
+                  </Text>
+                </View>
+ 
+                <View style={styles.statusWrap}>
+                  {isDone && <Text style={styles.statusTextDone}>Done</Text>}
+                  {isActive && <Text style={[styles.statusTextRunning, { color: accentColor }]}>Running</Text>}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
       </View>
     </SafeAreaView>
   );
@@ -158,87 +195,132 @@ export default function ProcessingScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FBFF',
-    paddingHorizontal: 18,
+    backgroundColor: '#FFFFFF',
   },
-  headerBlock: {
-    marginTop: 14,
-    alignItems: 'center',
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: 6,
-    color: '#64748B',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  ringWrap: {
-    marginTop: 24,
+  topSection: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 32,
+  },
+  ringWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   ringCenter: {
     position: 'absolute',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   progressText: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: -0.8,
+    fontSize: 38,
+    fontWeight: '800',
+    letterSpacing: -1,
+    marginBottom: -2,
   },
   progressLabel: {
-    marginTop: 2,
     fontSize: 12,
-    color: '#64748B',
+    fontWeight: '800',
+    letterSpacing: 1,
   },
-  stepsCard: {
-    marginTop: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    padding: 14,
-    gap: 12,
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    fontWeight: '400',
+  },
+  divider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 24,
+  },
+  checklistSection: {
+    width: '100%',
+    gap: 20,
   },
   stepRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
+    alignItems: 'center',
+    width: '100%',
   },
-  stepIcon: {
+  iconContainer: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  iconCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 1.2,
-    borderColor: '#C8D3E0',
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
-  stepIndexText: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '700',
+  iconDone: {
+    backgroundColor: '#22C55E',
+  },
+  iconActive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+  },
+  iconActiveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  iconPending: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   stepTextWrap: {
     flex: 1,
+    justifyContent: 'center',
   },
-  stepLabel: {
-    fontSize: 13,
-    color: '#334155',
+  stepTitle: {
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  stepTitleActive: {
+    color: '#0F172A',
     fontWeight: '700',
   },
-  stepDetail: {
-    marginTop: 2,
-    fontSize: 12,
+  stepTitlePending: {
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  stepSubtitle: {
+    fontSize: 13,
     color: '#64748B',
+    fontWeight: '400',
+  },
+  statusWrap: {
+    minWidth: 60,
+    alignItems: 'flex-end',
+  },
+  statusTextDone: {
+    color: '#22C55E',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  statusTextRunning: {
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
