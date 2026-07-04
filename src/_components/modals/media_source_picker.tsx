@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text,  View, Alert} from 'react-native';
+import DocumentScanner, { ResponseType } from 'react-native-document-scanner-plugin';
+import * as ImageManipulator from 'expo-image-manipulator';
+
 
 interface Props {
   visible: boolean;
@@ -9,6 +12,32 @@ interface Props {
   title?: string;
   message?: string;
 }
+
+
+export const scanForensicDocument = async (onImageScanned: (uri: string) => void) => {
+  try {
+    const { scannedImages } = await DocumentScanner.scanDocument({
+      croppedImageQuality: 100, 
+      responseType: ResponseType.ImageFilePath, 
+    });
+
+    if (scannedImages && scannedImages.length > 0) {
+      const jpegUri = scannedImages[0];
+
+      // INTERCEPT AND CONVERT: Transform the ML Kit JPEG into a Lossless PNG
+      const convertedImage = await ImageManipulator.manipulateAsync(
+        jpegUri,
+        [], 
+        { format: ImageManipulator.SaveFormat.PNG } 
+      );
+      
+      onImageScanned(convertedImage.uri);
+    }
+  } catch (error) {
+    Alert.alert("Scanner Error", "Failed to initialize the document scanner.");
+    console.error(error);
+  }
+};
 
 export default function MediaSourcePicker({ visible, onSelect, onCancel, title = 'Upload', message = 'Choose image source' }: Props) {
   return (
