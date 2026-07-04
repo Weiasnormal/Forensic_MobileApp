@@ -17,6 +17,8 @@ interface ProcessingScreenProps {
   steps: ProcessingStep[];
   onComplete: () => void;
   totalDurationMs?: number;
+  progress?: number;    
+  statusText?: string; 
 }
 
 const RING_SIZE = 160;
@@ -25,81 +27,37 @@ const RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function ProcessingScreen({
-  accentColor = '#3B82F6', 
-  steps,
-  onComplete,
-  totalDurationMs = 7500,
+  title, subtitle, accentColor, steps, onComplete, totalDurationMs = 7500, progress: controlledProgress, statusText,
 }: ProcessingScreenProps) {
-  const [progress, setProgress] = useState(0);
+  const isControlled = controlledProgress !== undefined;
+  const [internalProgress, setInternalProgress] = useState(0);
   const [isCompleteFired, setIsCompleteFired] = useState(false);
+  const progress = isControlled ? Math.min(100, Math.max(0, controlledProgress!)) : internalProgress;
 
   const stepProgressWidth = 100 / steps.length;
-  const activeStepIndex = Math.min(
-    steps.length - 1,
-    Math.floor(progress / stepProgressWidth)
-  );
+  const activeStepIndex = Math.min(steps.length - 1, Math.floor(progress / stepProgressWidth));
+  const dashOffset = useMemo(() => CIRCUMFERENCE - (CIRCUMFERENCE * progress) / 100, [progress]);
 
-  const dashOffset = useMemo(
-    () => CIRCUMFERENCE - (CIRCUMFERENCE * progress) / 100,
-    [progress]
-  );
-
-  // Dynamic Header Logic Based on Percentage
-  const { dynamicTitle, dynamicSubtitle } = useMemo(() => {
-    if (progress < 10) {
-      return { dynamicTitle: 'Initializing...', dynamicSubtitle: 'Preparing signature images' };
-    }
-    if (progress < 30) {
-      return { dynamicTitle: 'Preprocessing...', dynamicSubtitle: 'Normalizing & enhancing contrast' }; 
-    }
-    if (progress < 50) {
-      return { dynamicTitle: 'Extracting features...', dynamicSubtitle: 'Siamese network encoding' }; 
-    }
-    if (progress < 70) {
-      return { dynamicTitle: 'Scoring similarity...', dynamicSubtitle: 'Contrastive loss comparison' }; 
-    }
-    if (progress < 90) {
-      return { dynamicTitle: 'Generating heatmap...', dynamicSubtitle: 'Grad-CAM visualization' }; 
-    }
-    return { dynamicTitle: 'Compiling report...', dynamicSubtitle: 'Building forensic output' }; 
-  }, [progress]);
-
-  // Auto-increment progress logic
   useEffect(() => {
+    if (isControlled) return; // real progress is driving this, skip the fake ticker entirely
     const tickMs = Math.max(Math.round(totalDurationMs / 100), 30);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
     const tick = () => {
-      setProgress((current) => {
-        const next = Math.min(current + 1, 100);
-        return next;
-      });
-
+      setInternalProgress((current) => Math.min(current + 1, 100));
       timeoutId = setTimeout(tick, tickMs);
     };
-
     timeoutId = setTimeout(tick, tickMs);
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
+  }, [totalDurationMs, isControlled]);
 
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [totalDurationMs]);
-
-  // Completion trigger logic
   useEffect(() => {
-    if (progress < 100 || isCompleteFired) {
-      return;
-    }
-
+    if (progress < 100 || isCompleteFired) return;
     const doneTimer = setTimeout(() => {
       setIsCompleteFired(true);
       onComplete();
-    }, 480);
-
+    }, isControlled ? 200 : 480);
     return () => clearTimeout(doneTimer);
-  }, [isCompleteFired, onComplete, progress]);
+  }, [isCompleteFired, onComplete, progress, isControlled]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -138,8 +96,7 @@ export default function ProcessingScreen({
             </View>
           </View>
 
-          <Text style={styles.title}>{dynamicTitle}</Text>
-          <Text style={styles.subtitle}>{dynamicSubtitle}</Text>
+          <Text style={styles.progressLabel}>{statusText ?? 'Running AI pipeline'}</Text>
         </View>
 
         <View style={styles.divider} />

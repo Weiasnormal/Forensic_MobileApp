@@ -29,6 +29,7 @@ export default function SignatureUploadsRoute() {
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
   const isSubmitting = useCaseStore((state) => state.isSubmitting);
   const canRun = hasCompleteUploads(uploads);
+  const resetSubmissionState = useCaseStore((state) => state.resetSubmissionState);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,14 +87,15 @@ export default function SignatureUploadsRoute() {
     }
   };
 
-  const handleSubmit = async () => {
-    try {
-      await submitNewCase();
-      nav.replace('/analysis/signature/processing');
-    } catch (error: any) {
+  const handleSubmit = () => {
+    if (!canRun || isSubmitting) return;
+
+    resetSubmissionState();
+    submitNewCase().catch((error) => {
       console.warn('Unable to submit new case:', error);
-      Alert.alert('Submit failed', error?.message || 'An unexpected error occurred during submission.');
-    }
+    });
+
+    nav.replace('/analysis/signature/processing');
   };
 
   const openPreview = (uri: string, label: string) => {

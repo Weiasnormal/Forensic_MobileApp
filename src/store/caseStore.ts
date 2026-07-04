@@ -88,6 +88,12 @@ interface CaseStore {
   setDraftUpload: (type: DraftUploadType, index: number, uri: string | null) => void;
   submitNewCase: () => Promise<SavedCase>;
   resetMockDatabase: () => void;
+
+  submissionStatus: 'idle' | 'submitting' | 'success' | 'error';
+  submissionStep: string;
+  submissionProgress: number; 
+  submissionError: string | null;
+  resetSubmissionState: () => void;
 }
 
 const DEFAULT_DOCUMENT_TYPE = 'Bank cheque';
@@ -243,7 +249,7 @@ export const useCaseStore = create<CaseStore>()(
   persist(
     (set, get) => {
       caseLog.info('CaseStore', '🚀 Store initializing');
-      
+
       return {
         cases: INITIAL_CASES,
         draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
@@ -253,6 +259,20 @@ export const useCaseStore = create<CaseStore>()(
         activeSignatureCaseId: null,
         hiddenSavedCases: null,
         signatureAnalysisResults: {},
+
+        submissionStatus: 'idle',
+        submissionStep: '',
+        submissionProgress: 0,
+        submissionError: null,
+
+        resetSubmissionState: () => {
+          set({
+            submissionStatus: 'idle',
+            submissionStep: '',
+            submissionProgress: 0,
+            submissionError: null,
+          });
+        },
 
         markCaseResultViewed: (caseId) => {
           set((state) => ({
@@ -348,6 +368,10 @@ export const useCaseStore = create<CaseStore>()(
             return {
               draftSignatureCase: createInitialDraft(nextCaseNumber),
               nextCaseNumber: nextCaseNumber + 1,
+              submissionStatus: 'idle',
+              submissionStep: '',
+              submissionProgress: 0,
+              submissionError: null,
             };
           });
         },
@@ -397,13 +421,11 @@ export const useCaseStore = create<CaseStore>()(
             };
           });
         },
-        
 
         submitNewCase: async () => {
           caseLog.info('CaseStore:Submit', 'Submitting new case (networked)');
 
           const startTime = Date.now();
-
           const currentDraft = get().draftSignatureCase;
 
           if (!currentDraft.subjectName.trim() || !currentDraft.examiner.trim()) {
@@ -414,11 +436,16 @@ export const useCaseStore = create<CaseStore>()(
             throw createMockError('All reference uploads and the suspect upload must be completed before submission.');
           }
 
-          set({ isSubmitting: true });
+          set({
+            isSubmitting: true,
+            submissionStatus: 'submitting',
+            submissionStep: 'Creating case',
+            submissionProgress: 2,
+            submissionError: null,
+          });
 
-          // helper to generate a random GUID (v4)
           function generateGuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
               const r = (Math.random() * 16) | 0;
               const v = c === 'x' ? r : (r & 0x3) | 0x8;
               return v.toString(16);
@@ -426,14 +453,13 @@ export const useCaseStore = create<CaseStore>()(
           }
 
           try {
-            // Use a random GUID for Examiner (no auth available)
             const examinerGuid = generateGuid();
 
             const createRequest = {
-            SubjectName: currentDraft.subjectName,
-            Examiner: examinerGuid,
-            Priority: PRIORITY_MAP[currentDraft.priority],
-            AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
+              SubjectName: currentDraft.subjectName,
+              Examiner: examinerGuid,
+              Priority: PRIORITY_MAP[currentDraft.priority],
+              AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
             };
 
             caseLog.info('CaseStore:Submit', 'Creating case on backend', { SubjectName: createRequest.SubjectName });
@@ -451,45 +477,48 @@ export const useCaseStore = create<CaseStore>()(
               throw new Error(`Create case failed (${createRes.status})`);
             }
 
-              let caseId: string | null = null;
-              let caseCode: string | null = null;
-              try {
-                const json = await createRes.json();
-                if (json) {
-                  caseId = (json.id ?? json).toString();
-                  caseCode = json.caseCode ?? json.CaseCode ?? null;
-                }
-              } catch (_) {}
-            
-            if (!caseId) {
+            let rawCaseId: string | null = null;
+            let caseCode: string | null = null;
+            try {
+              const json = await createRes.json();
+              if (json) {
+                rawCaseId = (json.id ?? json).toString();
+                caseCode = json.caseCode ?? json.CaseCode ?? null;
+              }
+            } catch (_) {}
+
+            if (!rawCaseId) {
               const loc = createRes.headers.get('Location') || createRes.headers.get('location');
               if (loc) {
                 const parts = loc.split('/');
-                caseId = parts[parts.length - 1];
+                rawCaseId = parts[parts.length - 1];
               }
             }
 
-            if (!caseId) {
+            if (!rawCaseId) {
               throw new Error('Unable to determine created case id from response');
             }
+            const caseId: string = rawCaseId;
 
             caseLog.info('CaseStore:Submit', 'Uploading images for case', { caseId });
-            
-            // Helper to normalize images to PNG format
+            set({ submissionStep: 'Uploading reference signatures', submissionProgress: 10 });
+
             async function normalizeToPng(uri: string): Promise<string> {
-                const result = await ImageManipulator.manipulateAsync(
-                  uri,
-                  [],
-                  { format: ImageManipulator.SaveFormat.PNG },
-                );
-                caseLog.info('CaseStore:Upload', 'Normalized image to PNG', {//caselog
-                  from: uri,
-                  to: result.uri,
-                });
-                return result.uri;
-              }
-            // Upload reference images sequentially
-            for (let i = 0; i < currentDraft.uploads.references.length; i++) {
+              const result = await ImageManipulator.manipulateAsync(
+                uri,
+                [],
+                { format: ImageManipulator.SaveFormat.PNG },
+              );
+              caseLog.info('CaseStore:Upload', 'Normalized image to PNG', {
+                from: uri,
+                to: result.uri,
+              });
+              return result.uri;
+            }
+
+            const totalRefs = currentDraft.uploads.references.length;
+
+            for (let i = 0; i < totalRefs; i++) {
               const uri = currentDraft.uploads.references[i];
               if (!uri) continue;
 
@@ -510,23 +539,27 @@ export const useCaseStore = create<CaseStore>()(
               if (!upRes.ok) {
                 throw new Error(`Reference upload failed (${upRes.status})`);
               }
+
+              set({
+                submissionStep: `Uploading reference ${i + 1} of ${totalRefs}`,
+                submissionProgress: 10 + Math.round(((i + 1) / totalRefs) * 40),
+              });
             }
 
-            // Upload suspected image
-            if (currentDraft.uploads.suspect) {          
+            set({ submissionStep: 'Uploading suspected signature', submissionProgress: 55 });
+
+            if (currentDraft.uploads.suspect) {
               const cleanSuspect = stripFingerprintSuffix(currentDraft.uploads.suspect);
               const pngSuspect = await normalizeToPng(cleanSuspect);
 
               const fd = new FormData();
               fd.append('file', { uri: pngSuspect, name: 'suspect.png', type: 'image/png' } as any);
               const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=1`);
-                const upRes = await fetch(upPath, {
-                  method: 'POST',
-                  headers: {
-                    Accept: 'application/json',
-                  },
-                  body: fd as any,
-                });
+              const upRes = await fetch(upPath, {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: fd as any,
+              });
 
               if (!upRes.ok) {
                 throw new Error(`Suspect upload failed (${upRes.status})`);
@@ -534,8 +567,9 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
-            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
+            set({ submissionStep: 'Running AI forensic comparison', submissionProgress: 65 });
 
+            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
             const timeTakenMs = Date.now() - startTime;
 
             let analysisResult: any = null;
@@ -567,84 +601,69 @@ export const useCaseStore = create<CaseStore>()(
                   verdict: verdict as any,
                   Verdict: verdict as any,
                   analysisTimeMs: timeTakenMs,
-              };
-            } catch (error) {
-              caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
-              analysisResult = null;
+                };
+              } catch (error) {
+                caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
+                analysisResult = null;
+              }
             }
-          }
-            // update local store with created case
+
+            set({ submissionStep: 'Finalizing report', submissionProgress: 90 });
+
             const savedCase: SavedCase = {
               ...currentDraft,
-              caseId: caseId,
+              caseId,
               caseCode: caseCode ?? caseId,
               createdAt: new Date().toISOString(),
-              status: finalStatus, 
+              status: finalStatus,
               analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
               mockTemplateNumber: get().nextMockTemplateNumber,
             };
-            console.log("===== DEBUGGING STORE SAVE =====");
-            console.log("A. Draft ID being replaced:", currentDraft.caseId);
-            console.log("B. New Backend ID being saved:", caseId);
-            console.log("C. Are uploads attached to this save?:", !!savedCase.uploads);
-            console.log("D. Suspect attached?:", savedCase.uploads?.suspect);
-            console.log("================================");
-            
-            //  Store the actual signature result if it exists
-            if (analysisResult) {
-                set((state) => ({
-                    signatureAnalysisResults: {
-                        ...state.signatureAnalysisResults,
-                        [caseId]: analysisResult
-                    }
-                }));
-            }
 
-            //const isSuspected = (analysisResult?.Verdict ?? analysisResult?.verdict) === 'FORGED';
-            
+            caseLog.info('CaseStore:Submit', 'Saving case to store', {
+              draftId: currentDraft.caseId,
+              backendId: caseId,
+              hasUploads: !!savedCase.uploads,
+              hasSuspect: !!savedCase.uploads?.suspect,
+            });
+
             set((state) => {
               const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
-                // const savedCaseWithUploads: SavedCase = {
-                //   ...savedCase,
-                //   uploads: {
-                //     references: [...currentDraft.uploads.references],
-                //     suspect: currentDraft.uploads.suspect,
-                //   },
-                //   verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
-                //   Verdict: analysisResult?.Verdict ?? analysisResult?.verdict,
-                //   confidence: isSuspected
-                //     ? (analysisResult?.confidence_forged ?? 0)
-                //     : (analysisResult?.confidence_genuine ?? 0),
-                // };
               const nextCases: SavedCase[] = [...filteredCases, savedCase];
-              
               const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+
               return {
                 cases: nextCases,
                 draftSignatureCase: createInitialDraft(nextCaseNumber),
                 nextCaseNumber,
                 nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
                 activeSignatureCaseId: caseId,
-                
                 signatureAnalysisResults: {
                   ...state.signatureAnalysisResults,
-                  [caseId]: analysisResult 
-                }
-            };
-          });
+                  [caseId]: analysisResult,
+                },
+                submissionStatus: 'success',
+                submissionStep: 'Complete',
+                submissionProgress: 100,
+              };
+            });
 
-            caseLog.info('CaseStore:Submit', `✓ Case submitted successfully`, { caseId, analysisResult });
+            caseLog.info('CaseStore:Submit', '✓ Case submitted successfully', { caseId, analysisResult });
 
             return savedCase;
           } catch (e) {
             const error = e as Error;
             caseLog.error('CaseStore:Submit', 'Submission failed', error);
+            set({
+              submissionStatus: 'error',
+              submissionError: error.message || 'Something went wrong while submitting the case.',
+            });
             throw e;
           } finally {
             set({ isSubmitting: false });
           }
-            },
+        },
 
         resetMockDatabase: () => {
           caseLog.warn('CaseStore:Reset', 'Resetting mock database to initial state');
@@ -655,6 +674,10 @@ export const useCaseStore = create<CaseStore>()(
             nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
             activeSignatureCaseId: null,
             signatureAnalysisResults: {},
+            submissionStatus: 'idle',
+            submissionStep: '',
+            submissionProgress: 0,
+            submissionError: null,
           });
         },
       };

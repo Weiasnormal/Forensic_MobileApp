@@ -94,6 +94,11 @@ export function SignatureProcessingView() {
   const nav = router as any;
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+  const submissionStatus = useCaseStore((state) => state.submissionStatus);
+  const submissionStep = useCaseStore((state) => state.submissionStep);
+  const submissionProgress = useCaseStore((state) => state.submissionProgress);
+  const submissionError = useCaseStore((state) => state.submissionError);
+  const resetSubmissionState = useCaseStore((state) => state.resetSubmissionState);
 
   const setSignatureStatus = (status: CaseStatus) => {
     if (!currentCaseId) return;
@@ -105,6 +110,19 @@ export function SignatureProcessingView() {
     nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
   };
 
+  useEffect(() => {
+    if (submissionStatus !== 'error') return;
+    Alert.alert('Submission failed', submissionError || 'An unexpected error occurred.', [
+      {
+        text: 'Back to uploads',
+        onPress: () => {
+          resetSubmissionState();
+          nav.replace('/analysis/signature/uploads');
+        },
+      },
+    ]);
+  }, [submissionStatus]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <ProcessingScreen
@@ -112,8 +130,10 @@ export function SignatureProcessingView() {
         subtitle="AI forensic engine is running multi-stage comparison"
         accentColor={ACCENT}
         steps={processingSteps}
+        progress={submissionProgress}
+        statusText={submissionStep || 'Preparing…'}
         onComplete={() => {
-          if (currentCaseId) {
+          if (submissionStatus === 'success' && currentCaseId) {
             nav.replace(`/analysis/signature/results/${currentCaseId}`);
           }
         }}
@@ -140,17 +160,16 @@ export function SignatureResultsScreen() {
   const currentCase = useCaseStore((state) =>
     safeCaseId ? state.cases.find((c) => String(c.caseId) === safeCaseId) : undefined,
   );
-  const allCases = useCaseStore((state) => state.cases);
-
-  console.log("===== DEBUGGING RESULTS PAGE =====");
-  console.log("1. Clean Safe Case ID:", safeCaseId);
-  console.log("2. Did we find the case in the store?:", !!currentCase);
-  console.log("3. ALL IDs currently in store:", allCases.map(c => c.caseId));
-  if (currentCase) {
-    console.log("4. Uploads object exists?:", !!currentCase.uploads);
-    console.log("5. Suspect Image inside store:", currentCase.uploads?.suspect);
-  }
-  console.log("==================================");
+  //const allCases = useCaseStore((state) => state.cases);
+  // console.log("===== DEBUGGING RESULTS PAGE =====");
+  // console.log("1. Clean Safe Case ID:", safeCaseId);
+  // console.log("2. Did we find the case in the store?:", !!currentCase);
+  // console.log("3. ALL IDs currently in store:", allCases.map(c => c.caseId));
+  // if (currentCase) {
+  //   console.log("4. Uploads object exists?:", !!currentCase.uploads);
+  //   console.log("5. Suspect Image inside store:", currentCase.uploads?.suspect);
+  // }
+  // console.log("==================================");
 
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
   const insets = useSafeAreaInsets();
