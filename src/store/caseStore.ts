@@ -62,6 +62,7 @@ export interface SavedCase extends DraftCase {
   Verdict?: string;
   confidence?: number;
   Confidence?: number;
+  examiner: string;
 }
 
 type DraftEditableField = 'subjectName' | 'examiner' | 'documentType' | 'priority';
@@ -568,6 +569,7 @@ export const useCaseStore = create<CaseStore>()(
 
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
             set({ submissionStep: 'Running AI forensic comparison', submissionProgress: 65 });
+            set({ submissionStep: 'Analyzing forensic features', submissionProgress: 72 });
 
             const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
             const timeTakenMs = Date.now() - startTime;
