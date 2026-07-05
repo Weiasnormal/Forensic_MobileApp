@@ -21,9 +21,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.forensic"
     },
     "web": {
       "output": "static",
@@ -50,11 +53,11 @@
           "microphonePermission": "Allow Forensic to access your microphone."
         }
       ],
-      "expo-asset" 
+      "expo-asset"
     ]
   },
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+  "experiments": {
+    "typedRoutes": true,
+    "reactCompiler": true
+  }
 }
