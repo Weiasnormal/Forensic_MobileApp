@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -32,14 +32,63 @@ export default function ProcessingScreen({
   const isControlled = controlledProgress !== undefined;
   const [internalProgress, setInternalProgress] = useState(0);
   const [isCompleteFired, setIsCompleteFired] = useState(false);
-  const progress = isControlled ? Math.min(100, Math.max(0, controlledProgress!)) : internalProgress;
+
+  const targetProgress = isControlled
+    ? Math.min(100, Math.max(0, controlledProgress!))
+    : internalProgress;
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const targetRef = useRef(targetProgress);
+  const creepAccumulatorRef = useRef(0);
+
+  useEffect(() => {
+    targetRef.current = targetProgress;
+  }, [targetProgress]);
+
+  useEffect(() => {
+    let lastTick = Date.now();
+
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      const dt = now - lastTick;
+      lastTick = now;
+
+      setDisplayProgress((current) => {
+        const target = targetRef.current;
+
+        if (current < target) {
+          const gap = target - current;
+          const step = Math.max(1, Math.ceil(gap / 6));
+          return Math.min(target, current + step);
+        }
+
+        if (isControlled && target < 100 && current < 97) {
+          creepAccumulatorRef.current += dt;
+          if (creepAccumulatorRef.current >= 650) {
+            creepAccumulatorRef.current = 0;
+            return Math.min(current + 1, target + 10, 97);
+          }
+          return current;
+        }
+
+        if (current > target) {
+          return target;
+        }
+
+        return current;
+      });
+    }, 45);
+
+    return () => clearInterval(intervalId);
+  }, [isControlled]);
+
+  const progress = displayProgress;
 
   const stepProgressWidth = 100 / steps.length;
   const activeStepIndex = Math.min(steps.length - 1, Math.floor(progress / stepProgressWidth));
   const dashOffset = useMemo(() => CIRCUMFERENCE - (CIRCUMFERENCE * progress) / 100, [progress]);
 
   useEffect(() => {
-    if (isControlled) return; // real progress is driving this, skip the fake ticker entirely
+    if (isControlled) return; 
     const tickMs = Math.max(Math.round(totalDurationMs / 100), 30);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const tick = () => {
@@ -63,11 +112,9 @@ export default function ProcessingScreen({
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
         
-        {/* TOP SECTION: Radial Progress & Main Headers */}
         <View style={styles.topSection}>
           <View style={styles.ringWrap}>
             <Svg width={RING_SIZE} height={RING_SIZE}>
-              {/* Light gray inactive track */}
               <Circle
                 stroke="#F1F5F9"
                 fill="none"
