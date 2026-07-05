@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdminNavbar, { type AdminTabKey } from './_navbar/admin_nav_bar';
+import { MemberRequestCard, PendingReviewCard } from './cards';
 import AdminCasesScreen from './admin_cases';
 import AdminTeamScreen from './admin_team';
 import AdminStatsScreen from './admin_stats';
@@ -128,7 +129,7 @@ function AdminHomeTab({
 	onViewAllCases: () => void;
 }) {
 	const [memberRequests, setMemberRequests] = useState<MockMemberRequest[]>(MOCK_MEMBER_REQUESTS);
-	const [pendingReviews, setPendingReviews] = useState<MockPendingReview[]>(MOCK_PENDING_REVIEWS);
+	const [pendingReviews] = useState<MockPendingReview[]>(MOCK_PENDING_REVIEWS);
 
 	const handleApproveRequest = (id: string) => {
 		setMemberRequests((current) => current.filter((item) => item.id !== id));
@@ -161,29 +162,12 @@ function AdminHomeTab({
 			{memberRequests.length > 0 ? (
 				<View style={styles.listGroup}>
 					{memberRequests.map((member) => (
-						<View key={member.id} style={styles.requestRow}>
-							<View style={styles.requestAvatar}>
-								<Text style={styles.requestAvatarText}>{getInitials(member.firstName, member.lastName)}</Text>
-							</View>
-							<View style={{ flex: 1 }}>
-								<Text style={styles.requestName}>{member.firstName} {member.lastName}</Text>
-								<Text style={styles.requestTimeAgo}>{member.timeAgo}</Text>
-							</View>
-							<View style={styles.requestActions}>
-								<TouchableOpacity
-									style={[styles.iconButton, styles.iconButtonAccept]}
-									onPress={() => handleApproveRequest(member.id)}
-								>
-									<Ionicons name="checkmark" size={18} color="#16A34A" />
-								</TouchableOpacity>
-								<TouchableOpacity
-									style={[styles.iconButton, styles.iconButtonReject]}
-									onPress={() => handleRejectRequest(member.id)}
-								>
-									<Ionicons name="close" size={18} color="#EF4444" />
-								</TouchableOpacity>
-							</View>
-						</View>
+						<MemberRequestCard
+							key={member.id}
+							request={member}
+							onApprove={handleApproveRequest}
+							onReject={handleRejectRequest}
+						/>
 					))}
 				</View>
 			) : (
@@ -202,17 +186,7 @@ function AdminHomeTab({
 			{pendingReviews.length > 0 ? (
 				<View style={styles.listGroup}>
 					{pendingReviews.map((review) => (
-						<View key={review.id} style={styles.reviewRow}>
-							<View style={styles.reviewAccent} />
-							<View style={styles.reviewInfo}>
-								<Text style={styles.reviewCaseCode}>{review.caseCode}</Text>
-								<Text style={styles.reviewMeta}>{review.examiner} · {review.dateLabel}</Text>
-								<Text style={styles.reviewVerdict}>{review.verdictLabel} · {review.confidence.toFixed(1)}%</Text>
-							</View>
-							<TouchableOpacity style={styles.reviewButton} onPress={onViewAllCases}>
-								<Text style={styles.reviewButtonText}>Review</Text>
-							</TouchableOpacity>
-						</View>
+						<PendingReviewCard key={review.id} review={review} onReview={() => onViewAllCases()} />
 					))}
 				</View>
 			) : (
@@ -318,10 +292,12 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: '#DDE6F2',
 		padding: 14,
+		width: 175,
+		height: 137,
 	},
 	statIconWrap: {
-		width: 34,
-		height: 34,
+		width: 45,
+		height: 45,
 		borderRadius: 11,
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -358,113 +334,6 @@ const styles = StyleSheet.create({
 	listGroup: {
 		gap: 10,
 		marginBottom: 18,
-	},
-	requestRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-		backgroundColor: '#FFFFFF',
-		borderRadius: 14,
-		borderWidth: 1,
-		borderColor: '#E3EAF3',
-		padding: 12,
-	},
-	requestAvatar: {
-		width: 38,
-		height: 38,
-		borderRadius: 19,
-		backgroundColor: '#EAF3FF',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	requestAvatarText: {
-		color: '#1E6FD9',
-		fontWeight: '800',
-		fontSize: 13,
-	},
-	requestName: {
-		color: '#0F172A',
-		fontSize: 13,
-		fontWeight: '800',
-	},
-	requestTimeAgo: {
-		color: '#94A3B8',
-		fontSize: 11,
-		fontWeight: '600',
-		marginTop: 1,
-	},
-	requestActions: {
-		flexDirection: 'row',
-		gap: 8,
-	},
-	iconButton: {
-		width: 34,
-		height: 34,
-		borderRadius: 17,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	iconButtonAccept: {
-		backgroundColor: '#ECFDF3',
-	},
-	iconButtonReject: {
-		backgroundColor: '#FEF1F1',
-	},
-	reviewRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 12,
-		backgroundColor: '#FFFFFF',
-		borderRadius: 14,
-		borderWidth: 1,
-		borderColor: '#E3EAF3',
-		paddingVertical: 12,
-		paddingHorizontal: 14,
-		overflow: 'hidden',
-	},
-	reviewAccent: {
-		position: 'absolute',
-		left: 13,
-		top: 12,
-		bottom: 12,
-		width: 3,
-		borderRadius: 999,
-		backgroundColor: '#1E6FD9',
-	},
-	reviewInfo: {
-		flex: 1,
-		paddingLeft: 6,
-	},
-	reviewCaseCode: {
-		color: '#0F172A',
-		fontSize: 13,
-		fontWeight: '800',
-		left: 6,
-	},
-	reviewMeta: {
-		color: '#94A3B8',
-		fontSize: 11,
-		fontWeight: '600',
-		marginTop: 2,
-		left: 6,
-	},
-	reviewVerdict: {
-		color: '#1E6FD9',
-		fontSize: 11,
-		fontWeight: '700',
-		marginTop: 2,
-		left: 6,
-	},
-	reviewButton: {
-		backgroundColor: '#EAF3FF',
-		borderRadius: 999,
-		paddingHorizontal: 14,
-		paddingVertical: 8,
-	},
-	reviewButtonText: {
-		color: '#1E6FD9',
-		fontSize: 12,
-		fontWeight: '800',
 	},
 	emptyMini: {
 		backgroundColor: '#FFFFFF',
