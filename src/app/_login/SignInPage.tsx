@@ -4,18 +4,16 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
 import { type SignInFormValues, signInSchema } from '../../utils/validation';
 
-const maintenanceImage = require('../../../assets/expo.icon/Assets/under_maintenance.webp');
 
 export default function LogInPage() {
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<AppRole>('analyst');
   const [showPassword, setShowPassword] = useState(false);
-  const isOrgAdmin = activeRole === 'admin';
+  //const isOrgAdmin = activeRole === 'admin';
 
   const roleConfig = ROLE_SETTINGS[activeRole].signIn;
   const {
@@ -76,15 +74,15 @@ export default function LogInPage() {
             </TouchableOpacity>
           </View>
 
-          {isOrgAdmin ? (
+          {/* {isOrgAdmin ? (
             <View style={styles.maintenanceWrap}>
               <Image source={maintenanceImage} style={styles.maintenanceImage} resizeMode="contain" />
               <Text allowFontScaling={false} style={styles.maintenanceTitle}>Feature Currently Unavailable</Text>
               <Text allowFontScaling={false} style={styles.maintenanceBody}>
-                This section is currently being polished. We'll be ready for you shortly.
+                This section is currently being polished. We`&apos;`ll be ready for you shortly.
               </Text>
             </View>
-          ) : (
+          ) : ( */}
             <View style={styles.formFields}>
               <View style={styles.inputGroup}>
                 <Text allowFontScaling={false} style={styles.label}>Email</Text>
@@ -147,20 +145,20 @@ export default function LogInPage() {
                 </TouchableOpacity>
               </View>
             </View>
-          )}
+          
 
           <View style={styles.bottomActions}>
             <TouchableOpacity
-              style={[styles.primaryButton, isOrgAdmin && styles.primaryButtonDisabled]}
+              style={[styles.primaryButton]} //, isOrgAdmin && styles.primaryButtonDisabled
               activeOpacity={0.9}
               onPress={handleSubmit(handleSignIn)}
-              disabled={isOrgAdmin}
+              //disabled={isOrgAdmin}
             >
               <Text allowFontScaling={false} style={styles.primaryButtonText}>Sign In</Text>
             </TouchableOpacity>
 
             <View style={styles.footerRow}>
-              <Text allowFontScaling={false} style={styles.footerPrompt}>Don't have an account?</Text>
+              <Text allowFontScaling={false} style={styles.footerPrompt}>Don`&apos;`t have an account?</Text>
               <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/_signup/SignUppage')}>
                 <Text allowFontScaling={false} style={styles.footerAction}>Create account</Text>
               </TouchableOpacity>
