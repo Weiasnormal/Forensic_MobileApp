@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -21,6 +21,7 @@ import ToggleRow from '@/_components/common/ToggleRow';
 import Divider from '@/_components/common/Divider';
 import SignOutButton from '@/_components/common/SignOutButton';
 import Avatar from '@/_components/common/Avatar';
+import LogoutModal from '@/_components/modals/logout';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,6 +70,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onSignOutPress,
 }) => {
   const insets = useSafeAreaInsets();
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
@@ -141,8 +143,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <SettingsRow icon={FileText} title="App Version" rightText={appVersion} showChevron={false} />
         </GroupedCard>
 
-        <SignOutButton onPress={onSignOutPress} style={styles.signOutSpacing} />
-      </ScrollView>
+        <SignOutButton
+          style={styles.signOutSpacing}
+          onPress={() => setLogoutModalVisible(true)}
+        />
+
+        <LogoutModal
+          visible={logoutModalVisible}
+          onCancel={() => setLogoutModalVisible(false)}
+          onLogout={() => {
+            setLogoutModalVisible(false);
+
+            // Call the parent logout handler
+            onSignOutPress?.();
+          }}
+        />
+      </ScrollView>    
     </SafeAreaView>
   );
 };

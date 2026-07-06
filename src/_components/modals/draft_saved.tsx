@@ -1,6 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
+import TertiaryButton from '@/_components/common/TertiaryButton';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface DraftSavedModalProps {
   visible: boolean;
@@ -36,26 +41,31 @@ export default function DraftSavedModal({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
-          <Pressable style={styles.primaryButton} onPress={onContinue}>
-            <Text style={styles.primaryButtonText}>{primaryLabel}</Text>
-          </Pressable>
+          <PrimaryButton
+            label={primaryLabel}
+            onPress={onContinue}
+            backgroundColor="#1E6FD9"
+            style={styles.primaryButton}
+          />
 
           {secondaryLabel ? (
-            <Pressable
-              style={styles.secondaryButton}
+            <SecondaryButton
+              label={secondaryLabel}
               onPress={onSecondaryPress ?? handleClose}
-            >
-              <Text style={styles.secondaryButtonText}>{secondaryLabel}</Text>
-            </Pressable>
+              backgroundColor="#FFFFFF"
+              textVariant="b3Button"
+              style={styles.secondaryButton}
+            />
           ) : null}
 
           {tertiaryLabel ? (
-            <Pressable
-              style={styles.tertiaryButton}
+            <TertiaryButton
+              label={tertiaryLabel}
               onPress={onTertiaryPress ?? handleClose}
-            >
-              <Text style={styles.tertiaryButtonText}>{tertiaryLabel}</Text>
-            </Pressable>
+              backgroundColor="#FFFFFF"
+              textVariant="b3Button"
+              style={styles.tertiaryButton}
+            />
           ) : null}
         </View>
       </View>
@@ -81,8 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 19,
-    fontWeight: '800',
+    ...getTypographyStyle('t3Title'),
     color: '#0F172A',
     marginBottom: 8,
     textAlign: 'center',
@@ -90,51 +99,19 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     color: '#64748B',
-    fontSize: 14,
-    lineHeight: 20,
+    ...getTypographyStyle('headline', 'regular'),
     marginBottom: 14,
   },
   primaryButton: {
     width: '100%',
-    borderRadius: 12,
-    backgroundColor: '#1E6FD9',
-    paddingVertical: 14,
-    alignItems: 'center',
     marginTop: 2,
   },
   secondaryButton: {
     width: '100%',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D8E3EF',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    alignItems: 'center',
     marginTop: 10,
-  },
-  secondaryButtonText: {
-    color: '#EF4444',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
   },
   tertiaryButton: {
     width: '100%',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D8E3EF',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    alignItems: 'center',
     marginTop: 10,
-  },
-  tertiaryButtonText: {
-    color: '#64748B',
-    fontSize: 15,
-    fontWeight: '800',
   },
 });
