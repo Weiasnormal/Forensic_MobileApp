@@ -10,10 +10,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
-import { MemberRequestCard, PendingReviewCard } from './cards';
-// import AdminCasesScreen from './admin_cases';
-// import AdminTeamScreen from './admin_team';
-// import AdminStatsScreen from './admin_stats';
+import { MemberRequestCard, PendingReviewCard, type MemberRequestData } from './cards';
+import AdminCasesScreen from './admin_cases';
+import AdminTeamScreen from './admin_team';
+import AdminStatsScreen from './admin_stats';
 import ProfileScreen from './ProfileScreen';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
