@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '../../constants/typography';
 
 interface FormFieldProps {
   label: string;
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption'),
     color: colors.textSecondary,
     marginBottom: 6,
   },
@@ -51,11 +52,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    fontSize: 15,
+    ...getTypographyStyle('body'),
     color: colors.textPrimary,
   },
   inputDisabled: {
     color: colors.disabledText,
+    backgroundColor: colors.disabledBackground,
+    borderColor: colors.disabledBorder,
   },
 });
 

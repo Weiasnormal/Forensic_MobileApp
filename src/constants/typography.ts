@@ -13,7 +13,7 @@ export const typography = {
 	t2Title: { fontSize: 22, weight: 'bold' as SoraWeight },
 	t3Title: { fontSize: 17, weight: 'bold' as SoraWeight },
 	headline: { fontSize: 14, weight: 'bold' as SoraWeight },
-	body: { fontSize: 12, lineHeight: 17, weight: 'regular' as SoraWeight },
+	body: { fontSize: 15, lineHeight: 22, weight: 'regular' as SoraWeight },
 	l1List: { fontSize: 13, weight: 'bold' as SoraWeight },
 	l2List: { fontSize: 11, weight: 'bold' as SoraWeight },
 	c1Caption: { fontSize: 13, weight: 'semiBold' as SoraWeight },

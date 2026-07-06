@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background2,
   },
   backButton: {
     width: 36,

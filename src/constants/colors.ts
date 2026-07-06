@@ -1,6 +1,7 @@
 export const colors = {
   background: '#F8FAFC',
-  cardBackground: '#F7F8FA',
+  background2: '#ffffff',
+  cardBackground: '#ffffff',
   border: '#E8EDF3',
 
   textPrimary: '#0F172A',
@@ -20,9 +21,10 @@ export const colors = {
   warningIcon: '#4B5563',
   warningText: '#5B6270',
 
-  disabledBackground: '#F1F2F5',
+  disabledBackground: '#F8FAFC',
   disabledText: '#A6ACB8',
+  disabledBorder: '#E2E8F0',
 
-  inputBackground: '#F7F8FA',
-  inputBorder: '#ECEEF1',
+  inputBackground: '#FFFFFF',
+  inputBorder: '#E2E8F0',
 };
