@@ -1,17 +1,35 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface SecondaryButtonProps {
   label: string;
   onPress?: () => void;
   style?: ViewStyle;
+  textVariant?: 'b1Button' | 'b2Button' | 'b3Button';
+  textStyle?: TextStyle;
+  disabled?: boolean;
 }
 
-const SecondaryButton: React.FC<SecondaryButtonProps> = ({ label, onPress, style }) => {
+const SecondaryButton: React.FC<SecondaryButtonProps> = ({
+  label,
+  onPress,
+  style,
+  textVariant = 'b1Button',
+  textStyle,
+  disabled = false,
+}) => {
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.label}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.button, disabled && styles.disabledButton, style]}
+      onPress={onPress}
+      activeOpacity={0.7}
+      disabled={disabled}
+    >
+      <Text style={[styles.label, getTypographyStyle(textVariant), textStyle, disabled && styles.disabledLabel]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -26,10 +44,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  disabledButton: {
+    opacity: 0.45,
+  },
   label: {
     color: colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '600',
+  },
+  disabledLabel: {
+    color: colors.textTertiary,
   },
 });
 

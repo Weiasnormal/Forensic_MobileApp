@@ -7,6 +7,7 @@ import QRCodePlaceholder from '@/_components/admin/QRCodePlaceholder';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface OrgInviteCodeScreenProps {
   inviteCode: string;
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   },
   caption: {
     textAlign: 'center',
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption', 'regular'),
     color: colors.textSecondary,
     marginTop: 8,
     marginBottom: 24,
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     flex: 1,
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption', 'regular'),
     lineHeight: 18,
     color: colors.warningText,
   },
