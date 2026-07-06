@@ -25,7 +25,7 @@ const SCREEN_BG = '#ffffff';
 
 const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
 const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
-  'Heatmap': 'heatmap',
+  'Heatmap': 'overlay',
   'Bounding Box': 'bbox',
   'Stroke Diff': 'stroke_diff',
   };
