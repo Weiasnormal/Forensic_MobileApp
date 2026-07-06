@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface InfoRowProps {
   label: string;
@@ -37,21 +38,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#E3EAF3',
   },
   textWrapper: {
     flex: 1,
   },
   label: {
-    fontSize: 13,
+    ...getTypographyStyle('c2Caption'),
     color: colors.textSecondary,
     marginBottom: 4,
   },
   value: {
-    fontSize: 15.5,
-    fontWeight: '700',
+    ...getTypographyStyle('t3Title', 'bold'),
     color: colors.textPrimary,
   },
 });

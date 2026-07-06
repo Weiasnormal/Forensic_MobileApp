@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Home, ClipboardList, Users, BarChart3, User, LucideIcon } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
+import { getTypographyStyle } from '../../constants/typography';
 
 export type AdminTabKey = 'home' | 'cases' | 'team' | 'stats' | 'profile';
 
@@ -35,7 +36,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ activeTab, onTabChange }) => 
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 25 }]}>
       {TABS.map(({ key, label, icon: Icon }) => {
         const isActive = key === activeTab;
         const tint = isActive ? colors.primary : colors.textTertiary;
@@ -47,7 +48,9 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ activeTab, onTabChange }) => 
             onPress={() => onTabChange(key)}
             activeOpacity={0.7}
           >
-            <Icon size={22} color={tint} />
+            <View style={isActive ? styles.activeIconPill : styles.inactiveIconWrap}>
+              <Icon size={24} color={tint}/>
+            </View>
             <Text style={[styles.label, { color: tint }]}>{label}</Text>
           </TouchableOpacity>
         );
@@ -61,16 +64,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 8,
-    backgroundColor: colors.background,
+    paddingTop: 20,
+    backgroundColor: colors.background2,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
   },
+  activeIconPill: {
+    minWidth: 52,
+    height: 30,
+    paddingHorizontal: 18,
+    borderRadius: 99,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inactiveIconWrap: {
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
+    ...getTypographyStyle('c2Caption'),
     marginTop: 4,
   },
 });

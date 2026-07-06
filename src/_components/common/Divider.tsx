@@ -10,6 +10,7 @@ const styles = StyleSheet.create({
   line: {
     height: 1,
     backgroundColor: colors.border,
+    marginHorizontal: -16,
   },
 });
 

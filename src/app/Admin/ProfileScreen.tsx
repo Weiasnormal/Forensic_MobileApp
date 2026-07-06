@@ -72,15 +72,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Avatar initials={initials} size={64} variant="onDark" />
-        <View style={styles.headerCopy}>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.subtitle}>
-            {role} • {organization}
-          </Text>
+        <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
+          <View style={styles.headerGlow} />
+          <Avatar initials={initials} size={64} variant="onDark" />
+          <View style={styles.headerCopy}>
+            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.subtitle}>
+              {role} • {organization}
+            </Text>
+          </View>
         </View>
-      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollArea}>
         <SectionLabel label="Account" />
@@ -149,16 +150,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.background,
   },
   header: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    overflow: 'hidden',
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 35,
+  },
+  headerGlow: {
+    position: 'absolute',
+    right: -100,
+    bottom: -170,
+    width: 232,
+    height: 232,
+    borderRadius: 116,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   headerCopy: {
     marginLeft: 18,
@@ -180,7 +192,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingTop: 25,
 		paddingBottom: 18,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
 	},
 });
 

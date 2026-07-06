@@ -17,7 +17,7 @@ const GroupedCard: React.FC<GroupedCardProps> = ({ children }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
