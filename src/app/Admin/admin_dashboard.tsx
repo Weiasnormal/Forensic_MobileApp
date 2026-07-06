@@ -4,17 +4,17 @@ import { useUser } from '@/store/userStore';
 import { MOCK_PENDING_REVIEWS, type MockPendingReview } from '@/constants/adminMockData';
 import { Ionicons } from '@expo/vector-icons';
 import * as NavigationBar from 'expo-navigation-bar';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AdminNavbar, { type AdminTabKey } from './_navbar/admin_nav_bar';
-import { MemberRequestCard, PendingReviewCard, type MemberRequestData } from './cards';
-import AdminCasesScreen from './admin_cases';
-import AdminTeamScreen from './admin_team';
-import AdminStatsScreen from './admin_stats';
-import AdminProfileScreen from './admin_profile';
+import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
+import { MemberRequestCard, PendingReviewCard } from './cards';
+// import AdminCasesScreen from './admin_cases';
+// import AdminTeamScreen from './admin_team';
+// import AdminStatsScreen from './admin_stats';
+import ProfileScreen from './ProfileScreen';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
@@ -32,7 +32,10 @@ function getInitials(first = '', last = '') {
 
 export default function AdminDashboard() {
 	const params = useLocalSearchParams<{ tab?: string | string[] }>();
+	const router = useRouter();
 	const [activeTab, setActiveTab] = useState<AdminTabKey>(resolveTabValue(params.tab));
+	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 
 	const { user, load } = useUser();
 	const cases = useCaseStore((state) => state.cases);
@@ -76,7 +79,7 @@ export default function AdminDashboard() {
 
 	return (
 		<SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-			<StatusBar style="dark" backgroundColor="#ffffff" />
+			<StatusBar style="light" translucent backgroundColor="#ffffff" />
 
 			{activeTab === 'home' ? (
 				<View style={styles.homeHeader}>
@@ -113,14 +116,32 @@ export default function AdminDashboard() {
 						onViewAllCases={() => setActiveTab('cases')}
 					/>
 				</ScrollView>
-			) : activeTab === 'cases' ? (
-				<AdminCasesScreen />
-			) : activeTab === 'team' ? (
-				<AdminTeamScreen />
-			) : activeTab === 'stats' ? (
-				<AdminStatsScreen />
+			// ) : activeTab === 'cases' ? (
+			// 	<AdminCasesScreen />
+			// ) : activeTab === 'team' ? (
+			// 	<AdminTeamScreen />
+			// ) : activeTab === 'stats' ? (
+			// 	<AdminStatsScreen />
 			) : (
-				<AdminProfileScreen onNavigateTab={setActiveTab} />
+				<ProfileScreen
+					initials={getInitials(user?.firstName || '', user?.lastName || '')}
+					name={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Admin'}
+					role="Admin"
+					organization={user?.organization || 'PNP Crime Laboratory'}
+					appVersion="v1.0.0"
+					notificationsEnabled={notificationsEnabled}
+					autoExportEnabled={autoExportEnabled}
+					onEditProfilePress={() => router.push('/Admin/profileScreens/EditProfileScreen')}
+					onChangePasswordPress={() => router.push('/_login/forgot_password/enterEmail')}
+					onOrganizationPress={() => router.push('/Admin/profileScreens/OrganizationScreen')}
+					onOrgInviteCodePress={() => router.push('/Admin/profileScreens/OrgInviteCodeScreen')}
+					onManageTeamPress={() => setActiveTab('team')}
+					onOrganizationStatsPress={() => setActiveTab('stats')}
+					onToggleNotifications={setNotificationsEnabled}
+					onToggleAutoExport={setAutoExportEnabled}
+					onHelpSupportPress={() => router.push('/Admin/profileScreens/HelpSupportScreen')}
+					onSignOutPress={() => router.replace('/_login/SignInPage')}
+				/>
 			)}
 
 			<AdminNavbar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -233,7 +254,7 @@ function StatCard({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: 'transparent',
 	},
 	homeHeader: {
 		backgroundColor: '#ffffff',
