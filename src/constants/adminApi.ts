@@ -8,6 +8,7 @@
 //
 //   GET    /admin/team                 -> list of { id, firstName, lastName, email, role, status, casesHandled, createdAt }
 //   POST   /admin/team/{id}/approve    -> approve a pending analyst signup
+//   POST   /admin/team/{id}/reject     -> deny a pending analyst signup
 //   POST   /admin/team/{id}/suspend    -> suspend/deactivate a team member
 //   POST   /admin/team/invite          -> generate a new invite code, returns { code }
 //   GET    /admin/organization         -> org profile/settings
@@ -17,6 +18,7 @@ export const ADMIN_API_ENDPOINTS = {
   team: {
     list: '/admin/team',
     approve: (id: string) => `/admin/team/${id}/approve`,
+    reject: (id: string) => `/admin/team/${id}/reject`,
     suspend: (id: string) => `/admin/team/${id}/suspend`,
     invite: '/admin/team/invite',
   },

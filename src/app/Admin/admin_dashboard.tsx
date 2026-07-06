@@ -1,12 +1,12 @@
 import { getCaseSummary, useCaseStore } from '@/store/caseStore';
-import { getTeamSummary, useAdminStore } from '@/store/adminStore';
+import { formatRelativeTime, getTeamSummary, useAdminStore } from '@/store/adminStore';
 import { useUser } from '@/store/userStore';
-import { MOCK_ACTIVE_ANALYSTS_COUNT, MOCK_MEMBER_REQUESTS, MOCK_PENDING_REVIEWS, type MockMemberRequest, type MockPendingReview } from '@/constants/adminMockData';
+import { MOCK_PENDING_REVIEWS, type MockPendingReview } from '@/constants/adminMockData';
 import { Ionicons } from '@expo/vector-icons';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
@@ -42,7 +42,10 @@ export default function AdminDashboard() {
 	const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend);
 
 	const teamMembers = useAdminStore((state) => state.teamMembers);
+	const pendingApprovals = useAdminStore((state) => state.pendingApprovals);
 	const fetchTeamMembers = useAdminStore((state) => state.fetchTeamMembers);
+	const approveTeamMember = useAdminStore((state) => state.approveTeamMember);
+	const rejectTeamMember = useAdminStore((state) => state.rejectTeamMember);
 
 	useEffect(() => {
 		setActiveTab(resolveTabValue(params.tab));
@@ -62,7 +65,17 @@ export default function AdminDashboard() {
 
 	const { totalCases, suspectCount } = getCaseSummary(cases);
 	const { activeCount } = getTeamSummary(teamMembers);
-	const activeAnalystsValue = teamMembers.length > 0 ? activeCount : MOCK_ACTIVE_ANALYSTS_COUNT;
+
+	const memberRequests: MemberRequestData[] = useMemo(
+		() =>
+			pendingApprovals.map((member) => ({
+				id: member.id,
+				firstName: member.firstName,
+				lastName: member.lastName,
+				timeAgo: formatRelativeTime(member.joinedAt),
+			})),
+		[pendingApprovals],
+	);
 
 	return (
 		<SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -95,8 +108,10 @@ export default function AdminDashboard() {
 					<AdminHomeTab
 						totalCases={totalCases}
 						suspectCount={suspectCount}
-						activeAnalysts={activeAnalystsValue}
-						pendingReviewCount={MOCK_PENDING_REVIEWS.length}
+						activeAnalysts={activeCount}
+						memberRequests={memberRequests}
+						onApproveRequest={approveTeamMember}
+						onRejectRequest={rejectTeamMember}
 						onViewTeam={() => setActiveTab('team')}
 						onViewAllCases={() => setActiveTab('cases')}
 					/>
@@ -138,27 +153,22 @@ function AdminHomeTab({
 	totalCases,
 	suspectCount,
 	activeAnalysts,
-	pendingReviewCount,
+	memberRequests,
+	onApproveRequest,
+	onRejectRequest,
 	onViewTeam,
 	onViewAllCases,
 }: {
 	totalCases: number;
 	suspectCount: number;
 	activeAnalysts: number;
-	pendingReviewCount: number;
+	memberRequests: MemberRequestData[];
+	onApproveRequest: (id: string) => void;
+	onRejectRequest: (id: string) => void;
 	onViewTeam: () => void;
 	onViewAllCases: () => void;
 }) {
-	const [memberRequests, setMemberRequests] = useState<MockMemberRequest[]>(MOCK_MEMBER_REQUESTS);
 	const [pendingReviews] = useState<MockPendingReview[]>(MOCK_PENDING_REVIEWS);
-
-	const handleApproveRequest = (id: string) => {
-		setMemberRequests((current) => current.filter((item) => item.id !== id));
-	};
-
-	const handleRejectRequest = (id: string) => {
-		setMemberRequests((current) => current.filter((item) => item.id !== id));
-	};
 
 	return (
 		<View style={styles.paddedSection}>
@@ -168,7 +178,7 @@ function AdminHomeTab({
 					<StatCard label="Total Cases" value={String(totalCases)} icon="folder-open-outline" tint="#1E6FD9" />
 				</View>
 				<View style={styles.statsGridRow}>
-					<StatCard label="Pending Review" value={String(pendingReviewCount)} icon="shield-checkmark-outline" tint="#D97706" />
+					<StatCard label="Pending Review" value={String(pendingReviews.length)} icon="shield-checkmark-outline" tint="#D97706" />
 					<StatCard label="Suspected Cases" value={String(suspectCount)} icon="reader-outline" tint="#E24B4A" />
 				</View>
 			</View>
@@ -186,8 +196,8 @@ function AdminHomeTab({
 						<MemberRequestCard
 							key={member.id}
 							request={member}
-							onApprove={handleApproveRequest}
-							onReject={handleRejectRequest}
+							onApprove={onApproveRequest}
+							onReject={onRejectRequest}
 						/>
 					))}
 				</View>
