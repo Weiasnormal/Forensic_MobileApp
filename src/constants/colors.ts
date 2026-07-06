@@ -11,6 +11,7 @@ export const colors = {
   primary: '#1E6FD9',
   primaryLight: '#E8F0FE',
   primaryText: '#FFFFFF',
+  primaryDisabled: '#AFC9EA',
 
   danger: '#E24B4A',
   dangerLight: '#FEF2F2',

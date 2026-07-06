@@ -35,7 +35,11 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
 
-      {rightText ? <Text style={styles.rightText}>{rightText}</Text> : null}
+      {rightText ? (
+        <Text style={styles.rightText} numberOfLines={1} ellipsizeMode="tail">
+          {rightText}
+        </Text>
+      ) : null}
       {showChevron && <ChevronRight size={18} color={colors.textTertiary} />}
     </TouchableOpacity>
   );
@@ -67,6 +71,8 @@ const styles = StyleSheet.create({
     ...getTypographyStyle('c1Caption'),
     color: colors.textTertiary,
     marginRight: 6,
+    flexShrink: 1,
+    maxWidth: '45%',
   },
 });
 

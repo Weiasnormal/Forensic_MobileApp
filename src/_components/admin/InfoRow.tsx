@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#E3EAF3',
+    borderBottomColor: colors.border,
   },
   textWrapper: {
     flex: 1,
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   value: {
-    ...getTypographyStyle('t3Title', 'bold'),
+    ...getTypographyStyle('body', 'semiBold'),
     color: colors.textPrimary,
   },
 });

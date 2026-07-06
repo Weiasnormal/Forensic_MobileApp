@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 
@@ -10,9 +11,12 @@ interface ScreenHeaderProps {
 }
 
 const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBackPress }) => {
+  const router = useRouter();
+  const handleBackPress = onBackPress ?? (() => router.replace('/Admin/admin_dashboard?tab=profile'));
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={onBackPress} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.backButton} onPress={handleBackPress} activeOpacity={0.7}>
         <ChevronLeft size={18} color="#A7B2C3" strokeWidth={2.1} />
       </TouchableOpacity>
       <Text style={styles.title} numberOfLines={1}>

@@ -29,10 +29,10 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   onCopyCodePress,
   onMembersPress,
 }) => {
-  const { setUser } = useUser();
-  const resolvedOrganizationName = organizationName ?? 'PNP Crime Laboratory';
+  const { user, setUser } = useUser();
+  const resolvedOrganizationName = user?.organization ?? organizationName ?? 'PNP Crime Laboratory';
   const resolvedOrganizationCode = organizationCode ?? 'UST-A7F3';
-  const resolvedMemberCount = memberCount ?? 7;
+  const resolvedMemberCount = memberCount ?? 0;
   const resolvedCreatedDate = createdDate ?? 'Jan 12, 2025';
 
   const [draftOrganizationName, setDraftOrganizationName] = useState(resolvedOrganizationName);
@@ -186,12 +186,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionLabel: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle('c2Caption'),
     color: colors.textSecondary,
     marginBottom: 6,
   },
   nameValue: {
-    ...getTypographyStyle('t3Title', 'semiBold'),
+    ...getTypographyStyle('body', 'semiBold'),
     color: colors.textPrimary,
   },
   editorCard: {
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   inputShell: {
     position: 'relative',
     borderWidth: 1,
-    borderColor: '#D8E1EE',
+    borderColor: colors.inputBorder,
     backgroundColor: colors.inputBackground,
     borderRadius: 12,
     minHeight: 48,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     gap: 10,
     marginTop: 12,
     marginBottom: 2,
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D6DFEC',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background2,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   primaryButtonDisabled: {
-    backgroundColor: '#AFC9EA',
+    backgroundColor: colors.primaryDisabled,
   },
   primaryButtonText: {
     ...getTypographyStyle('b3Button'),

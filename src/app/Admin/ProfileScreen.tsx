@@ -77,7 +77,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Avatar initials={initials} size={64} variant="onDark" />
           <View style={styles.headerCopy}>
             <Text style={styles.name}>{name}</Text>
-            <Text style={styles.subtitle}>
+            <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
               {role} • {organization}
             </Text>
           </View>
