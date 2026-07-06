@@ -10,7 +10,7 @@ import DraftSavedModal from '@/_components/modals/draft_saved';
 
 const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#FFFFFF';
-const documentOptions = ['Bank cheque', 'Legal contract', 'Government form', 'Insurance document', 'Payroll statement'];
+const documentOptions = ['Bank cheque', 'Property deed', 'Last will', 'Contract', 'Affidavit', 'Other'];
 const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
 
 export default function SignatureStep1Route() {
