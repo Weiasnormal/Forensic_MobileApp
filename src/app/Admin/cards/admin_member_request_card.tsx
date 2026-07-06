@@ -1,14 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { MockMemberRequest } from '@/constants/adminMockData';
+
+// Deliberately its own minimal shape rather than importing MockMemberRequest
+// or TeamMember directly — any caller (mock data today, real /admin/team
+// data tomorrow) just needs to map into this before rendering.
+export interface MemberRequestData {
+	id: string;
+	firstName: string;
+	lastName: string;
+	timeAgo: string;
+}
 
 function getInitials(first = '', last = '') {
 	return ((first[0] || '') + (last[0] || '')).toUpperCase();
 }
 
 interface MemberRequestCardProps {
-	request: MockMemberRequest;
+	request: MemberRequestData;
 	onApprove: (id: string) => void;
 	onReject: (id: string) => void;
 }

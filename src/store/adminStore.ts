@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { buildApiUrl } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
+import { MOCK_TEAM_MEMBERS } from '@/constants/adminMockData';
 
 const adminLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -32,11 +33,13 @@ interface AdminStore {
   pendingApprovals: TeamMember[];
   isLoadingTeam: boolean;
   teamLoadError: string | null;
+  isUsingMockTeam: boolean;
 
   isGeneratingInvite: boolean;
 
   fetchTeamMembers: () => Promise<void>;
   approveTeamMember: (id: string) => Promise<void>;
+  rejectTeamMember: (id: string) => Promise<void>;
   suspendTeamMember: (id: string) => Promise<void>;
   generateInviteCode: () => Promise<string | null>;
 }
@@ -74,11 +77,33 @@ function normalizeTeamMember(record: any): TeamMember | null {
   };
 }
 
+/** "3 days ago" / "2 months ago" style label from an ISO date string. */
+export function formatRelativeTime(dateIso: string | null): string {
+  if (!dateIso) return 'Recently';
+
+  const date = new Date(dateIso);
+  if (Number.isNaN(date.getTime())) return 'Recently';
+
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return '1 day ago';
+  if (diffDays < 30) return `${diffDays} days ago`;
+
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+
+  const diffYears = Math.floor(diffMonths / 12);
+  return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
+}
+
 export const useAdminStore = create<AdminStore>((set, get) => ({
   teamMembers: [],
   pendingApprovals: [],
   isLoadingTeam: false,
   teamLoadError: null,
+  isUsingMockTeam: false,
   isGeneratingInvite: false,
 
   fetchTeamMembers: async () => {
@@ -108,62 +133,84 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .map(normalizeTeamMember)
         .filter((item): item is TeamMember => Boolean(item));
 
+      if (members.length === 0) {
+        throw new Error('Backend returned no team members');
+      }
+
       set({
         teamMembers: members,
         pendingApprovals: members.filter((member) => member.status === 'pending'),
         isLoadingTeam: false,
+        isUsingMockTeam: false,
       });
 
       adminLog.info('AdminStore:Team', `✓ Loaded ${members.length} team member(s)`);
     } catch (error) {
-      // The /admin/team endpoint likely doesn't exist on the backend yet.
-      // We surface this as an explicit error state instead of showing fake data.
-      adminLog.warn('AdminStore:Team', 'Failed to load team members', error);
+      // /admin/team isn't implemented on the backend yet — fall back to a
+      // seeded mock roster (same pattern as INITIAL_CASES in caseStore.ts)
+      // instead of surfacing a hard error, so the UI has something real
+      // to demo against.
+      adminLog.warn('AdminStore:Team', 'Falling back to mock roster', error);
       set({
+        teamMembers: MOCK_TEAM_MEMBERS,
+        pendingApprovals: MOCK_TEAM_MEMBERS.filter((member) => member.status === 'pending'),
         isLoadingTeam: false,
         teamLoadError: error instanceof Error ? error.message : 'Unable to load team members',
+        isUsingMockTeam: true,
       });
     }
   },
 
   approveTeamMember: async (id) => {
+    // Optimistic update first so mock/demo data (and slow networks) still
+    // feel responsive — the backend call is best-effort on top of that.
+    set((state) => ({
+      teamMembers: state.teamMembers.map((member) =>
+        member.id === id ? { ...member, status: 'active' } : member,
+      ),
+      pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
+    }));
+
+    if (get().isUsingMockTeam) return;
+
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.approve(id)), {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Approve failed (${response.status})`);
-      }
-
-      set((state) => ({
-        teamMembers: state.teamMembers.map((member) =>
-          member.id === id ? { ...member, status: 'active' } : member,
-        ),
-        pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
-      }));
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.approve(id)), { method: 'POST' });
+      if (!response.ok) throw new Error(`Approve failed (${response.status})`);
     } catch (error) {
-      adminLog.warn('AdminStore:Team', `Unable to approve member ${id}`, error);
+      adminLog.warn('AdminStore:Team', `Unable to approve member ${id} on the backend`, error);
+    }
+  },
+
+  rejectTeamMember: async (id) => {
+    set((state) => ({
+      teamMembers: state.teamMembers.filter((member) => member.id !== id),
+      pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
+    }));
+
+    if (get().isUsingMockTeam) return;
+
+    try {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.reject(id)), { method: 'POST' });
+      if (!response.ok) throw new Error(`Reject failed (${response.status})`);
+    } catch (error) {
+      adminLog.warn('AdminStore:Team', `Unable to reject member ${id} on the backend`, error);
     }
   },
 
   suspendTeamMember: async (id) => {
+    set((state) => ({
+      teamMembers: state.teamMembers.map((member) =>
+        member.id === id ? { ...member, status: 'suspended' } : member,
+      ),
+    }));
+
+    if (get().isUsingMockTeam) return;
+
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.suspend(id)), {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Suspend failed (${response.status})`);
-      }
-
-      set((state) => ({
-        teamMembers: state.teamMembers.map((member) =>
-          member.id === id ? { ...member, status: 'suspended' } : member,
-        ),
-      }));
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.suspend(id)), { method: 'POST' });
+      if (!response.ok) throw new Error(`Suspend failed (${response.status})`);
     } catch (error) {
-      adminLog.warn('AdminStore:Team', `Unable to suspend member ${id}`, error);
+      adminLog.warn('AdminStore:Team', `Unable to suspend member ${id} on the backend`, error);
     }
   },
 
