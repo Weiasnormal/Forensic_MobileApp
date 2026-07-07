@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text,  View, Alert} from 'react-native';
 import DocumentScanner, { ResponseType } from 'react-native-document-scanner-plugin';
-import * as ImageManipulator from 'expo-image-manipulator';
 
 
 interface Props {
@@ -22,16 +21,7 @@ export const scanForensicDocument = async (onImageScanned: (uri: string) => void
     });
 
     if (scannedImages && scannedImages.length > 0) {
-      const jpegUri = scannedImages[0];
-
-      // INTERCEPT AND CONVERT: Transform the ML Kit JPEG into a Lossless PNG
-      const convertedImage = await ImageManipulator.manipulateAsync(
-        jpegUri,
-        [], 
-        { format: ImageManipulator.SaveFormat.PNG } 
-      );
-      
-      onImageScanned(convertedImage.uri);
+      onImageScanned(scannedImages[0]);
     }
   } catch (error) {
     Alert.alert("Scanner Error", "Failed to initialize the document scanner.");

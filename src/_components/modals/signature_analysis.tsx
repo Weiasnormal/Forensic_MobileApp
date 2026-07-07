@@ -15,7 +15,7 @@ import {
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
 } from '@/services/signatureAnalysis';
-import { API_BASE_URL, API_ENDPOINTS, buildApiUrl } from '../../constants/api';
+import { API_ENDPOINTS, buildApiUrl } from '../../constants/api';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../store/caseStore';
 import ProcessingScreen, { type ProcessingStep } from '../analysis/ProcessingScreen';
@@ -121,7 +121,7 @@ export function SignatureProcessingView() {
         },
       },
     ]);
-  }, [submissionStatus]);
+  }, [nav, resetSubmissionState, submissionError, submissionStatus]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>

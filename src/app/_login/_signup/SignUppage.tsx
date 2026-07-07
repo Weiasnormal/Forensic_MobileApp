@@ -11,7 +11,7 @@ import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/role
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
 
-const maintenanceImage = require('../../../../assets/expo.icon/Assets/under_maintenance.webp');
+//const maintenanceImage = require('../../../../assets/expo.icon/Assets/under_maintenance.webp');
 
 export default function SignUpPage() {
 	const router = useRouter();
@@ -106,15 +106,15 @@ export default function SignUpPage() {
 					</View>
 
 					<View style={styles.formBody}>
-						{isOrgAdmin ? (
+						{/* {isOrgAdmin ? (
 							<View style={styles.maintenanceWrap}>
 								<Image source={maintenanceImage} style={styles.maintenanceImage} resizeMode="contain" />
 								<Text style={styles.maintenanceTitle}>Feature Currently Unavailable</Text>
 								<Text style={styles.maintenanceBody}>
-									This section is currently being polished. We'll be ready for you shortly.
+									This section is currently being polished. We`&apos;`ll be ready for you shortly.
 								</Text>
 							</View>
-						) : (
+						) : ( */}
 						<>
 						<View style={styles.nameRow}>
 							<View style={[styles.fieldGroup, styles.halfField]}>
@@ -269,7 +269,6 @@ export default function SignUpPage() {
 							{errors.confirmPassword?.message ? <Text style={styles.errorText}>{errors.confirmPassword.message}</Text> : null}
 						</View>
 						</>
-						)}
 					</View>
 
 					<TouchableOpacity
