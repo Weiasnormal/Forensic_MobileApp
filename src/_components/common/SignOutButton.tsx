@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
 import { colors } from '../../constants/colors';
+import { getTypographyStyle } from '../../constants/typography';
 
 interface SignOutButtonProps {
   onPress?: () => void;
@@ -26,9 +27,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
+    ...getTypographyStyle('b1Button', 'bold'),
     color: colors.danger,
-    fontSize: 16,
-    fontWeight: '700',
   },
 });
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Pencil } from 'lucide-react-native';
-import { colors } from '../../constants/colors';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface AvatarProps {
   initials: string;
@@ -29,6 +30,7 @@ const Avatar: React.FC<AvatarProps> = ({
       : colors.primaryLight;
 
   const textColor = variant === 'light' ? colors.primary : colors.primaryText;
+  const borderColor = variant === 'onDark' ? 'rgba(255, 255, 255, 0.18)' : 'transparent';
 
   return (
     <View style={[styles.wrapper, { width: size, height: size }]}>
@@ -40,10 +42,12 @@ const Avatar: React.FC<AvatarProps> = ({
             height: size,
             borderRadius: size / 2,
             backgroundColor,
+            borderWidth: variant === 'onDark' ? 2 : 0,
+            borderColor,
           },
         ]}
       >
-        <Text style={[styles.initials, { fontSize: size * 0.32, color: textColor }]}>
+        <Text style={[styles.initials, {color: textColor }]}>
           {initials}
         </Text>
       </View>
@@ -66,7 +70,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initials: {
-    fontWeight: '700',
+    ...getTypographyStyle('t3Title'),
   },
   editBadge: {
     position: 'absolute',

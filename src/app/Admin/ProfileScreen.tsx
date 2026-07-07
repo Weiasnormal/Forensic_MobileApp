@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User,
@@ -14,14 +14,16 @@ import {
   FileText,
 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
-import ProfileHeader from '@/_components/admin/ProfileHeader';
 import SectionLabel from '@/_components/common/SectionLabel';
 import GroupedCard from '@/_components/common/GroupedCard';
 import SettingsRow from '@/_components/common/SettingsRow';
 import ToggleRow from '@/_components/common/ToggleRow';
 import Divider from '@/_components/common/Divider';
 import SignOutButton from '@/_components/common/SignOutButton';
+import Avatar from '@/_components/common/Avatar';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // NOTE: This screen intentionally does NOT render a bottom nav bar.
 // AdminDashboard renders <AdminNavbar /> once, outside the per-tab content
@@ -66,17 +68,32 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onHelpSupportPress,
   onSignOutPress,
 }) => {
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <StatusBar style="light" translucent backgroundColor="#2D72D1" />
-      <ProfileHeader initials={initials} name={name} role={role} organization={organization} />
+  const insets = useSafeAreaInsets();
 
-      <ScrollView contentContainerStyle={styles.content}>
+  return (
+      <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Avatar initials={initials} size={64} variant="onDark" />
+        <View style={styles.headerCopy}>
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.subtitle}>
+            {role} • {organization}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollArea}>
         <SectionLabel label="Account" />
         <GroupedCard>
-          <SettingsRow icon={User} title="Edit Profile" onPress={onEditProfilePress} />
+          <SettingsRow 
+            icon={User} 
+            title="Edit Profile" 
+            onPress={onEditProfilePress} />
           <Divider />
-          <SettingsRow icon={Lock} title="Change Password" onPress={onChangePasswordPress} />
+          <SettingsRow 
+            icon={Lock} 
+            title="Change Password" 
+            onPress={onChangePasswordPress} />
           <Divider />
           <SettingsRow
             icon={Briefcase}
@@ -132,12 +149,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    padding: 16,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  headerCopy: {
+    marginLeft: 18,
+    flex: 1,
+  },
+  name: {
+    ...getTypographyStyle('t1Title', 'bold'),
+    color: colors.primaryText,
+  },
+  subtitle: {
+    ...getTypographyStyle('c1Caption'),
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
   },
   signOutSpacing: {
     marginTop: 4,
   },
+  scrollArea: {
+		paddingHorizontal: 16,
+		paddingTop: 25,
+		paddingBottom: 18,
+		backgroundColor: '#F8FAFC',
+	},
 });
 
 export default ProfileScreen;

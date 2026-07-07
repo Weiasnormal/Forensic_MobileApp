@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet, ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '../../constants/typography';
 
 interface SectionLabelProps {
   label: string;
@@ -13,8 +14,7 @@ const SectionLabel: React.FC<SectionLabelProps> = ({ label, style }) => {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...getTypographyStyle('headline'),
     color: colors.textSecondary,
     marginBottom: 10,
   },

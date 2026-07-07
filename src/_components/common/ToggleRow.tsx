@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '../../constants/typography';
 
 interface ToggleRowProps {
   title: string;
@@ -39,12 +40,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...getTypographyStyle('c1Caption'),
     color: colors.textPrimary,
   },
   subtitle: {
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption'),
     color: colors.textSecondary,
     marginTop: 2,
   },

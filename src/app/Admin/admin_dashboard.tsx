@@ -9,7 +9,9 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
+import { colors } from '@/constants/colors';
 import { MemberRequestCard, PendingReviewCard, type MemberRequestData } from './cards';
 import AdminCasesScreen from './admin_cases';
 import AdminTeamScreen from './admin_team';
@@ -33,6 +35,7 @@ function getInitials(first = '', last = '') {
 export default function AdminDashboard() {
 	const params = useLocalSearchParams<{ tab?: string | string[] }>();
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const [activeTab, setActiveTab] = useState<AdminTabKey>(resolveTabValue(params.tab));
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
@@ -78,11 +81,15 @@ export default function AdminDashboard() {
 	);
 
 	return (
-		<SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-			<StatusBar style="light" translucent backgroundColor="#ffffff" />
+		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
+			<StatusBar
+				style={activeTab === 'profile' ? 'light' : 'dark'}
+				backgroundColor={activeTab === 'profile' ? colors.primary : '#ffffff'}
+				translucent={activeTab === 'profile'}
+			/>
 
 			{activeTab === 'home' ? (
-				<View style={styles.homeHeader}>
+				<View style={[styles.homeHeader, { paddingTop: insets.top + 18 }]}>
 					<View style={styles.homeHeaderTop}>
 						<View>
 							<Text style={styles.homeOrgText}>{user?.organization || 'PNP Crime Laboratory'}</Text>
@@ -254,7 +261,7 @@ function StatCard({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		backgroundColor: 'transparent',
+		backgroundColor: '#ffffff',
 	},
 	homeHeader: {
 		backgroundColor: '#ffffff',
