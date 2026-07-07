@@ -1,4 +1,4 @@
-import MediaSourcePicker from '@/_components/modals/media_source_picker';
+import MediaSourcePicker, { scanForensicDocument } from '@/_components/modals/media_source_picker';
 import { hasCompleteUploads, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 const ACCENT = '#1E6FD9';
 const SCREEN_BG = '#F7F9FC';
@@ -220,110 +221,112 @@ export default function SignatureUploadsRoute() {
         visible={showSourcePicker}
         onCancel={() => setShowSourcePicker(false)}
         onSelect={async (choice) => {
-        setShowSourcePicker(false);
-        if (choice === 'camera') {
-          setCameraVisible(true);
-          return;
-        }
+          setShowSourcePicker(false);
 
-        try {
-          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!perm.granted) {
-            Alert.alert('Permission required', 'Gallery access is required to pick images.');
-            return;
-          }
+          try {
+            if (choice === 'camera') {
+              // Trigger the ML Kit Document Scanner
+              await scanForensicDocument((scannedUri) => {
+                if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+                  setDraftUpload('reference', currentReferenceIndex, scannedUri);
+                } else if (currentUploadTarget === 'suspect') {
+                  setDraftUpload('suspect', 0, scannedUri);
+                }
+              });
+              return;
+            }
 
             // duplicate Checker
-          const isDuplicate = (asset: any) => {
-            // Create a unique fingerprint using iOS assetId, Android fileName, or fileSize as a fallback
-            const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
-            if (!identifier) return false;
+            const isDuplicate = (asset: any) => {
+              // Create a unique fingerprint using iOS assetId, Android fileName, or fileSize as a fallback
+              const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
+              if (!identifier) return false;
 
-            const searchStr = `?id=${encodeURIComponent(identifier)}`;
+              const searchStr = `?id=${encodeURIComponent(identifier)}`;
 
-            // Check if this unique ID is already anywhere in our uploads
-            const isRefDup = uploads.references.some((uri) => uri?.includes(searchStr));
-            const isSuspectDup = uploads.suspect?.includes(searchStr);
+              // Check if this unique ID is already anywhere in our uploads
+              const isRefDup = uploads.references.some((uri) => uri?.includes(searchStr));
+              const isSuspectDup = uploads.suspect?.includes(searchStr);
 
-            return isRefDup || isSuspectDup;
-          };
+              return isRefDup || isSuspectDup;
+            };
 
-          if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-            const remainingSlots = 4 - currentReferenceIndex;
+            if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+              const remainingSlots = 4 - currentReferenceIndex;
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsMultipleSelection: true,
+                allowsEditing: false,
+                selectionLimit: Math.max(1, remainingSlots),
+                quality: 0.9,
+              });
+
+              if (result && !result.canceled) {
+                const assets = result.assets || [];
+                let addedCount = 0;
+                let duplicateCount = 0;
+
+                for (let i = 0; i < assets.length; i++) {
+                  const asset = assets[i];
+                  if (!asset || !asset.uri) continue;
+
+                  if (isDuplicate(asset)) {
+                    duplicateCount++;
+                    continue;
+                  }
+
+                  const slotIndex = currentReferenceIndex + addedCount;
+                  if (slotIndex > 3) break;
+
+                  // Attach the fingerprint to the URI before saving to the global store
+                  const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
+                  const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
+
+                  setDraftUpload('reference', slotIndex, finalUri);
+                  addedCount++;
+                }
+
+                if (duplicateCount > 0) {
+                  Alert.alert(
+                    'Duplicate Detected',
+                    `${duplicateCount} image(s) were skipped because they are already selected in this case.`
+                  );
+                }
+              }
+              return;
+            }
+
+            // SUSPECT SIGNATURE 
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsMultipleSelection: true,
               allowsEditing: false,
-              selectionLimit: Math.max(1, remainingSlots),
               quality: 0.9,
             });
 
             if (result && !result.canceled) {
-              const assets = result.assets || [];
-              let addedCount = 0;
-              let duplicateCount = 0;
-
-              for (let i = 0; i < assets.length; i++) {
-                const asset = assets[i];
-                if (!asset || !asset.uri) continue;
-
+              const asset = result.assets?.[0];
+              if (asset && asset.uri) {
                 if (isDuplicate(asset)) {
-                  duplicateCount++;
-                  continue; 
+                  // Instantly alert the user if they pick a duplicate for the Suspect slot
+                  Alert.alert('Already Selected', 'This image is already being used as a reference signature.');
+                  return;
                 }
 
-                const slotIndex = currentReferenceIndex + addedCount;
-                if (slotIndex > 3) break; 
-
-                // Attach the fingerprint to the URI before saving to the global store
                 const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
                 const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
 
-                setDraftUpload('reference', slotIndex, finalUri);
-                addedCount++;
-              }
-
-              if (duplicateCount > 0) {
-                Alert.alert(
-                  'Duplicate Detected',
-                  `${duplicateCount} image(s) were skipped because they are already selected in this case.`
-                );
+                if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+                  setDraftUpload('reference', currentReferenceIndex, finalUri);
+                } else if (currentUploadTarget === 'suspect') {
+                  setDraftUpload('suspect', 0, finalUri);
+                }
               }
             }
-            return;
+          } catch (e) {
+            console.warn('Gallery pick failed', e);
+            Alert.alert('Error', 'Unable to pick image from gallery.');
           }
-
-          // SUSPECT SIGNATURE 
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: false,
-            quality: 0.9,
-          });
-
-          if (result && !result.canceled) {
-            const asset = result.assets?.[0];
-            if (asset && asset.uri) {
-              if (isDuplicate(asset)) {
-                // Instantly alert the user if they pick a duplicate for the Suspect slot
-                Alert.alert('Already Selected', 'This image is already being used as a reference signature.');
-                return;
-              }
-
-              const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
-              const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
-
-              if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-                setDraftUpload('reference', currentReferenceIndex, finalUri);
-              } else if (currentUploadTarget === 'suspect') {
-                setDraftUpload('suspect', 0, finalUri);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('Gallery pick failed', e);
-          Alert.alert('Error', 'Unable to pick image from gallery.');
-        }
-      }}
+        }}
       />
       {cameraVisible && (
         <View style={styles.cameraOverlay}>
