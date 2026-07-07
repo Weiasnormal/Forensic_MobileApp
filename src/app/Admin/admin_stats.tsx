@@ -2,7 +2,7 @@ import { type SavedCase, useCaseStore } from '@/store/caseStore';
 import { getTeamSummary, useAdminStore } from '@/store/adminStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { AdminStatCard, TeamOverviewCard, type TeamOverviewData } from './cards';
 
@@ -331,35 +331,54 @@ function DropdownPill<T extends string>({
 	onChange: (value: T) => void;
 }) {
 	const [open, setOpen] = useState(false);
+	const [anchor, setAnchor] = useState<{ top: number; right: number; width: number } | null>(null);
+	const pillRef = useRef<View>(null);
+
+	const openDropdown = () => {
+		pillRef.current?.measureInWindow((x, y, width, height) => {
+			const windowWidth = Dimensions.get('window').width;
+			setAnchor({
+				top: y + height + 30,
+				right: windowWidth - (x + width),
+				width: Math.max(width, 140),
+			});
+			setOpen(true);
+		});
+	};
 
 	return (
 		<>
-			<TouchableOpacity style={styles.pill} onPress={() => setOpen(true)} activeOpacity={0.85}>
-				<Text style={styles.pillText}>{value}</Text>
-				<Ionicons name="chevron-up" size={14} color="#64748B" />
-			</TouchableOpacity>
+			<View ref={pillRef} collapsable={false}>
+				<TouchableOpacity style={styles.pill} onPress={openDropdown} activeOpacity={0.85}>
+					<Text style={styles.pillText}>{value}</Text>
+					<Ionicons name="chevron-up" size={14} color="#64748B" />
+				</TouchableOpacity>
+			</View>
 
-			<Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-				<Pressable style={styles.pickerOverlay} onPress={() => setOpen(false)}>
-					<Pressable style={styles.pickerCard} onPress={() => {}}>
-						{options.map((option) => {
-							const active = option === value;
-							return (
-								<TouchableOpacity
+				<Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+				<Pressable style={StyleSheet.absoluteFillObject} onPress={() => setOpen(false)}>
+					{anchor ? (
+						<Pressable
+							style={[styles.dropdownMenu, { top: anchor.top, right: anchor.right, minWidth: anchor.width }]}
+							onPress={() => {}}
+						>
+							{options.map((option) => (
+								<Pressable
 									key={option}
-									style={[styles.pickerOption, active && styles.pickerOptionActive]}
+									style={({ pressed }) => [
+										styles.dropdownOption,
+										pressed && { backgroundColor: '#F2F6FE' },
+									]}
 									onPress={() => {
 										onChange(option);
 										setOpen(false);
 									}}
-									activeOpacity={0.85}
 								>
-									<Text style={[styles.pickerOptionText, active && styles.pickerOptionTextActive]}>{option}</Text>
-									{active ? <Ionicons name="checkmark" size={16} color="#1E6FD9" /> : null}
-								</TouchableOpacity>
-							);
-						})}
-					</Pressable>
+									<Text style={styles.dropdownOptionText}>{option}</Text>
+								</Pressable>
+							))}
+						</Pressable>
+					) : null}
 				</Pressable>
 			</Modal>
 		</>
@@ -430,31 +449,28 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 	},
 	pillText: { color: '#64748B', fontSize: 12, fontWeight: '700' },
-	pickerOverlay: {
-		flex: 1,
-		backgroundColor: 'rgba(15, 23, 42, 0.42)',
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingHorizontal: 32,
-	},
-	pickerCard: {
-		width: '100%',
-		maxWidth: 300,
-		borderRadius: 16,
+	dropdownMenu: {
+		position: 'absolute',
 		backgroundColor: '#FFFFFF',
-		paddingVertical: 8,
-		overflow: 'hidden',
+		borderRadius: 16,
+		borderWidth: 1,
+		borderColor: '#E2E8F0',
+		paddingVertical: 6,
+		shadowColor: '#0F172A',
+		shadowOpacity: 0.12,
+		shadowRadius: 16,
+		shadowOffset: { width: 0, height: 8 },
+		elevation: 8,
 	},
-	pickerOption: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+	dropdownOption: {
 		paddingHorizontal: 18,
 		paddingVertical: 14,
 	},
-	pickerOptionActive: { backgroundColor: '#EAF3FF' },
-	pickerOptionText: { color: '#0F172A', fontSize: 14, fontWeight: '700' },
-	pickerOptionTextActive: { color: '#1E6FD9' },
+	dropdownOptionText: {
+		color: '#0F172A',
+		fontSize: 14,
+		fontWeight: '700',
+	},
 	statsGrid: { gap: 10, marginBottom: 18 },
 	statsGridRow: { flexDirection: 'row', gap: 10 },
 	sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 2 },
