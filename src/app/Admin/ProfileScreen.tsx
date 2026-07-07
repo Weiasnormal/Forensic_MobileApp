@@ -119,12 +119,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <SectionLabel label="Preferences" />
         <GroupedCard>
           <ToggleRow
+            icon={Bell}
             title="Notifications"
             value={notificationsEnabled}
             onValueChange={onToggleNotifications}
           />
           <Divider />
           <ToggleRow
+            icon={Upload}
             title="Auto-Export Reports"
             value={autoExportEnabled}
             onValueChange={onToggleAutoExport}

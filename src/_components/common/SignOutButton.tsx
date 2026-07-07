@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.dangerLight,
     borderWidth: 1,
-    borderColor: colors.dangerLight,
+    borderColor: colors.dangerBorder,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

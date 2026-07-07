@@ -3,7 +3,7 @@ export const colors = {
   cardBackground: '#F7F8FA',
   border: '#E8EDF3',
 
-  textPrimary: '#171B24',
+  textPrimary: '#0F172A',
   textSecondary: '#8A93A2',
   textTertiary: '#B0B7C3',
 
@@ -11,8 +11,9 @@ export const colors = {
   primaryLight: '#E8F0FE',
   primaryText: '#FFFFFF',
 
-  danger: '#E5484D',
-  dangerLight: '#FDEDED',
+  danger: '#E24B4A',
+  dangerLight: '#FEF2F2',
+  dangerBorder: '#FECACA',
 
   warningBackground: '#F7F8FA',
   warningBorder: '#ECEEF1',

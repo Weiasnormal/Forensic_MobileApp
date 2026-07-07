@@ -1,29 +1,43 @@
 import React from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { LucideIcon } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '../../constants/typography';
+import ToggleSwitch from './ToggleSwitch';
 
 interface ToggleRowProps {
+  icon?: LucideIcon;
   title: string;
   subtitle?: string;
   value: boolean;
   onValueChange?: (value: boolean) => void;
+  disabled?: boolean;
 }
 
-const ToggleRow: React.FC<ToggleRowProps> = ({ title, subtitle, value, onValueChange }) => {
+const ToggleRow: React.FC<ToggleRowProps> = ({
+  icon: Icon,
+  title,
+  subtitle,
+  value,
+  onValueChange,
+  disabled = false,
+}) => {
   return (
     <View style={styles.row}>
-      <View style={styles.textWrapper}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <View style={styles.rowLeft}>
+        {Icon ? (
+          <View style={styles.iconWrapper}>
+            <Icon size={18} color={colors.textPrimary} />
+          </View>
+        ) : null}
+
+        <View style={styles.textWrapper}>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        </View>
       </View>
 
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: colors.border, true: colors.primary }}
-        thumbColor={colors.background}
-      />
+      <ToggleSwitch value={value} onValueChange={onValueChange} disabled={disabled} />
     </View>
   );
 };
@@ -32,12 +46,19 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 14,
+  },
+  rowLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    width: 32,
+    marginRight: 4,
   },
   textWrapper: {
     flex: 1,
-    marginRight: 12,
   },
   title: {
     ...getTypographyStyle('c1Caption'),
