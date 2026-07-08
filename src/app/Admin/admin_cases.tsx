@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
 	FlatList,
 	SectionList,
-	StatusBar,
 	StyleSheet,
 	Text,
 	TextInput,
@@ -16,6 +15,7 @@ import FilterCasesModal from '@/_components/modals/filtercases';
 import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '@/store/caseStore';
 import { caseMatchesSearch, normalizeCaseSearchQuery } from '@/utils/caseSearch';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const quickFilters = ['All', 'Genuine', 'Suspected', 'Processing'];
 const DEFAULT_HEADER_HEIGHT = 140;
@@ -41,7 +41,7 @@ export default function AdminCasesScreen() {
 
 	useEffect(() => {
 		refreshCasesFromBackend();
-	}, []);
+	}, [refreshCasesFromBackend]);
 
 	useEffect(() => {
 		const debounceId = setTimeout(() => {
@@ -92,7 +92,7 @@ export default function AdminCasesScreen() {
 	const showSearchFeedback = isSearchFocused || query.trim().length > 0;
 
 	return (
-		<View style={styles.screen}>
+		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
 			<ScreenStatusBar variant="onLight" />
 			
 			<View
@@ -236,7 +236,7 @@ export default function AdminCasesScreen() {
 					setActiveFilter('All');
 				}}
 			/>
-		</View>
+		</SafeAreaView>
 	);
 }
 
