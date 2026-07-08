@@ -26,12 +26,6 @@ interface AdminNavbarProps {
   onTabChange: (tab: AdminTabKey) => void;
 }
 
-/**
- * Shared bottom navigation bar for the admin section.
- * Rendered ONCE by AdminDashboard, outside the per-tab content switch --
- * individual tab screens (home, cases, team, stats, profile) should NOT
- * render their own copy of this component.
- */
 const AdminNavbar: React.FC<AdminNavbarProps> = ({ activeTab, onTabChange }) => {
   const insets = useSafeAreaInsets();
 

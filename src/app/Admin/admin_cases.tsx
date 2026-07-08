@@ -15,6 +15,7 @@ import CaseCard from '@/_components/caseCards';
 import FilterCasesModal from '@/_components/modals/filtercases';
 import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '@/store/caseStore';
 import { caseMatchesSearch, normalizeCaseSearchQuery } from '@/utils/caseSearch';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 
 const quickFilters = ['All', 'Genuine', 'Suspected', 'Processing'];
 const DEFAULT_HEADER_HEIGHT = 140;
@@ -92,8 +93,8 @@ export default function AdminCasesScreen() {
 
 	return (
 		<View style={styles.screen}>
-			<StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
+			<ScreenStatusBar variant="onLight" />
+			
 			<View
 				style={styles.fixedHeader}
 				onLayout={(event) => {
