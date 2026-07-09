@@ -33,21 +33,21 @@ const SIZE_CONFIG: Record<
   }
 > = {
   large: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 30,
     borderRadius: 14,
     textVariant: 'b1Button',
     iconSize: 20,
   },
   medium: {
-    paddingVertical: 12,
+    paddingVertical: 15,
     paddingHorizontal: 16,
     borderRadius: 12,
     textVariant: 'b2Button',
     iconSize: 18,
   },
   small: {
-    paddingVertical: 8,
+    paddingVertical: 13,
     paddingHorizontal: 12,
     borderRadius: 10,
     textVariant: 'b3Button',
