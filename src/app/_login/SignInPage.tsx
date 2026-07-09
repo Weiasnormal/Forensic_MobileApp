@@ -20,6 +20,7 @@ import { type SignInFormValues, signInSchema } from '../../utils/validation';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 
 export default function LogInPage() {
   const router = useRouter();
@@ -191,13 +192,11 @@ export default function LogInPage() {
           </View>
 
           <View style={styles.bottomActions}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              activeOpacity={0.9}
+            <PrimaryButton
+              label="Sign In"
               onPress={handleSubmit(handleSignIn)}
-            >
-              <Text allowFontScaling={false} style={styles.primaryButtonText}>Sign In</Text>
-            </TouchableOpacity>
+              style={styles.primaryButton}
+            />
 
             <View style={styles.footerRow}>
               <Text allowFontScaling={false} style={styles.footerPrompt}>Don&apos;t have an account?</Text>
@@ -316,10 +315,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 12,
-  },
-  primaryButtonText: {
-    ...getTypographyStyle('b1Button'),
-    color: colors.primaryText,
   },
   footerRow: {
     flexDirection: 'row',

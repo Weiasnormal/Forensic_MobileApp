@@ -3,18 +3,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 export default function PendingUserAndAdminPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].pendingApproval;
-
+	const handleWelcomePage = () => {
+		router.push('/_login/GetStarted');
+	};
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-			<StatusBar style="dark" translucent backgroundColor="#ffffff" />
+			<ScreenStatusBar variant="onBrand" />
 
 			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
 				<View style={styles.content}>
@@ -31,7 +36,7 @@ export default function PendingUserAndAdminPage() {
 						{roleConfig.steps.map((step, index) => (
 							<View key={index} style={styles.stepRow}>
 								<View style={styles.stepNumber}>
-									<Text allowFontScaling={false} style={styles.stepNumberText}>{index + 1}.</Text>
+									<Text allowFontScaling={false} style={styles.stepNumberText}>{index + 1}</Text>
 								</View>
 								<Text allowFontScaling={false} style={styles.stepText}>{step}</Text>
 							</View>
@@ -39,9 +44,14 @@ export default function PendingUserAndAdminPage() {
 					</View>
 
 					<View style={styles.bottomActions}>
-						<TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} onPress={() => router.push('/_login/SignInPage')}>
-							<Text allowFontScaling={false} style={styles.primaryButtonText}>Back to sign in</Text>
-						</TouchableOpacity>
+						<PrimaryButton
+							label="Back to Welcome Page"
+							onPress={handleWelcomePage}
+							size="large"
+							backgroundColor={colors.primary}
+							textColor={colors.primaryText}
+							textStyle={styles.primaryButtonText}
+						/>
 					</View>
 				</View>
 			</ScrollView>
@@ -52,20 +62,20 @@ export default function PendingUserAndAdminPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollView: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollContent: {
 		flexGrow: 1,
 		paddingBottom: 10,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	content: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		paddingHorizontal: 16,
 		paddingTop: 42,
 		paddingBottom: 20,
@@ -88,29 +98,17 @@ const styles = StyleSheet.create({
 		height: '100%',
 	},
 	title: {
-		color: '#172033',
-		fontSize: 22,
+		...getTypographyStyle('t1Title'),
 		lineHeight: 28,
-		fontWeight: '800',
 		textAlign: 'center',
 	},
 	subtitle: {
 		marginTop: 8,
-		color: '#6E7E96',
-		fontSize: 14,
+		color: colors.textSecondary,
+		...getTypographyStyle('body', 'regular'),
 		lineHeight: 20,
 		textAlign: 'center',
-		fontWeight: '500',
         marginBottom: 12,
-	},
-	bodyText: {
-		color: '#6E7E96',
-        marginTop: 12,
-		fontSize: 14,
-		lineHeight: 20,
-		textAlign: 'center',
-		fontWeight: '500',
-		marginBottom: 22,
 	},
 	stepsContainer: {
 		width: '100%',
@@ -129,42 +127,32 @@ const styles = StyleSheet.create({
 		height: 34,
 		borderRadius: 17,
 		borderWidth: 1,
-		borderColor: '#1E6FD9',
-		backgroundColor: '#ffffff',
+		borderColor: colors.primary,
+		backgroundColor: colors.background2,
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginTop: 1,
         outlineWidth: 2,
-		outlineColor: '#1E6FD9',  
+		outlineColor: colors.primary,  
 	},
 	stepNumberText: {
-		color: '#1E6FD9',
-		fontSize: 14,
-		fontWeight: '800',
+		color: colors.primary,
+		...getTypographyStyle('body', 'bold'),
 	},
 	stepText: {
 		flex: 1,
 		paddingTop: 4,
-		color: '#6E7E96',
-		fontSize: 14,
+		color: colors.textSecondary,
+		...getTypographyStyle('body', 'regular'),
 		lineHeight: 20,
 	},
 	bottomActions: {
 		marginTop: 'auto',
 		width: '100%',
 		paddingTop: 6,
-	},
-	primaryButton: {
-		backgroundColor: '#1E6FD9',
-		borderRadius: 12,
-		paddingVertical: 13,
-		alignItems: 'center',
-		marginTop: 10,
-		marginBottom: 12,
+		paddingBottom: 30,
 	},
 	primaryButtonText: {
-		color: '#ffffff',
-		fontSize: 15,
-		fontWeight: '800',
+		...getTypographyStyle('b1Button'),
 	},
 });
