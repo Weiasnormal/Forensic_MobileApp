@@ -2,18 +2,32 @@ import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Animated,
+  KeyboardAvoidingView,
+  LayoutChangeEvent,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
 import { type SignInFormValues, signInSchema } from '../../utils/validation';
-
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import FormField from '@/_components/common/FormField';
 
 export default function LogInPage() {
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<AppRole>('analyst');
   const [showPassword, setShowPassword] = useState(false);
-  //const isOrgAdmin = activeRole === 'admin';
+
+  const [tabsWidth, setTabsWidth] = useState(0);
+  const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
 
   const roleConfig = ROLE_SETTINGS[activeRole].signIn;
   const {
@@ -34,6 +48,25 @@ export default function LogInPage() {
     params: { role: activeRole },
   };
 
+  const handleTabsLayout = (e: LayoutChangeEvent) => {
+    setTabsWidth(e.nativeEvent.layout.width);
+  };
+
+  const selectRole = (role: AppRole) => {
+    setActiveRole(role);
+    Animated.timing(slideAnim, {
+      toValue: role === 'analyst' ? 0 : 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const pillWidth = tabsWidth > 0 ? (tabsWidth - 8) / 2 : 0;
+  const pillTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, pillWidth],
+  });
+
   const handleSignIn = (_values: SignInFormValues) => {
     router.push(roleConfig.redirectTo);
   };
@@ -43,11 +76,10 @@ export default function LogInPage() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
     >
-      <StatusBar style="light" translucent backgroundColor="#2D72D1" />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+      <StatusBar style="light" translucent backgroundColor={colors.primary} />
         <View style={styles.hero}>
           <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color="#EAF3FF" />
+            <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
           </TouchableOpacity>
 
           <View style={styles.heroCopy}>
@@ -55,110 +87,120 @@ export default function LogInPage() {
             <Text allowFontScaling={false} style={styles.subtitle}>Sign in to continue to Avera</Text>
           </View>
         </View>
-
+      
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.content}>
-          <View style={styles.roleTabs}>
+          <View style={styles.roleTabs} onLayout={handleTabsLayout}>
+            {tabsWidth > 0 && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.rolePill,
+                  {
+                    width: pillWidth,
+                    transform: [{ translateX: pillTranslateX }],
+                  },
+                ]}
+              />
+            )}
             <TouchableOpacity
-              style={[styles.roleTab, activeRole === 'analyst' && styles.roleTabActive]}
+              style={styles.roleTab}
               activeOpacity={0.85}
-              onPress={() => setActiveRole('analyst')}
+              onPress={() => selectRole('analyst')}
             >
-              <Text allowFontScaling={false} style={[styles.roleTabText, activeRole === 'analyst' && styles.roleTabTextActive]}>{ROLE_LABEL.analyst}</Text>
+              <Text
+                allowFontScaling={false}
+                style={[styles.roleTabText, activeRole === 'analyst' && styles.roleTabTextActive]}
+              >
+                {ROLE_LABEL.analyst}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.roleTab, activeRole === 'admin' && styles.roleTabActive]}
+              style={styles.roleTab}
               activeOpacity={0.85}
-              onPress={() => setActiveRole('admin')}
+              onPress={() => selectRole('admin')}
             >
-              <Text allowFontScaling={false} style={[styles.roleTabText, activeRole === 'admin' && styles.roleTabTextActive]}>{ROLE_LABEL.admin}</Text>
+              <Text
+                allowFontScaling={false}
+                style={[styles.roleTabText, activeRole === 'admin' && styles.roleTabTextActive]}
+              >
+                {ROLE_LABEL.admin}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* {isOrgAdmin ? (
-            <View style={styles.maintenanceWrap}>
-              <Image source={maintenanceImage} style={styles.maintenanceImage} resizeMode="contain" />
-              <Text allowFontScaling={false} style={styles.maintenanceTitle}>Feature Currently Unavailable</Text>
-              <Text allowFontScaling={false} style={styles.maintenanceBody}>
-                This section is currently being polished. We`&apos;`ll be ready for you shortly.
-              </Text>
-            </View>
-          ) : ( */}
-            <View style={styles.formFields}>
-              <View style={styles.inputGroup}>
-                <Text allowFontScaling={false} style={styles.label}>Email</Text>
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[styles.input, errors.email && styles.inputError]}
-                      placeholder={emailPlaceholder}
-                      placeholderTextColor="#8FA0B7"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      textContentType="emailAddress"
-                      autoComplete="email"
-                      value={value}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                    />
-                  )}
+          <View style={styles.formFields}>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <FormField
+                  label="Email"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder={emailPlaceholder}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  error={errors.email?.message}
                 />
-                {errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
-              </View>
+              )}
+            />
 
-              <View style={styles.inputGroup}>
-                <Text allowFontScaling={false} style={styles.label}>Password</Text>
-                <View style={styles.passwordInputWrap}>
-                  <Controller
-                    control={control}
-                    name="password"
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <TextInput
-                        style={[styles.passwordInput, errors.password && styles.passwordInputError]}
-                        placeholder="Enter your password"
-                        placeholderTextColor="#8FA0B7"
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="password"
-                        autoComplete="password"
-                        value={value}
-                        onBlur={onBlur}
-                        onChangeText={onChange}
-                      />
-                    )}
-                  />
-                  <TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
-                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
-                  </TouchableOpacity>
-                </View>
-                {errors.password?.message ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <FormField
+                  label="Password"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="Create a password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoComplete="password"
+                  textContentType="password"
+                  error={errors.password?.message}
+                  rightIcon={
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={colors.textTertiary}
+                    />
+                  }
+                  onRightIconPress={() => setShowPassword((v) => !v)}
+                />
+              )}
+            />
 
-                <TouchableOpacity
-                  style={styles.forgotPasswordWrap}
-                  activeOpacity={0.7}
-                  onPress={() => router.push(forgotPasswordRoute)}
-                >
-                  <Text allowFontScaling={false} style={styles.forgotPasswordText}>Forgot password?</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          
+            <TouchableOpacity
+              style={styles.forgotPasswordWrap}
+              activeOpacity={0.7}
+              onPress={() => router.push(forgotPasswordRoute)}
+            >
+              <Text allowFontScaling={false} style={styles.forgotPasswordText}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.bottomActions}>
             <TouchableOpacity
-              style={[styles.primaryButton]} //, isOrgAdmin && styles.primaryButtonDisabled
+              style={styles.primaryButton}
               activeOpacity={0.9}
               onPress={handleSubmit(handleSignIn)}
-              //disabled={isOrgAdmin}
             >
               <Text allowFontScaling={false} style={styles.primaryButtonText}>Sign In</Text>
             </TouchableOpacity>
 
             <View style={styles.footerRow}>
-              <Text allowFontScaling={false} style={styles.footerPrompt}>Don`&apos;`t have an account?</Text>
+              <Text allowFontScaling={false} style={styles.footerPrompt}>Don&apos;t have an account?</Text>
               <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/_signup/SignUppage')}>
                 <Text allowFontScaling={false} style={styles.footerAction}>Create account</Text>
               </TouchableOpacity>
@@ -173,207 +215,124 @@ export default function LogInPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background2,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: colors.background2,
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 10,
-    backgroundColor: '#ffffff',
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background2,
   },
   hero: {
-    backgroundColor: '#1E6FD9',
-    paddingHorizontal: 16,
-    paddingTop: 38,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-  },
-  title: {
-    color: '#ffffff',
-    fontSize: 33,
-    lineHeight: 40,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-  },
-  subtitle: {
-    color: 'rgba(233, 241, 255, 0.9)',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  heroCopy: {
-    marginTop: 18,
-    marginBottom: 2,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingTop: 44,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
   backButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(233, 243, 255, 0.9)',
-    backgroundColor: 'rgba(47, 112, 200, 0.35)',
+    borderColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  heroCopy: {
+    marginTop: 20,
+  },
+  title: {
+    ...getTypographyStyle('t1Title'),
+    fontSize: 28,
+    color: colors.primaryText,
+  },
+  subtitle: {
+    ...getTypographyStyle('body'),
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
+  },
   content: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+    backgroundColor: colors.background2,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   roleTabs: {
     flexDirection: 'row',
-    backgroundColor: '#E8EDF5',
+    backgroundColor: colors.background,
     borderRadius: 18,
     padding: 4,
-    marginBottom: 22,
+    marginBottom: 24,
+    position: 'relative',
+  },
+  rolePill: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    bottom: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 14,
   },
   roleTab: {
     flex: 1,
     borderRadius: 14,
-    paddingVertical: 9,
+    paddingVertical: 10,
     alignItems: 'center',
-  },
-  roleTabActive: {
-    backgroundColor: '#1E6FD9',
+    zIndex: 1,
   },
   roleTabText: {
-    color: '#3F3F3F',
-    fontSize: 13,
-    fontWeight: '700',
+    ...getTypographyStyle('b3Button'),
+    color: colors.textSecondary,
   },
   roleTabTextActive: {
-    color: '#F7FBFF',
-  },
-  inputGroup: {
-    marginBottom: 14,
-  },
-  label: {
-    color: '#8A99AE',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#E9EEF5',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#1F2B3E',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#D0DAE8',
-  },
-  inputError: {
-    borderColor: '#E24B4A',
-  },
-  passwordInputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E9EEF5',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D0DAE8',
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#1F2B3E',
-    fontSize: 14,
-  },
-  passwordInputError: {
-    borderColor: '#E24B4A',
-  },
-  eyeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  forgotPasswordWrap: {
-    alignSelf: 'flex-end',
-    marginTop: 10,
-  },
-  forgotPasswordText: {
-    color: '#1E63CA',
-    fontSize: 12,
-    fontWeight: '700',
+    color: colors.primaryText,
   },
   formFields: {
     marginBottom: 12,
+  },
+  forgotPasswordWrap: {
+    alignSelf: 'flex-end',
+    marginTop: -6,
+  },
+  forgotPasswordText: {
+    ...getTypographyStyle('c1Caption'),
+    color: colors.primary,
   },
   bottomActions: {
     marginTop: 'auto',
   },
   primaryButton: {
-    backgroundColor: '#1E6FD9',
+    backgroundColor: colors.primary,
     borderRadius: 12,
-    paddingVertical: 13,
+    paddingVertical: 15,
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 12,
   },
-  primaryButtonDisabled: {
-    backgroundColor: '#C9D7EA',
-  },
   primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
+    ...getTypographyStyle('b1Button'),
+    color: colors.primaryText,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   footerPrompt: {
-    color: '#8A99AE',
-    fontSize: 13,
-    fontWeight: '600',
+    ...getTypographyStyle('c1Caption'),
+    color: colors.textSecondary,
   },
   footerAction: {
-    color: '#1E63CA',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  errorText: {
-    marginTop: 6,
-    left: 6,
-    color: '#E24B4A',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  maintenanceWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    marginBottom: 16,
-    marginTop: 6,
-  },
-  maintenanceImage: {
-    width: 210,
-    height: 140,
-    marginBottom: 10,
-  },
-  maintenanceTitle: {
-    color: '#1F2B3E',
-    fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  maintenanceBody: {
-    color: '#66768E',
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
-    maxWidth: 300,
+    ...getTypographyStyle('c1Caption'),
+    color: colors.primary,
   },
 });

@@ -1,13 +1,10 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as NavigationBar from 'expo-navigation-bar';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, FlatList, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Animated, Easing, FlatList, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
-import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { ScreenNavigationBar } from '@/_components/common/ScreenNavigationBar';
@@ -16,7 +13,6 @@ type Slide = {
 	title: string;
 	description: string;
 	image: any;
-	imageStyle?: object;
 };
 
 const slides: Slide[] = [
@@ -44,6 +40,7 @@ const AUTOPLAY_INTERVAL = 5000;
 export default function OnBoardingPage() {
 	const router = useRouter();
 	const { width } = useWindowDimensions();
+	const insets = useSafeAreaInsets();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const listRef = useRef<FlatList<Slide>>(null);
 	const textOpacity = useRef(new Animated.Value(1)).current;
@@ -71,8 +68,6 @@ export default function OnBoardingPage() {
 		});
 	};
 
-	// Auto-advance every 5s, looping back to the first slide indefinitely.
-	// Resets whenever currentIndex changes, whether from autoplay or a manual swipe.
 	useEffect(() => {
 		autoplayTimer.current = setTimeout(() => {
 			const nextIndex = (currentIndex + 1) % slides.length;
@@ -96,7 +91,6 @@ export default function OnBoardingPage() {
 			animateToIndex(nextIndex);
 			return;
 		}
-
 		router.push('/_login/_signup/SignUppage');
 	};
 
@@ -116,78 +110,70 @@ export default function OnBoardingPage() {
 	};
 
 	return (
-		<SafeAreaView style={styles.safeArea}>
+		<View style={styles.root}>
 			<ScreenStatusBar variant="onBrand" />
 			<ScreenNavigationBar variant="onLight" />
-			<View style={styles.container}>
-				<View style={styles.topArtWrap}>
-					<Image
-						source={require('../../../assets/expo.icon/Assets/OnboardingBG.webp')}
-						style={styles.topBlob}
-						contentFit="cover"
-					/>
 
-					<FlatList
-						ref={listRef}
-						data={slides}
-						horizontal
-						pagingEnabled
-						showsHorizontalScrollIndicator={false}
-						keyExtractor={(_, index) => String(index)}
-						onScrollBeginDrag={clearAutoplay}
-						onMomentumScrollEnd={(event) => handleSlideChange(event.nativeEvent.contentOffset.x)}
-						getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-						style={styles.heroList}
-						renderItem={({ item, index }) => (
-							<View style={[styles.slide, { width }]}>
-								<Image
-									source={item.image}
-									style={[styles.heroImage, index === 2 && styles.heroImageLast]}
-									contentFit="contain"
-								/>
-							</View>
-						)}
-					/>
+			{/* Top art bleeds fully to the edge, behind the transparent status bar */}
+			<View style={[styles.topArtWrap, { paddingTop: insets.top }]}>
+				<Image
+					source={require('../../../assets/expo.icon/Assets/OnboardingBG.webp')}
+					style={styles.topBlob}
+					contentFit="cover"
+				/>
+
+				<FlatList
+					ref={listRef}
+					data={slides}
+					horizontal
+					pagingEnabled
+					showsHorizontalScrollIndicator={false}
+					keyExtractor={(_, index) => String(index)}
+					onScrollBeginDrag={clearAutoplay}
+					onMomentumScrollEnd={(event) => handleSlideChange(event.nativeEvent.contentOffset.x)}
+					getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+					style={styles.heroList}
+					renderItem={({ item, index }) => (
+						<View style={[styles.slide, { width }]}>
+							<Image
+								source={item.image}
+								style={[styles.heroImage, index === 2 && styles.heroImageLast]}
+								contentFit="contain"
+							/>
+						</View>
+					)}
+				/>
+			</View>
+
+			<Animated.View style={[styles.copyBlock, { opacity: textOpacity }]}>
+				<Text style={styles.title}>{currentSlide.title}</Text>
+				<Text style={styles.description}>{currentSlide.description}</Text>
+			</Animated.View>
+
+			{/* Footer bleeds white fully to the bottom edge, behind the transparent nav bar */}
+			<View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+				<View style={styles.progressRow}>
+					{progressSegments.map((active, index) => (
+						<View key={index} style={[styles.progressSegment, active && styles.progressSegmentActive]} />
+					))}
 				</View>
 
-				<Animated.View style={[styles.copyBlock, { opacity: textOpacity }]}>
-					<Text style={styles.title}>{currentSlide.title}</Text>
-					<Text style={styles.description}>{currentSlide.description}</Text>
-				</Animated.View>
-
-				<View style={styles.footer}>
-					<View style={styles.progressRow}>
-						{progressSegments.map((active, index) => (
-							<View key={index} style={[styles.progressSegment, active && styles.progressSegmentActive]} />
-						))}
-					</View>
-
-					<View style={styles.buttonRow}>
-						<SecondaryButton
-							label="Skip"
-							onPress={handleSkip}
-							size="large"
-						/>
-
-						<PrimaryButton
-							label={isLastSlide ? 'Get started' : 'Next'}
-							onPress={handleNext}
-							size="large"
-							style={styles.nextButton}
-						/>
-					</View>
+				<View style={styles.buttonRow}>
+					<SecondaryButton label="Skip" onPress={handleSkip} size="large" />
+					<PrimaryButton
+						label={isLastSlide ? 'Get started' : 'Next'}
+						onPress={handleNext}
+						size="large"
+						style={styles.nextButton}
+					/>
 				</View>
 			</View>
-		</SafeAreaView>
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	safeArea: {
-		flex: 1,
-		backgroundColor: '#1E6FD9',
-	},
-	container: {
+	root: {
 		flex: 1,
 		backgroundColor: '#FFFFFF',
 	},
@@ -213,7 +199,7 @@ const styles = StyleSheet.create({
 	},
 	heroImage: {
 		position: 'absolute',
-		top: 90,
+		top: 80,
 		width: '100%',
 		height: 400,
 	},
@@ -240,7 +226,7 @@ const styles = StyleSheet.create({
 		marginTop: 'auto',
 		paddingHorizontal: 24,
 		paddingTop: 20,
-		paddingBottom: 30,
+		backgroundColor: '#FFFFFF',
 	},
 	slide: {
 		flex: 1,
