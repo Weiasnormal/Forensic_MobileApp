@@ -1,8 +1,12 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 export default function GetStartedPage() {
 	const router = useRouter();
@@ -54,13 +58,24 @@ export default function GetStartedPage() {
 				</View>
 
 				<View style={styles.buttonContainer}>
-					<Pressable style={styles.primaryButton} onPress={handleGetStarted}>
-						<Text style={styles.primaryButtonText}>Get started</Text>
-					</Pressable>
+					<PrimaryButton
+						label="Get started"
+						onPress={handleGetStarted}
+						size="large"
+						backgroundColor="#F8FAFC"
+						textColor="#1E6FD9"
+						textStyle={styles.primaryButtonText}
+					/>
 
-					<Pressable style={styles.secondaryButton} onPress={handleSignIn}>
-						<Text style={styles.secondaryButtonText}>Sign in</Text>
-					</Pressable>
+					<SecondaryButton
+						label="Sign in"
+						onPress={handleSignIn}
+						size="large"
+						backgroundColor="#1E6FD9"
+						borderColor="#F8FAFC"
+						textColor="#F8FAFC"
+						textStyle={styles.secondaryButtonText}
+					/>
 				</View>
 			</Animated.View>
 		</SafeAreaView>
@@ -70,11 +85,11 @@ export default function GetStartedPage() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#1E6FD9',
+		backgroundColor: colors.primary,
 	},
 	container: {
 		flex: 1,
-		backgroundColor: '#1E6FD9',
+		backgroundColor: colors.primary,
 		overflow: 'hidden',
 		paddingHorizontal: 26,
 		paddingTop: 18,
@@ -90,7 +105,7 @@ const styles = StyleSheet.create({
 	heroWrap: {
 		alignItems: 'center',
 		justifyContent: 'center',
-        marginBottom: -65,
+        marginBottom: -100,
 	},
 	heroGlow: {
 		position: 'absolute',
@@ -100,7 +115,7 @@ const styles = StyleSheet.create({
 		backgroundColor: 'rgba(255, 255, 255, 0.08)',
 	},
 	heroArt: {
-		width: '100%',
+		width: '120%',
 		height: 340,
 	},
 	heroBadge: {
@@ -118,59 +133,30 @@ const styles = StyleSheet.create({
 	},
 	headline: {
 		color: '#FFFFFF',
-		fontSize: 26,
-		fontWeight: '800',
 		lineHeight: 31,
 		textAlign: 'center',
-		fontFamily: 'Sora_800ExtraBold',
+		...getTypographyStyle('t1Title'),
 	},
 	headlineAccent: {
-		color: '#BBD4FF',
-		fontFamily: 'Sora_800ExtraBold',
+		color: '#8FD4FF',
+		...getTypographyStyle('t1Title'),
+
 	},
 	subheadline: {
 		marginTop: 10,
-		color: '#EAF1FF',
-		fontSize: 15,
+		color: colors.primaryLight,
 		lineHeight: 20,
 		textAlign: 'center',
 		opacity: 0.95,
-		fontFamily: 'Sora_400Regular',
+		...getTypographyStyle('c1Caption', 'regular'),
 	},
 	buttonContainer: {
 		gap: 12,
 	},
-	primaryButton: {
-		height: 52,
-		borderRadius: 14,
-		backgroundColor: '#F4F7FF',
-		alignItems: 'center',
-		justifyContent: 'center',
-		shadowColor: '#000',
-		shadowOpacity: 0.15,
-		shadowRadius: 16,
-		shadowOffset: { width: 0, height: 8 },
-		elevation: 3,
-	},
 	primaryButtonText: {
-		color: '#1E6FD9',
-		fontSize: 18,
-		fontWeight: '800',
-		fontFamily: 'Sora_800ExtraBold',
-	},
-	secondaryButton: {
-		height: 52,
-		borderRadius: 14,
-		backgroundColor: 'rgba(255, 255, 255, 0.08)',
-		borderWidth: 1,
-		borderColor: 'rgba(255, 255, 255, 0.72)',
-		alignItems: 'center',
-		justifyContent: 'center',
+		...getTypographyStyle('b1Button'),
 	},
 	secondaryButtonText: {
-		color: '#FFFFFF',
-		fontSize: 18,
-		fontWeight: '800',
-		fontFamily: 'Sora_800ExtraBold',
+		...getTypographyStyle('b1Button'),
 	},
 });
