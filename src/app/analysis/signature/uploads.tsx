@@ -2,10 +2,9 @@ import MediaSourcePicker, { scanForensicDocument } from '@/_components/modals/me
 import { hasCompleteUploads, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,14 +16,14 @@ export default function SignatureUploadsRoute() {
   const router = useRouter();
   const nav = router as any;
   const insets = useSafeAreaInsets();
-  const [permission, requestPermission] = useCameraPermissions();
-  const [cameraVisible, setCameraVisible] = useState(false);
+  //const [permission, requestPermission] = useCameraPermissions();
+  //const [cameraVisible, setCameraVisible] = useState(false);
   const [currentUploadTarget, setCurrentUploadTarget] = useState<'reference' | 'suspect' | null>(null);
   const [currentReferenceIndex, setCurrentReferenceIndex] = useState<number | null>(null);
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
-  const cameraRef = useRef(null);
+  //const cameraRef = useRef(null);
   const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
@@ -44,49 +43,50 @@ export default function SignatureUploadsRoute() {
   );
 
   const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
-    if (!permission?.granted) {
-      requestPermission();
+  if (target === 'suspect') {
+    const allRefsFilled = uploads.references.every(Boolean);
+    if (!allRefsFilled) {
+      Alert.alert(
+        'Complete references first',
+        'Please upload all 4 reference signatures (SIG 01–04) before adding the suspected signature.'
+      );
       return;
     }
+  }
 
-    if (target === 'suspect') {
-      const allRefsFilled = uploads.references.every(Boolean);
-      if (!allRefsFilled) {
-        Alert.alert(
-          'Complete references first',
-          'Please upload all 4 reference signatures (SIG 01–04) before adding the suspected signature.'
-        );
-        return;
-      }
+   setCurrentUploadTarget(target);
+  if (refIndex !== undefined) {
+    setCurrentReferenceIndex(refIndex);
+  }
+
+  scanForensicDocument((scannedUri) => {
+    if (target === 'reference' && refIndex !== undefined) {
+      setDraftUpload('reference', refIndex, scannedUri);
+    } else if (target === 'suspect') {
+      setDraftUpload('suspect', 0, scannedUri);
     }
+  });
+};
 
-    setCurrentUploadTarget(target);
-    if (refIndex !== undefined) {
-      setCurrentReferenceIndex(refIndex);
-    }
-
-    setShowSourcePicker(true);
-  };
-
-  const handleCapture = async () => {
-    if (!cameraRef.current) return;
-    try {
-      const photo = await (cameraRef.current as any).takePictureAsync({ base64: true });
-      if (photo?.uri) {
-        if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-          setDraftUpload('reference', currentReferenceIndex, photo.uri);
-        } else if (currentUploadTarget === 'suspect') {
-          setDraftUpload('suspect', 0, photo.uri);
-        }
-      }
-      setCameraVisible(false);
-      setCurrentUploadTarget(null);
-      setCurrentReferenceIndex(null);
-    } catch (error) {
-      console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to capture image. Please try again.');
-    }
-  };
+  // const handleCapture = async () => {
+  //   if (!cameraRef.current) return;
+  //   try {
+  //     const photo = await (cameraRef.current as any).takePictureAsync({ base64: true });
+  //     if (photo?.uri) {
+  //       if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
+  //         setDraftUpload('reference', currentReferenceIndex, photo.uri);
+  //       } else if (currentUploadTarget === 'suspect') {
+  //         setDraftUpload('suspect', 0, photo.uri);
+  //       }
+  //     }
+  //     setCameraVisible(false);
+  //     setCurrentUploadTarget(null);
+  //     setCurrentReferenceIndex(null);
+  //   } catch (error) {
+  //     console.error('Error taking picture:', error);
+  //     Alert.alert('Error', 'Failed to capture image. Please try again.');
+  //   }
+  // };
 
   const handleSubmit = () => {
     if (!canRun || isSubmitting) return;
@@ -328,28 +328,6 @@ export default function SignatureUploadsRoute() {
           }
         }}
       />
-      {cameraVisible && (
-        <View style={styles.cameraOverlay}>
-          <SafeAreaView style={styles.cameraContainer}>
-            <View style={styles.cameraHeader}>
-              <Pressable onPress={() => setCameraVisible(false)} style={styles.cameraDismiss}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
-              </Pressable>
-              <Text style={styles.cameraTitle}>Capture Signature</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <View style={styles.cameraViewContainer}>
-              <CameraView ref={cameraRef} style={styles.cameraView} facing="back" zoom={0} />
-            </View>
-            <View style={styles.cameraFooter}>
-              <Pressable onPress={handleCapture} style={styles.captureButton}>
-                <View style={styles.captureInner} />
-              </Pressable>
-              <Text style={styles.cameraHint}>Tap to capture signature</Text>
-            </View>
-          </SafeAreaView>
-        </View>
-      )}
 
       <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={closePreview}>
         <Pressable style={styles.previewBackdrop} onPress={closePreview}>

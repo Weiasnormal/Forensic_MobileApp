@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text,  View, Alert} from 'react-native';
-import DocumentScanner, { ResponseType } from 'react-native-document-scanner-plugin';
+import DocumentScanner, { ResponseType, ScanDocumentResponseStatus  } from 'react-native-document-scanner-plugin';
 
 
 interface Props {
@@ -13,19 +13,31 @@ interface Props {
 }
 
 
-export const scanForensicDocument = async (onImageScanned: (uri: string) => void) => {
+export const scanForensicDocument = async (
+  onImageScanned: (uri: string) => void,
+): Promise<boolean> => {
   try {
-    const { scannedImages } = await DocumentScanner.scanDocument({
-      croppedImageQuality: 100, 
-      responseType: ResponseType.ImageFilePath, 
+    const { scannedImages, status } = await DocumentScanner.scanDocument({
+      croppedImageQuality: 100,
+      responseType: ResponseType.ImageFilePath,
     });
 
-    if (scannedImages && scannedImages.length > 0) {
-      onImageScanned(scannedImages[0]);
+    console.log('[scanForensicDocument] status:', status, 'count:', scannedImages?.length ?? 0);
+
+    if (status === ScanDocumentResponseStatus.Cancel || !scannedImages?.length) {
+      Alert.alert(
+        'Scan not completed',
+        'The scan didn’t finish. If you used the clean-up tool in the scanner, try again without it — some devices fail to apply it. Otherwise just retry the scan.',
+      );
+      return false;
     }
+
+    onImageScanned(scannedImages[0]);
+    return true;
   } catch (error) {
-    Alert.alert("Scanner Error", "Failed to initialize the document scanner.");
-    console.error(error);
+    console.error('[scanForensicDocument] threw:', error);
+    Alert.alert('Scanner Error', 'Failed to initialize the document scanner.');
+    return false;
   }
 };
 
