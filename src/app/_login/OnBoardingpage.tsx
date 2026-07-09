@@ -227,17 +227,14 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		color: '#2B2D31',
-		fontSize: 28,
+		...getTypographyStyle('t2Title'),
 		lineHeight: 34,
-		fontWeight: '800',
-		letterSpacing: -0.6,
 		textAlign: 'left',
 	},
 	description: {
 		marginTop: 10,
 		color: '#66748B',
-		fontSize: 15,
-		lineHeight: 22,
+		...getTypographyStyle('c1Caption'),
 	},
 	footer: {
 		marginTop: 'auto',
