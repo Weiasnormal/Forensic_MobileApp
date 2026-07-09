@@ -1,17 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-	ActivityIndicator,
-	ScrollView,
-	StatusBar,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { formatRelativeTime, useAdminStore } from '@/store/adminStore';
 import { MemberRequestCard, TeamOverviewCard, type MemberRequestData, type TeamOverviewData } from './cards';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/constants/colors';
 
 const sortOptions = ['Alphabetical (A-Z)', 'Most Cases', 'Least Cases'] as const;
 type SortOption = (typeof sortOptions)[number];
@@ -67,19 +61,19 @@ export default function AdminTeamScreen() {
 	}, [teamMembers, query, sortBy]);
 
 	return (
-		<View style={styles.screen}>
-			<StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+		<SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
+			<ScreenStatusBar variant="onLight" />
 
 			<View style={styles.header}>
 				<Text style={styles.pageTitle}>Team Management</Text>
 
 				<View style={styles.searchBox}>
-					<Ionicons name="search" size={18} color="#94A3B8" />
+					<Ionicons name="search" size={18} color={colors.label} />
 					<TextInput
 						value={query}
 						onChangeText={setQuery}
 						placeholder="Search by name..."
-						placeholderTextColor="#94A3B8"
+						placeholderTextColor={colors.label}
 						style={styles.searchInput}
 					/>
 				</View>
@@ -106,7 +100,7 @@ export default function AdminTeamScreen() {
 
 				{isLoadingTeam ? (
 					<View style={styles.loadingRow}>
-						<ActivityIndicator color="#1E6FD9" />
+						<ActivityIndicator color={colors.primary} />
 					</View>
 				) : memberRequests.length > 0 ? (
 					<View style={styles.listGroup}>
@@ -129,7 +123,7 @@ export default function AdminTeamScreen() {
 
 				{isLoadingTeam ? (
 					<View style={styles.loadingRow}>
-						<ActivityIndicator color="#1E6FD9" />
+						<ActivityIndicator color={colors.primary} />
 					</View>
 				) : roster.length > 0 ? (
 					<View style={styles.rosterCard}>
@@ -143,25 +137,26 @@ export default function AdminTeamScreen() {
 					</View>
 				)}
 			</ScrollView>
-		</View>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	screen: {
+	safeArea: {
 		flex: 1,
-		backgroundColor: '#F8FAFC',
-	},
+		backgroundColor: colors.background,
+		top: 30,
+	  },
 	header: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		paddingTop: 10,
 		paddingHorizontal: 16,
 		paddingBottom: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: '#E2E8F0',
+		borderBottomColor: colors.border,
 	},
 	pageTitle: {
-		color: '#0F172A',
+		color: colors.textPrimary,
 		fontSize: 24,
 		fontWeight: '900',
 		letterSpacing: -0.6,
@@ -174,14 +169,14 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingHorizontal: 14,
 		borderRadius: 12,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
 		borderWidth: 1,
-		borderColor: '#E6EEF9',
+		borderColor: colors.border,
 		marginBottom: 12,
 	},
 	searchInput: {
 		flex: 1,
-		color: '#0F172A',
+		color: '#757575',
 		fontSize: 14,
 		fontWeight: '500',
 	},
@@ -195,20 +190,20 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		borderRadius: 999,
 		borderWidth: 1,
-		borderColor: '#E6EEF9',
-		backgroundColor: '#FFFFFF',
+		borderColor: colors.border,
+		backgroundColor: colors.background2,
 	},
 	chipActive: {
-		backgroundColor: '#1E6FD9',
-		borderColor: '#1E6FD9',
+		backgroundColor: colors.primary,
+		borderColor: colors.primary,
 	},
 	chipText: {
-		color: '#475569',
+		color: '#64748B',
 		fontSize: 12,
 		fontWeight: '700',
 	},
 	chipTextActive: {
-		color: '#FFFFFF',
+		color: colors.primaryText,
 	},
 	content: {
 		paddingHorizontal: 16,
@@ -216,7 +211,7 @@ const styles = StyleSheet.create({
 		paddingBottom: 120,
 	},
 	sectionLabel: {
-		color: '#A3B0C4',
+		color: colors.label,
 		fontSize: 13,
 		fontWeight: '800',
 		letterSpacing: 0.3,
@@ -227,24 +222,24 @@ const styles = StyleSheet.create({
 		marginBottom: 22,
 	},
 	rosterCard: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderRadius: 16,
 		borderWidth: 1,
-		borderColor: '#E3EAF3',
+		borderColor: colors.border,
 		marginBottom: 22,
 		overflow: 'hidden',
 	},
 	emptyMini: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderRadius: 14,
 		borderWidth: 1,
-		borderColor: '#E3EAF3',
+		borderColor: colors.border,
 		padding: 16,
 		alignItems: 'center',
 		marginBottom: 22,
 	},
 	emptyMiniText: {
-		color: '#94A3B8',
+		color: colors.label,
 		fontSize: 12,
 		fontWeight: '600',
 	},

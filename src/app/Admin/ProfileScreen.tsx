@@ -1,19 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  User,
-  Lock,
-  Briefcase,
-  Copy,
-  Users,
-  BarChart3,
-  Bell,
-  Upload,
-  Info,
-  FileText,
-} from 'lucide-react-native';
-import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { User, Lock, Briefcase, Copy, Users, BarChart3, Bell, Upload, Info, FileText } from 'lucide-react-native';
 import SectionLabel from '@/_components/common/SectionLabel';
 import GroupedCard from '@/_components/common/GroupedCard';
 import SettingsRow from '@/_components/common/SettingsRow';
@@ -24,11 +12,8 @@ import Avatar from '@/_components/common/Avatar';
 import LogoutModal from '@/_components/modals/logout';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 
-// NOTE: This screen intentionally does NOT render a bottom nav bar.
-// AdminDashboard renders <AdminNavbar /> once, outside the per-tab content
-// switch, shared across all 5 tabs -- rendering one here too would duplicate it.
 
 interface ProfileScreenProps {
   initials: string;
@@ -74,6 +59,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
+        <ScreenStatusBar variant="onBrand" />
         <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
           <View style={styles.headerGlow} />
           <Avatar initials={initials} size={64} variant="onDark" />
@@ -153,8 +139,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           onCancel={() => setLogoutModalVisible(false)}
           onLogout={() => {
             setLogoutModalVisible(false);
-
-            // Call the parent logout handler
             onSignOutPress?.();
           }}
         />

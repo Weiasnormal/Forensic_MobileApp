@@ -1,21 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-	FlatList,
-	SectionList,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CaseCard from '@/_components/caseCards';
 import FilterCasesModal from '@/_components/modals/filtercases';
 import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '@/store/caseStore';
 import { caseMatchesSearch, normalizeCaseSearchQuery } from '@/utils/caseSearch';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/constants/colors';
 
 const quickFilters = ['All', 'Genuine', 'Suspected', 'Processing'];
 const DEFAULT_HEADER_HEIGHT = 140;
@@ -113,20 +106,20 @@ export default function AdminCasesScreen() {
 
 				<View style={styles.searchRow}>
 					<View style={styles.searchBox}>
-						<Ionicons name="search" size={18} color="#94A3B8" />
+						<Ionicons name="search" size={18} color= {colors.label} />
 						<TextInput
 							value={query}
 							onChangeText={setQuery}
 							onFocus={() => setIsSearchFocused(true)}
 							onBlur={() => setIsSearchFocused(false)}
 							placeholder="Search case ID, subject, examiner..."
-							placeholderTextColor="#94A3B8"
+							placeholderTextColor={colors.label}
 							style={styles.searchInput}
 						/>
 					</View>
 
 					<TouchableOpacity style={styles.filterButton} activeOpacity={0.85} onPress={() => setShowFilter(true)}>
-						<Ionicons name="options-outline" size={20} color="#1F5DA8" />
+						<Ionicons name="options-outline" size={20} color={colors.primary} />
 					</TouchableOpacity>
 				</View>
 
@@ -172,14 +165,14 @@ export default function AdminCasesScreen() {
 			{totalCases === 0 ? (
 				<View style={styles.emptyArea}>
 					<View style={styles.emptyBadge}>
-						<Ionicons name="document-text-outline" size={34} color="#94A3B8" />
+						<Ionicons name="document-text-outline" size={34} color={colors.label} />
 					</View>
 					<Text style={styles.emptyTitle}>No cases yet</Text>
 					<Text style={styles.emptySubtitle}>Cases submitted by your analysts will appear here.</Text>
 				</View>
 			) : sections.length === 0 ? (
 				<View style={styles.emptySearchArea}>
-					<Ionicons name="search-outline" size={34} color="#94A3B8" />
+					<Ionicons name="search-outline" size={34} color={colors.label} />
 					<Text style={styles.emptySearchTitle}>No matching cases</Text>
 					<Text style={styles.emptySearchText}>
 						Try a case ID, subject, examiner, document type, priority, or analysis type.
@@ -243,17 +236,17 @@ export default function AdminCasesScreen() {
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
+		top: 30,
 	},
 	fixedHeader: {
 		position: 'absolute',
 		left: 0,
 		right: 0,
 		zIndex: 20,
-		elevation: 1,
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderBottomWidth: 1,
-		borderBottomColor: '#E2E8F0',
+		borderBottomColor: colors.border,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.08,
@@ -267,19 +260,19 @@ const styles = StyleSheet.create({
 		paddingBottom: 8,
 	},
 	pageTitle: {
-		color: '#0F172A',
+		color: colors.textPrimary,
 		fontSize: 24,
 		fontWeight: '900',
 		letterSpacing: -0.6,
 	},
 	countBadge: {
-		backgroundColor: '#E0EDFF',
+		backgroundColor: colors.badgeBackground,
 		borderRadius: 999,
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 	},
 	countBadgeText: {
-		color: '#1E6FD9',
+		color: colors.primary,
 		fontSize: 12,
 		fontWeight: '800',
 	},
@@ -298,13 +291,13 @@ const styles = StyleSheet.create({
 		minHeight: 44,
 		paddingHorizontal: 14,
 		borderRadius: 12,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
 		borderWidth: 1,
-		borderColor: '#E6EEF9',
+		borderColor: colors.border,
 	},
 	searchInput: {
 		flex: 1,
-		color: '#0F172A',
+		color: colors.textPrimary,
 		fontSize: 14,
 		fontWeight: '500',
 	},
@@ -343,12 +336,12 @@ const styles = StyleSheet.create({
 		borderRadius: 22,
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
 		borderWidth: 1,
-		borderColor: '#E2E8F0',
+		borderColor: colors.border,
 	},
 	emptyTitle: {
-		color: '#0F172A',
+		color: colors.textPrimary,
 		fontSize: 17,
 		fontWeight: '800',
 	},
@@ -362,12 +355,12 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 		borderRadius: 999,
-		backgroundColor: '#E0EDFF',
+		backgroundColor: colors.badgeBackground,
 	},
 	clearSearchText: {
 		fontSize: 12,
 		fontWeight: '700',
-		color: '#1E6FD9',
+		color: colors.primary,
 	},
 	filterButton: {
 		width: 44,
@@ -375,9 +368,9 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderWidth: 1,
-		borderColor: '#E6EEF9',
+		borderColor: colors.border,
 	},
 	chipsContent: {
 		paddingHorizontal: 16,
@@ -389,24 +382,24 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		borderRadius: 999,
 		borderWidth: 1,
-		borderColor: '#E6EEF9',
-		backgroundColor: '#FFFFFF',
+		borderColor: colors.border,
+		backgroundColor: colors.background2,
 	},
 	chipActive: {
-		backgroundColor: '#1E6FD9',
-		borderColor: '#1E6FD9',
+		backgroundColor: colors.primary,
+		borderColor: colors.primary,
 	},
 	chipText: {
-		color: '#475569',
+		color: '#64748B',
 		fontSize: 12,
 		fontWeight: '700',
 	},
 	chipTextActive: {
-		color: '#FFFFFF',
+		color: colors.primaryText,
 	},
 	list: {
 		flex: 1,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
 	},
 	listContent: {
 		paddingBottom: 120,
@@ -417,7 +410,7 @@ const styles = StyleSheet.create({
 		paddingBottom: 8,
 		fontSize: 11,
 		fontWeight: '700',
-		color: '#94A3B8',
+		color: colors.label,
 		letterSpacing: 0.5,
 	},
 	emptySearchArea: {
@@ -431,7 +424,7 @@ const styles = StyleSheet.create({
 	emptySearchTitle: {
 		fontSize: 18,
 		fontWeight: '800',
-		color: '#0F172A',
+		color: colors.textPrimary,
 	},
 	emptySearchText: {
 		fontSize: 13,
@@ -444,11 +437,11 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 10,
 		borderRadius: 999,
-		backgroundColor: '#1E6FD9',
+		backgroundColor: colors.primary,
 	},
 	clearSearchTextLarge: {
 		fontSize: 13,
 		fontWeight: '800',
-		color: '#FFFFFF',
+		color: colors.primaryText,
 	},
 });

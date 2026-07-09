@@ -5,11 +5,9 @@ import { MOCK_PENDING_REVIEWS, type MockPendingReview } from '@/constants/adminM
 import { Ionicons } from '@expo/vector-icons';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
 import { colors } from '@/constants/colors';
 import { MemberRequestCard, PendingReviewCard, type MemberRequestData } from './cards';
@@ -17,6 +15,7 @@ import AdminCasesScreen from './admin_cases';
 import AdminTeamScreen from './admin_team';
 import AdminStatsScreen from './admin_stats';
 import ProfileScreen from './ProfileScreen';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
@@ -62,7 +61,7 @@ export default function AdminDashboard() {
 
 	useEffect(() => {
 		if (Platform.OS !== 'android') return;
-		NavigationBar.setBackgroundColorAsync('#FFFFFF').catch(() => {});
+		NavigationBar.setBackgroundColorAsync(colors.background2).catch(() => {});
 		NavigationBar.setButtonStyleAsync('dark').catch(() => {});
 	}, [activeTab]);
 
@@ -82,11 +81,7 @@ export default function AdminDashboard() {
 
 	return (
 		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
-			<StatusBar
-				style={activeTab === 'profile' ? 'light' : 'dark'}
-				backgroundColor={activeTab === 'profile' ? colors.primary : '#ffffff'}
-				translucent={activeTab === 'profile'}
-			/>
+			<ScreenStatusBar variant="onLight" />
 
 			{activeTab === 'home' ? (
 				<View style={[styles.homeHeader, { paddingTop: insets.top + 18 }]}>
@@ -240,7 +235,7 @@ function StatCard({
 	label,
 	value,
 	icon,
-	tint = '#1E6FD9',
+	tint = colors.primary,
 }: {
 	label: string;
 	value: string;
@@ -261,15 +256,14 @@ function StatCard({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	homeHeader: {
-		backgroundColor: '#ffffff',
-		paddingTop: Platform.OS === 'android' ? 18 : 20,
+		backgroundColor: colors.background2,
 		paddingHorizontal: 16,
 		paddingBottom: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: '#E2E8F0',
+		borderBottomColor: colors.border,
 	},
 	homeHeaderTop: {
 		flexDirection: 'row',
@@ -277,7 +271,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	homeGreeting: {
-		color: '#0F172A',
+		color: colors.textPrimary,
 		fontSize: 22,
 		fontWeight: '900',
 		letterSpacing: -0.5,
@@ -286,7 +280,7 @@ const styles = StyleSheet.create({
 		width: 44,
 		height: 44,
 		borderRadius: 22,
-		backgroundColor: '#1E6FD9',
+		backgroundColor: colors.primary,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -296,7 +290,7 @@ const styles = StyleSheet.create({
 		fontWeight: '800',
 	},
 	homeOrgText: {
-		color: '#64748B',
+		color: colors.textSecondary,
 		fontSize: 13,
 		fontWeight: '700',
 	},
@@ -307,7 +301,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 0,
 		paddingTop: 0,
 		paddingBottom: 18,
-		backgroundColor: '#F8FAFC',
+		backgroundColor: colors.background,
 	},
 	homeScrollArea: {
 		paddingTop: 14,
@@ -325,10 +319,10 @@ const styles = StyleSheet.create({
 	},
 	statCard: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.cardBackground,
 		borderRadius: 16,
 		borderWidth: 1,
-		borderColor: '#DDE6F2',
+		borderColor: colors.border,
 		padding: 14,
 		width: 175,
 		height: 137,
@@ -342,14 +336,14 @@ const styles = StyleSheet.create({
 		marginBottom: 10,
 	},
 	statValue: {
-		color: '#111827',
+		color: colors.textPrimary,
 		fontSize: 22,
 		fontWeight: '900',
 		letterSpacing: -0.5,
 	},
 	statLabel: {
 		marginTop: 2,
-		color: '#94A3B8',
+		color: colors.label,
 		fontSize: 11,
 		fontWeight: '700',
 	},
@@ -362,11 +356,11 @@ const styles = StyleSheet.create({
 	sectionTitle: {
 		fontSize: 14,
 		fontWeight: '800',
-		color: '#0F172A',
+		color: colors.label,
 	},
 	sectionLink: {
 		fontSize: 12,
-		color: '#185FA5',
+		color: colors.primary,
 		fontWeight: '700',
 	},
 	listGroup: {
@@ -374,16 +368,16 @@ const styles = StyleSheet.create({
 		marginBottom: 18,
 	},
 	emptyMini: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderRadius: 14,
 		borderWidth: 1,
-		borderColor: '#E3EAF3',
+		borderColor: colors.border,
 		padding: 16,
 		alignItems: 'center',
 		marginBottom: 18,
 	},
 	emptyMiniText: {
-		color: '#94A3B8',
+		color: colors.textSecondary,
 		fontSize: 12,
 		fontWeight: '600',
 	},

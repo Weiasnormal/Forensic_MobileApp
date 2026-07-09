@@ -5,15 +5,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { AdminStatCard, TeamOverviewCard, type TeamOverviewData } from './cards';
+import { colors } from '@/constants/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TIME_RANGE_OPTIONS = ['Today', 'This Week', 'This Month', 'This Quarter', 'This Year'] as const;
 type TimeRange = (typeof TIME_RANGE_OPTIONS)[number];
 
-// Seed/mock cases in caseStore.ts carry fixed April/May 2026 dates, so a
-// literal "This Month" default would show an empty screen until real,
-// present-dated cases start flowing in. "This Year" keeps the demo useful
-// today while still being real, live-filtered data — change this back to
-// 'This Month' once case volume is current.
 const DEFAULT_TIME_RANGE: TimeRange = 'This Year';
 
 const GRANULARITY_OPTIONS = ['Hourly', 'Daily', 'Weekly', 'Monthly'] as const;
@@ -188,14 +185,14 @@ export default function AdminStatsScreen() {
 
 	if (cases.length === 0) {
 		return (
-			<View style={styles.screen}>
+			<SafeAreaView style={styles.screen}>
 				<View style={styles.header}>
 					<Text style={styles.title}>Org Statistics</Text>
 				</View>
 
 				<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 					<View style={styles.skeletonInfoCard}>
-						<Ionicons name="information-circle-outline" size={24} color="#8FA2BE" />
+						<Ionicons name="information-circle-outline" size={24} color={colors.textSecondary} />
 						<Text style={styles.skeletonInfoTextLabel}>
 							Once your team submits cases, organization-wide analytics will appear here.
 						</Text>
@@ -208,12 +205,12 @@ export default function AdminStatsScreen() {
 						<Animated.View style={[styles.skeletonLineLg, { opacity: skeletonOpacity }]} />
 					</View>
 				</ScrollView>
-			</View>
+			</SafeAreaView>
 		);
 	}
 
 	return (
-		<View style={styles.screen}>
+		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
 			<View style={styles.header}>
 				<View style={styles.headerRow}>
 					<Text style={styles.title}>Org Statistics</Text>
@@ -228,7 +225,7 @@ export default function AdminStatsScreen() {
 							label="Active Analysts"
 							value={String(activeCount)}
 							icon="people-outline"
-							tint="#1E6FD9"
+							tint= {colors.primary}	
 							subtext={`${activeCount} of ${totalRosterCount} total analysts`}
 							subtextColor="#94A3B8"
 						/>
@@ -236,9 +233,9 @@ export default function AdminStatsScreen() {
 							label="Total Cases"
 							value={String(summary.total)}
 							icon="folder-open-outline"
-							tint="#1E6FD9"
+							tint={colors.primary}
 							subtext={casesThisWeek > 0 ? `↑ ${casesThisWeek} this week` : 'No new cases this week'}
-							subtextColor="#16A34A"
+							subtextColor= {colors.labelsuccess}
 						/>
 					</View>
 					<View style={styles.statsGridRow}>
@@ -246,17 +243,17 @@ export default function AdminStatsScreen() {
 							label="Genuine Cases"
 							value={String(summary.genuine)}
 							icon="checkmark-done-outline"
-							tint="#16A34A"
+							tint={colors.labelsuccess}
 							subtext={`${summary.genuinePercent}% of total`}
-							subtextColor="#16A34A"
+							subtextColor={colors.labelsuccess}
 						/>
 						<AdminStatCard
 							label="Suspected Cases"
 							value={String(summary.suspected)}
 							icon="alert-circle-outline"
-							tint="#E24B4A"
+							tint={colors.danger}
 							subtext={`${summary.suspectedPercent}% rate`}
-							subtextColor="#E24B4A"
+							subtextColor={colors.danger}
 						/>
 					</View>
 				</View>
@@ -268,8 +265,8 @@ export default function AdminStatsScreen() {
 
 				<View style={styles.chartCard}>
 					<View style={styles.legendRow}>
-						<LegendItem color="#16A34A" label="Genuine" />
-						<LegendItem color="#E24B4A" label="Suspected" />
+						<LegendItem color={colors.labelsuccess} label="Genuine" />
+						<LegendItem color={colors.danger} label="Suspected" />
 					</View>
 					<TrendLineChart buckets={trendBuckets} />
 				</View>
@@ -308,7 +305,7 @@ export default function AdminStatsScreen() {
 					</View>
 				)}
 			</ScrollView>
-		</View>
+		</SafeAreaView>
 	);
 }
 
@@ -351,7 +348,7 @@ function DropdownPill<T extends string>({
 			<View ref={pillRef} collapsable={false}>
 				<TouchableOpacity style={styles.pill} onPress={openDropdown} activeOpacity={0.85}>
 					<Text style={styles.pillText}>{value}</Text>
-					<Ionicons name="chevron-up" size={14} color="#64748B" />
+					<Ionicons name="chevron-up" size={14} color={colors.label} />
 				</TouchableOpacity>
 			</View>
 
@@ -404,12 +401,12 @@ function TrendLineChart({ buckets }: { buckets: TrendBucket[] }) {
 	return (
 		<View>
 			<Svg width="100%" height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
-				<Polyline points={genuinePoints} fill="none" stroke="#16A34A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-				<Polyline points={suspectedPoints} fill="none" stroke="#E24B4A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+				<Polyline points={genuinePoints} fill="none" stroke={colors.labelsuccess} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+				<Polyline points={suspectedPoints} fill="none" stroke={colors.danger} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 				{buckets.map((bucket, index) => (
 					<React.Fragment key={`point-${index}`}>
-						<Circle cx={toX(index)} cy={toY(bucket.genuine)} r={3.5} fill="#16A34A" />
-						<Circle cx={toX(index)} cy={toY(bucket.suspected)} r={3.5} fill="#E24B4A" />
+						<Circle cx={toX(index)} cy={toY(bucket.genuine)} r={3.5} fill={colors.labelsuccess} />
+						<Circle cx={toX(index)} cy={toY(bucket.suspected)} r={3.5} fill={colors.danger} />
 					</React.Fragment>
 				))}
 			</Svg>
@@ -425,14 +422,18 @@ function TrendLineChart({ buckets }: { buckets: TrendBucket[] }) {
 }
 
 const styles = StyleSheet.create({
-	screen: { flex: 1, backgroundColor: '#F5F8FC' },
+	screen: { 
+		flex: 1, 
+		backgroundColor: colors.background,
+		top: 30,
+	 },
 	header: {
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 		paddingHorizontal: 16,
 		paddingTop: 10,
 		paddingBottom: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: '#E2E8F0',
+		borderBottomColor: colors.border,
 	},
 	headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 	content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
@@ -443,18 +444,22 @@ const styles = StyleSheet.create({
 		gap: 6,
 		borderRadius: 999,
 		borderWidth: 1,
-		borderColor: '#E2E8F0',
-		backgroundColor: '#F8FAFC',
+		borderColor: colors.border,
+		backgroundColor: colors.background2,
 		paddingHorizontal: 14,
 		paddingVertical: 8,
 	},
-	pillText: { color: '#64748B', fontSize: 12, fontWeight: '700' },
+	pillText: { 
+		color: colors.label,
+		 fontSize: 12, 
+		 fontWeight: '700' 
+		},
 	dropdownMenu: {
 		position: 'absolute',
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderRadius: 16,
 		borderWidth: 1,
-		borderColor: '#E2E8F0',
+		borderColor: colors.border,
 		paddingVertical: 6,
 		shadowColor: '#0F172A',
 		shadowOpacity: 0.12,
@@ -467,56 +472,185 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 	},
 	dropdownOptionText: {
-		color: '#0F172A',
+		color: colors.textPrimary,
 		fontSize: 14,
 		fontWeight: '700',
 	},
-	statsGrid: { gap: 10, marginBottom: 18 },
-	statsGridRow: { flexDirection: 'row', gap: 10 },
-	sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 2 },
-	sectionHeader: { color: '#1E293B', fontSize: 16, fontWeight: '800', marginBottom: 10, marginTop: 2 },
-	chartCard: {
-		backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#DDE6F2', padding: 16, marginBottom: 16,
-		shadowColor: '#0F172A', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 1,
+	statsGrid: { 
+		gap: 10, 
+		marginBottom: 18 
 	},
-	legendRow: { flexDirection: 'row', gap: 16, marginBottom: 10 },
-	legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-	legendDot: { width: 10, height: 10, borderRadius: 2 },
-	legendText: { color: '#64748B', fontSize: 11, fontWeight: '600' },
-	axisRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingHorizontal: 2 },
-	axisLabel: { flex: 1, textAlign: 'center', color: '#94A3B8', fontSize: 10, fontWeight: '600' },
-	docRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-	docLabel: { width: 112, color: '#1E293B', fontSize: 14, fontWeight: '700' },
-	progressWrap: { flex: 1, paddingRight: 10 },
-	progressTrack: { height: 5, borderRadius: 999, backgroundColor: '#E2E8F0', overflow: 'hidden' },
-	progressFill: { height: '100%', borderRadius: 999, backgroundColor: '#1D63D6' },
-	docCount: { width: 20, textAlign: 'right', color: '#1E293B', fontSize: 14, fontWeight: '700' },
+	statsGridRow: { 
+		flexDirection: 'row', 
+		gap: 10 
+	},
+	sectionHeaderRow: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		justifyContent: 'space-between', 
+		marginBottom: 10, 
+		marginTop: 2 
+	},
+	sectionHeader: { 
+		color: colors.label, 
+		fontSize: 16, 
+		fontWeight: '800', 
+		marginBottom: 10, 
+		marginTop: 2 
+	},
+	chartCard: {
+		backgroundColor: colors.background2, 
+		borderRadius: 16, 
+		borderWidth: 1, 
+		borderColor: '#DDE6F2', 
+		padding: 16, 
+		marginBottom: 16,
+		shadowColor: '#0F172A', 
+		shadowOpacity: 0.04, 
+		shadowRadius: 10, 
+		shadowOffset: { width: 0, height: 4 }, 
+		elevation: 1,
+	},
+	legendRow: { 
+		flexDirection: 'row', 
+		gap: 16, 
+		marginBottom: 10 
+	},
+	legendItem: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		gap: 6 
+	},
+	legendDot: { 
+		width: 10, 
+		height: 10, 
+		borderRadius: 2 
+	},
+	legendText: { 
+		color: colors.label, 
+		fontSize: 11, 
+		fontWeight: '600' 
+	},
+	axisRow: { 
+		flexDirection: 'row', 
+		justifyContent: 'space-between', 
+		marginTop: 6, 
+		paddingHorizontal: 2 
+	},
+	axisLabel: { 
+		flex: 1, 
+		textAlign: 'center', 
+		color: colors.label, 
+		fontSize: 10, 
+		fontWeight: '600' 
+	},
+	docRow: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		marginBottom: 10 
+	},
+	docLabel: { 
+		width: 112, 
+		color: colors.textPrimary, 
+		fontSize: 14, 
+		fontWeight: '700' 
+	},
+	progressWrap: { 
+		flex: 1, 
+		paddingRight: 10 
+	},
+	progressTrack: { 
+		height: 5, 
+		borderRadius: 999, 
+		backgroundColor: '#E2E8F0', 
+		overflow: 'hidden' 
+	},
+	progressFill: { 
+		height: '100%', 
+		borderRadius: 999, 
+		backgroundColor: colors.primary 
+	},
+	docCount: { 
+		width: 20, 
+		textAlign: 'right', 
+		color: colors.textPrimary, 
+		fontSize: 14, 
+		fontWeight: '700' 
+	},
 	rosterCard: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderRadius: 16,
 		borderWidth: 1,
-		borderColor: '#DDE6F2',
+		borderColor: colors.border,
 		marginBottom: 16,
 		overflow: 'hidden',
 	},
 	emptyMini: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderRadius: 14,
 		borderWidth: 1,
-		borderColor: '#E3EAF3',
+		borderColor: colors.border,
 		padding: 16,
 		alignItems: 'center',
 		marginBottom: 16,
 	},
-	emptyMiniText: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
-	emptyState: { color: '#94A3B8', fontSize: 13, fontWeight: '600', textAlign: 'center', paddingVertical: 10 },
-	skeletonInfoCard: {
-		minHeight: 62, borderRadius: 16, borderWidth: 1, borderColor: '#DDE6F2', backgroundColor: '#FFFFFF', marginBottom: 16,
-		paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
+	emptyMiniText: { 
+		color: colors.label, 
+		fontSize: 12, 
+		fontWeight: '600' 
 	},
-	skeletonInfoTextLabel: { flex: 1, color: '#8FA2BE', fontSize: 13, fontWeight: '600' },
-	skeletonCardLarge: { borderRadius: 16, borderWidth: 1, borderColor: '#DDE6F2', backgroundColor: '#FFFFFF', marginBottom: 16, minHeight: 168, padding: 16 },
-	skeletonTitlePill: { width: 108, height: 22, borderRadius: 999, backgroundColor: '#C8D3E3', marginBottom: 14 },
-	skeletonLineMd: { width: 110, height: 8, borderRadius: 999, backgroundColor: '#D4DDEB', marginBottom: 14 },
-	skeletonLineLg: { width: 100, height: 26, borderRadius: 13, backgroundColor: '#C8D3E3', marginBottom: 8 },
+	emptyState: { 
+		color: colors.label, 
+		fontSize: 13, 
+		fontWeight: '600', 
+		textAlign: 'center', 
+		paddingVertical: 10 
+	},
+	skeletonInfoCard: {
+		minHeight: 62, 
+		borderRadius: 16, 
+		borderWidth: 1, 
+		borderColor: colors.border, 
+		backgroundColor: colors.background2, 
+		marginBottom: 16,
+		paddingHorizontal: 14, 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		gap: 10,
+	},
+	skeletonInfoTextLabel: { 
+		flex: 1, 
+		color: '#8FA2BE', 
+		fontSize: 13, 
+		fontWeight: '600' 
+	},
+	skeletonCardLarge: { 
+		borderRadius: 16, 
+		borderWidth: 1, 
+		borderColor: colors.border, 
+		backgroundColor: colors.background2, 
+		marginBottom: 16, 
+		minHeight: 168, 
+		padding: 16 
+	},
+	skeletonTitlePill: { 
+		width: 108, height: 22, 
+		borderRadius: 999, 
+		backgroundColor: '#C8D3E3', 
+		marginBottom: 14 
+	},
+	skeletonLineMd: { 
+		width: 110, 
+		height: 8, 
+		borderRadius: 999, 
+		backgroundColor: '#D4DDEB', 
+		marginBottom: 14 
+	},
+	skeletonLineLg: { 
+		width: 100, 
+		height: 26, 
+		borderRadius: 13, 
+		backgroundColor: '#C8D3E3', 
+		marginBottom: 8 
+	},
 });

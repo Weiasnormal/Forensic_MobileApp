@@ -1,10 +1,7 @@
-import { StatusBar } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { colors } from '@/constants/colors';
-import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
 
 type StatusBarVariant = 'onBrand' | 'onLight' | 'onDark';
-
-const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
 export function ScreenStatusBar({ variant }: { variant: StatusBarVariant }) {
   const config = {

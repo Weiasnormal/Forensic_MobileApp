@@ -13,6 +13,9 @@ export const colors = {
   primaryText: '#FFFFFF',
   primaryDisabled: '#AFC9EA',
 
+  label: '#94A3B8',
+  labelsuccess: '#16A34A',
+
   danger: '#E24B4A',
   dangerLight: '#FEF2F2',
   dangerBorder: '#FECACA',
@@ -28,4 +31,6 @@ export const colors = {
 
   inputBackground: '#FFFFFF',
   inputBorder: '#E2E8F0',
+
+  badgeBackground: '#E0EDFF',
 };
