@@ -10,7 +10,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
 export const ROLE_SETTINGS = {
   analyst: {
     signIn: {
-      emailPlaceholder: 'admin@institution.gov.ph',
+      emailPlaceholder: 'user@institution.gov.ph',
       redirectTo: '/User/user_dashboard' as const,
     },
     signUp: {
@@ -32,14 +32,14 @@ export const ROLE_SETTINGS = {
       ],
     },
     forgotPassword: {
-      emailPlaceholder: 'admin@institution.gov.ph',
-      verificationEmail: 'admin@institution.gov.ph',
+      emailPlaceholder: 'user@institution.gov.ph',
+      verificationEmail: 'user@institution.gov.ph',
       successMessage: 'Your password has been updated successfully.',
     },
   },
   admin: {
     signIn: {
-      emailPlaceholder: 'user@institution.gov.ph',
+      emailPlaceholder: 'admin@institution.gov.ph',
       redirectTo: '/Admin/admin_dashboard' as const,
     },
     signUp: {
@@ -61,8 +61,8 @@ export const ROLE_SETTINGS = {
       ],
     },
     forgotPassword: {
-      emailPlaceholder: 'user@institution.gov.ph',
-      verificationEmail: 'user@institution.gov.ph',
+      emailPlaceholder: 'admin@institution.gov.ph',
+      verificationEmail: 'admin@institution.gov.ph',
       successMessage: 'Your password has been updated successfully.',
     },
   },
