@@ -8,7 +8,7 @@ interface FormFieldProps {
   value: string;
   onChangeText?: (text: string) => void;
   onBlur?: () => void;
-  /** When true, renders a grayed-out, non-editable looking field (e.g. Role, Organization) */
+  onFocus?: () => void;
   disabled?: boolean;
   placeholder?: string;
   style?: ViewStyle;
@@ -16,6 +16,7 @@ interface FormFieldProps {
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
   error?: string;
+  focused?: boolean;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoComplete?: string;
@@ -27,6 +28,7 @@ const FormField: React.FC<FormFieldProps> = ({
   value,
   onChangeText,
   onBlur,
+  onFocus,
   disabled = false,
   placeholder,
   style,
@@ -34,6 +36,7 @@ const FormField: React.FC<FormFieldProps> = ({
   rightIcon,
   onRightIconPress,
   error,
+  focused = false,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
   autoComplete,
@@ -46,6 +49,7 @@ const FormField: React.FC<FormFieldProps> = ({
         style={[
           styles.inputWrap,
           disabled && styles.inputDisabled,
+          focused && styles.inputFocused,
           !!error && styles.inputErrorBorder,
         ]}
       >
@@ -54,6 +58,7 @@ const FormField: React.FC<FormFieldProps> = ({
           value={value}
           onChangeText={onChangeText}
           onBlur={onBlur}
+          onFocus={onFocus}
           editable={!disabled}
           placeholder={placeholder}
           placeholderTextColor={colors.textTertiary}
@@ -106,6 +111,10 @@ const styles = StyleSheet.create({
   inputDisabled: {
     backgroundColor: colors.disabledBackground,
     borderColor: colors.disabledBorder,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
   },
   inputErrorBorder: {
     borderColor: colors.danger,
