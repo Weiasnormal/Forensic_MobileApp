@@ -1,15 +1,27 @@
-import DraftSavedModal from '@/_components/modals/draft_saved';
+import GroupedCard from '@/_components/common/GroupedCard';
+import Avatar from '@/_components/common/Avatar';
+import SectionLabel from '@/_components/common/SectionLabel';
+import SettingsRow from '@/_components/common/SettingsRow';
+import ToggleRow from '@/_components/common/ToggleRow';
+import Divider from '@/_components/common/Divider';
+import SignOutButton from '@/_components/common/SignOutButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
+import LogoutModal from '@/_components/modals/logout';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import { useUser } from '@/store/userStore';
-import { Ionicons } from '@expo/vector-icons';
+import { getCaseSummary, useCaseStore } from '@/store/caseStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getCaseSummary, useCaseStore } from '../../store/caseStore';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const { user, load } = useUser();
 	const cases = useCaseStore((state) => state.cases);
 	const resetMockDatabase = useCaseStore((state) => state.resetMockDatabase);
@@ -18,33 +30,36 @@ export default function UserProfileScreen() {
 	useFocusEffect(
 		useCallback(() => {
 			load();
-		}, [load])
+		}, [load]),
 	);
+
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
-	const [showSignOutModal, setShowSignOutModal] = useState(false);
+	const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
 	const hiddenSavedCases = useCaseStore((s) => s.hiddenSavedCases);
 	const stashSavedCases = useCaseStore((s) => s.stashSavedCases);
 	const restoreSavedCases = useCaseStore((s) => s.restoreSavedCases);
 
+	const initials = getInitials(user.firstName, user.lastName);
+
+	const handleConfirmSignOut = () => {
+		setLogoutModalVisible(false);
+		router.replace('/_login/SignInPage');
+	};
+
 	return (
-		<View style={styles.screen}>
-			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
+		<View style={styles.safeArea}>
+			<View style={[styles.header, { paddingTop: insets.top + 40 }]}>
+				<View style={styles.headerGlow} />
 
-		<View style={styles.heroCard}>
-				<View style={styles.heroTopRow}>
-{user.avatarUri ? (
-					<Image source={{ uri: user.avatarUri }} style={styles.avatarCircle} />
-				) : (
-					<View style={styles.avatarCircle}>
-						<Text style={styles.avatarText}>{getInitials(user.firstName, user.lastName)}</Text>
-					</View>
-				)}
-
-					<View style={styles.heroCopy}>
+				<View style={styles.headerTopRow}>
+					<Avatar initials={initials} size={64} variant="onDark" />
+					<View style={styles.headerCopy}>
 						<Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-						<Text style={styles.subtitle}>{user.role} • {user.organization}</Text>
+						<Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+							{user.role} • {user.organization}
+						</Text>
 					</View>
 				</View>
 
@@ -55,59 +70,66 @@ export default function UserProfileScreen() {
 				</View>
 			</View>
 
-			<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-				<SectionLabel title="Account" />
-				<CardShell>
-					<ActionRow icon="person-outline" label="Edit Profile" onPress={() => router.push('/User/pages/setupAccount')} />
-					<ActionRow icon="lock-closed-outline" label="Change Password" />
-				</CardShell>
+			<ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollArea}>
+				<SectionLabel label="Account" />
+				<GroupedCard>
+					<SettingsRow icon={User} title="Edit Profile" onPress={() => router.push('/User/pages/setupAccount')} />
+					<Divider />
+					<SettingsRow icon={Lock} title="Change Password" onPress={() => router.push('/_login/forgot_password/enterEmail')} />
+				</GroupedCard>
 
-				<SectionLabel title="Preferences" />
-				<CardShell>
+				<SectionLabel label="Preferences" />
+				<GroupedCard>
 					<ToggleRow
-						icon="notifications-outline"
-						label="Notifications"
+						icon={Bell}
+						title="Notifications"
 						value={notificationsEnabled}
-						onToggle={() => setNotificationsEnabled((value) => !value)}
+						onValueChange={setNotificationsEnabled}
 					/>
-					<ActionRow icon="grid-outline" label="Default Result View" value="Heatmap" />
+					<Divider />
+					<SettingsRow icon={Grid} title="Default Result View" rightText="Heatmap" />
+					<Divider />
 					<ToggleRow
-						icon="share-outline"
-						label="Auto-Export Reports"
+						icon={Upload}
+						title="Auto-Export Reports"
 						value={autoExportEnabled}
-						onToggle={() => setAutoExportEnabled((value) => !value)}
+						onValueChange={setAutoExportEnabled}
 					/>
-				</CardShell>
+				</GroupedCard>
 
-				<SectionLabel title="About" />
-				<CardShell>
-					<ActionRow icon="information-circle-outline" label="Help & Support" />
-					<ActionRow icon="document-text-outline" label="App Version" value="v1.0.0" showChevron={false} />
-				</CardShell>
+				<SectionLabel label="About" />
+				<GroupedCard>
+					<SettingsRow icon={Info} title="Help & Support" />
+					<Divider />
+					<SettingsRow icon={FileText} title="App Version" rightText="v1.0.0" showChevron={false} />
+				</GroupedCard>
 
-				<SectionLabel title="Data" />
-				<ToggleRow
-					icon={hiddenSavedCases ? 'eye-off-outline' : 'eye-outline'}
-					label={hiddenSavedCases ? 'Saved Cases Hidden (Restore)' : 'Hide Saved Cases'}
-					value={!!hiddenSavedCases}
-					onToggle={() => {
-						if (!hiddenSavedCases) {
-							Alert.alert(
-								'Hide saved cases',
-								'This will temporarily hide saved cases from the dashboard. Continue?',
-								[
-									{ text: 'Cancel', style: 'cancel' },
-									{ text: 'Hide', style: 'destructive', onPress: () => stashSavedCases() },
-								],
-							);
-						} else {
-							restoreSavedCases();
-						}
-					}}
-				/>
-				<TouchableOpacity
-					style={styles.resetButton}
-					activeOpacity={0.88}
+				<SectionLabel label="Data" />
+				<GroupedCard>
+					<ToggleRow
+						icon={hiddenSavedCases ? EyeOff : Eye}
+						title={hiddenSavedCases ? 'Saved Cases Hidden' : 'Hide Saved Cases'}
+						subtitle={hiddenSavedCases ? 'Tap to restore them to your dashboard' : 'Temporarily hide saved cases from the dashboard'}
+						value={!!hiddenSavedCases}
+						onValueChange={() => {
+							if (!hiddenSavedCases) {
+								Alert.alert(
+									'Hide saved cases',
+									'This will temporarily hide saved cases from the dashboard. Continue?',
+									[
+										{ text: 'Cancel', style: 'cancel' },
+										{ text: 'Hide', style: 'destructive', onPress: () => stashSavedCases() },
+									],
+								);
+							} else {
+								restoreSavedCases();
+							}
+						}}
+					/>
+				</GroupedCard>
+
+				<SecondaryButton
+					label="Reset Test Data"
 					onPress={() => {
 						Alert.alert(
 							'Reset test data',
@@ -118,31 +140,19 @@ export default function UserProfileScreen() {
 							],
 						);
 					}}
-				>
-					<Text style={styles.resetButtonText}>Reset Test Data</Text>
-				</TouchableOpacity>
+					backgroundColor={colors.dangerLight}
+					borderColor={colors.dangerBorder}
+					textColor={colors.danger}
+					style={styles.resetSpacing}
+				/>
 
-				<TouchableOpacity
-					style={styles.signOutButton}
-					activeOpacity={0.88}
-					onPress={() => setShowSignOutModal(true)}
-				>
-					<Text style={styles.signOutText}>Sign out</Text>
-				</TouchableOpacity>
+				<SignOutButton style={styles.signOutSpacing} onPress={() => setLogoutModalVisible(true)} />
 			</ScrollView>
 
-			<DraftSavedModal
-				visible={showSignOutModal}
-				title="Logout Confirmation"
-				message="Are you sure you want to logout your account?"
-				primaryLabel="Log out"
-				secondaryLabel="Cancel"
-				onSecondaryPress={() => setShowSignOutModal(false)}
-				onContinue={() => {
-					setShowSignOutModal(false);
-					router.replace('/_login/SignInPage');
-				}}
-				onDismiss={() => setShowSignOutModal(false)}
+			<LogoutModal
+				visible={logoutModalVisible}
+				onCancel={() => setLogoutModalVisible(false)}
+				onLogout={handleConfirmSignOut}
 			/>
 		</View>
 	);
@@ -161,126 +171,46 @@ function HeroStat({ value, label, last }: { value: string; label: string; last?:
 	);
 }
 
-function SectionLabel({ title }: { title: string }) {
-	return <Text style={styles.sectionLabel}>{title}</Text>;
-}
-
-function CardShell({ children }: { children: React.ReactNode }) {
-	return <View style={styles.card}>{children}</View>;
-}
-
-function ActionRow({
-	icon,
-	label,
-	value,
-	showChevron = true,
-	onPress,
-}: {
-	icon: keyof typeof Ionicons.glyphMap;
-	label: string;
-	value?: string;
-	showChevron?: boolean;
-	onPress?: () => void;
-}) {
-	return (
-		<TouchableOpacity style={styles.row} activeOpacity={0.86} onPress={onPress}>
-			<View style={styles.rowLeft}>
-				<Ionicons name={icon} size={20} color="#111827" />
-				<Text style={styles.rowLabel}>{label}</Text>
-			</View>
-
-			<View style={styles.rowRight}>
-				{value ? <Text style={styles.rowValue}>{value}</Text> : null}
-				{showChevron ? <Ionicons name="chevron-forward" size={18} color="#94A3B8" /> : null}
-			</View>
-		</TouchableOpacity>
-	);
-}
-
-function ToggleRow({
-	icon,
-	label,
-	value,
-	onToggle,
-}: {
-	icon: keyof typeof Ionicons.glyphMap;
-	label: string;
-	value: boolean;
-	onToggle: () => void;
-}) {
-	return (
-		<View style={styles.row}>
-			<View style={styles.rowLeft}>
-				<Ionicons name={icon} size={20} color="#111827" />
-				<Text style={styles.rowLabel}>{label}</Text>
-			</View>
-
-			<TouchableOpacity
-				style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
-				onPress={onToggle}
-				activeOpacity={0.9}
-			>
-				<View style={[styles.toggleKnob, value ? styles.toggleKnobOn : styles.toggleKnobOff]} />
-			</TouchableOpacity>
-		</View>
-	);
-}
-
 const styles = StyleSheet.create({
-	screen: {
+	safeArea: {
 		flex: 1,
-		backgroundColor: '#F4F7FB',
+		backgroundColor: colors.background,
 	},
-	content: {
-		paddingHorizontal: 16,
-		paddingTop: 12,
-		paddingBottom: 28,
+	header: {
+		position: 'relative',
+		backgroundColor: colors.primary,
+		borderBottomLeftRadius: 28,
+		borderBottomRightRadius: 28,
+		overflow: 'hidden',
+		paddingHorizontal: 24,
+		paddingBottom: 20,
 	},
- 	heroCard: {
-		backgroundColor: '#1E6FD9',
- 		paddingHorizontal: 16,
- 		paddingTop: 20,
- 		paddingBottom: 20,
- 		borderBottomLeftRadius: 25,
- 		borderBottomRightRadius: 25,
- 		overflow: 'hidden',
- 	},
-	heroTopRow: {
+	headerGlow: {
+		position: 'absolute',
+		right: -100,
+		bottom: -170,
+		width: 232,
+		height: 232,
+		borderRadius: 116,
+		backgroundColor: 'rgba(255, 255, 255, 0.08)',
+	},
+	headerTopRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 14,
 	},
-	avatarCircle: {
-		width: 64,
-		height: 64,
-		borderRadius: 32,
-		borderWidth: 2,
-		borderColor: 'rgba(255,255,255,0.35)',
-		alignItems: 'center',
-		justifyContent: 'center',
-		backgroundColor: 'rgba(255,255,255,0.12)',
-	},
-	avatarText: {
-		color: '#FFFFFF',
-		fontSize: 18,
-		fontWeight: '900',
-		letterSpacing: 0.2,
-	},
-	heroCopy: {
+	headerCopy: {
+		marginLeft: 18,
 		flex: 1,
 	},
 	name: {
-		color: '#FFFFFF',
-		fontSize: 22,
-		fontWeight: '900',
-		letterSpacing: -0.5,
+		...getTypographyStyle('t1Title', 'bold'),
+		color: colors.primaryText,
 	},
- 	subtitle: {
- 		marginTop: 2,
- 		color: 'rgba(233, 241, 255, 0.9)',
- 		fontSize: 11,
- 		fontWeight: '600',
- 	},
+	subtitle: {
+		...getTypographyStyle('c1Caption'),
+		color: 'rgba(255, 255, 255, 0.8)',
+		marginTop: 2,
+	},
 	heroStats: {
 		flexDirection: 'row',
 		marginTop: 18,
@@ -301,7 +231,7 @@ const styles = StyleSheet.create({
 		borderRightWidth: 0,
 	},
 	heroStatValue: {
-		color: '#FFFFFF',
+		color: colors.primaryText,
 		fontSize: 19,
 		fontWeight: '900',
 		letterSpacing: -0.3,
@@ -313,102 +243,16 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 		letterSpacing: 0.5,
 	},
-	sectionLabel: {
-		color: '#A3B0C4',
-		fontSize: 14,
-		fontWeight: '800',
-		marginTop: 2,
-		marginBottom: 10,
-	},
-	card: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 18,
-		borderWidth: 1,
-		borderColor: '#E3EAF3',
-		overflow: 'hidden',
-		marginBottom: 20,
-	},
-	row: {
-		minHeight: 56,
+	scrollArea: {
 		paddingHorizontal: 16,
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-		borderBottomWidth: 1,
-		borderBottomColor: '#E9EEF5',
+		paddingTop: 25,
+		paddingBottom: 18,
+		backgroundColor: colors.background,
 	},
-	rowLeft: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 12,
-		flex: 1,
-	},
-	rowLabel: {
-		color: '#111827',
-		fontSize: 14,
-		fontWeight: '700',
-	},
-	rowRight: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-	},
-	rowValue: {
-		color: '#64748B',
-		fontSize: 13,
-		fontWeight: '700',
-	},
-	toggle: {
-		width: 36,
-		height: 22,
-		borderRadius: 999,
-		padding: 2,
-		justifyContent: 'center',
-	},
-	toggleOn: {
-		backgroundColor: '#1E6FD9',
-	},
-	toggleOff: {
-		backgroundColor: '#D7DEE9',
-	},
-	toggleKnob: {
-		width: 18,
-		height: 18,
-		borderRadius: 9,
-		backgroundColor: '#FFFFFF',
-	},
-	toggleKnobOn: {
-		alignSelf: 'flex-end',
-	},
-	toggleKnobOff: {
-		alignSelf: 'flex-start',
-	},
-	signOutButton: {
+	resetSpacing: {
 		marginTop: 4,
-		borderWidth: 1,
-		borderColor: '#FFB5B5',
-		backgroundColor: '#FFF5F5',
-		borderRadius: 16,
-		paddingVertical: 15,
-		alignItems: 'center',
 	},
-	resetButton: {
-		marginTop: 2,
-		borderWidth: 1,
-		borderColor: '#FECACA',
-		backgroundColor: '#FEF2F2',
-		borderRadius: 16,
-		paddingVertical: 15,
-		alignItems: 'center',
-	},
-	resetButtonText: {
-		color: '#B91C1C',
-		fontSize: 15,
-		fontWeight: '900',
-	},
-	signOutText: {
-		color: '#EF4444',
-		fontSize: 15,
-		fontWeight: '900',
+	signOutSpacing: {
+		marginTop: 12,
 	},
 });

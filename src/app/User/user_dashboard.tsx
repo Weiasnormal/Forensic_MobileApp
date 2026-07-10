@@ -13,6 +13,8 @@ import PendingCard from '../../_components/pendingCards';
 import { formatAnalysisTypeLabel, getPendingCards, type SavedCase, useCaseStore } from '../../store/caseStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import { colors } from '@/constants/colors';
 
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
@@ -57,8 +59,8 @@ export default function UserDashboardScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-      <StatusBar style="dark" backgroundColor="#ffffff" />
+    <SafeAreaView edges={['top','left', 'right']} style={styles.screen}>
+      <ScreenStatusBar variant="onLight" />
 
       {activeTab === 'home' ? (
         <View style={styles.homeHeader}>
@@ -229,15 +231,15 @@ function getInitials(first = '', last = '') {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   homeHeader: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background2,
     paddingTop: Platform.OS === 'android' ? 18 : 20,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
   },
   homeHeaderTop: {
     flexDirection: 'row',
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   homeGreeting: {
-    color: '#0F172A',
+    color: colors.textPrimary,
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: -0.5,
@@ -254,7 +256,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1E6FD9',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 18,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -303,7 +305,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 14,
-    backgroundColor: '#1E6FD9',
+    backgroundColor: colors.primary,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 16,
