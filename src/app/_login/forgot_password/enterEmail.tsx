@@ -4,7 +4,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type ForgotPasswordFormValues, forgotPasswordSchema } from '../../../utils/validation';
@@ -31,54 +35,60 @@ export default function EnterEmailPage() {
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
+			<StatusBar style="light" translucent backgroundColor={colors.primary} />
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+			<ScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
+				bounces={false}
+				keyboardShouldPersistTaps="handled"
+			>
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
+						<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
 					</TouchableOpacity>
 
 					<View style={styles.heroCopy}>
 						<Text allowFontScaling={false} style={styles.title}>Forgot Password?</Text>
-						<Text allowFontScaling={false} style={styles.subtitle}>Enter your email and we&apos;ll send you a verification code</Text>
+						<Text allowFontScaling={false} style={styles.subtitle}>
+							Enter your email and we&apos;ll send you a verification code
+						</Text>
 					</View>
 				</View>
 
 				<View style={styles.content}>
 					<View style={styles.inputGroup}>
-						<Text allowFontScaling={false} style={styles.label}>Email</Text>
 						<Controller
 							control={control}
 							name="email"
 							render={({ field: { onChange, onBlur, value } }) => (
-								<TextInput
-									style={[styles.input, errors.email && styles.inputError]}
+								<FormField
+									label="Email"
+									value={value}
+									onChangeText={onChange}
+									onBlur={onBlur}
 									placeholder={roleConfig.emailPlaceholder}
-									placeholderTextColor="#8FA0B7"
 									keyboardType="email-address"
 									autoCapitalize="none"
-									autoCorrect={false}
-									textContentType="emailAddress"
 									autoComplete="email"
-									value={value}
-									onBlur={onBlur}
-									onChangeText={onChange}
+									textContentType="emailAddress"
+									error={errors.email?.message}
+									style={styles.noMargin}
 								/>
 							)}
 						/>
-						{errors.email?.message ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
-						<Text allowFontScaling={false} style={styles.helperText}>We&apos;ll send a 6-digit code to {roleConfig.verificationEmail}.</Text>
+						<Text allowFontScaling={false} style={styles.helperText}>
+							We&apos;ll send a 6-digit code to {roleConfig.verificationEmail}.
+						</Text>
 					</View>
 
 					<View style={styles.bottomActions}>
-						<TouchableOpacity
-							style={styles.primaryButton}
-							activeOpacity={0.9}
+						<PrimaryButton
+							label="Send code"
 							onPress={handleSubmit(handleSendCode)}
-						>
-							<Text allowFontScaling={false} style={styles.primaryButtonText}>Send code</Text>
-						</TouchableOpacity>
+							size="large"
+							style={styles.sendButton}
+						/>
 
 						<View style={styles.footerRow}>
 							<Text allowFontScaling={false} style={styles.footerPrompt}>Remember your password? </Text>
@@ -96,110 +106,73 @@ export default function EnterEmailPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollContent: {
 		flexGrow: 1,
 		paddingBottom: 10,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollView: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	hero: {
-		backgroundColor: '#1E6FD9',
-		paddingHorizontal: 16,
-		paddingTop: 38,
-		paddingBottom: 20,
-		borderBottomLeftRadius: 25,
-		borderBottomRightRadius: 25,
+		backgroundColor: colors.primary,
+		paddingHorizontal: 20,
+		paddingTop: 44,
+		paddingBottom: 28,
+		borderBottomLeftRadius: 28,
+		borderBottomRightRadius: 28,
 	},
 	title: {
-		color: '#ffffff',
-		fontSize: 33,
-		lineHeight: 40,
-		fontWeight: '800',
-		letterSpacing: -0.6,
+		...getTypographyStyle('t1Title'),
+		fontSize: 28,
+		color: colors.primaryText,
 	},
 	subtitle: {
-		color: 'rgba(233, 241, 255, 0.9)',
+		...getTypographyStyle('body'),
 		fontSize: 14,
-		lineHeight: 20,
+		color: 'rgba(255,255,255,0.85)',
 		marginTop: 4,
-		fontWeight: '500',
 	},
 	heroCopy: {
-		marginTop: 18,
-		marginBottom: 2,
+		marginTop: 20,
 	},
 	backButton: {
 		width: 36,
 		height: 36,
 		borderRadius: 10,
 		borderWidth: 1,
-		borderColor: 'rgba(233, 243, 255, 0.9)',
-		backgroundColor: 'rgba(47, 112, 200, 0.35)',
+		borderColor: 'rgba(255,255,255,0.5)',
+		backgroundColor: 'rgba(255,255,255,0.15)',
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	content: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 16,
+		backgroundColor: colors.background2,
+		paddingHorizontal: 20,
 		paddingTop: 24,
 		paddingBottom: 20,
 	},
 	inputGroup: {
 		marginBottom: 14,
 	},
-	label: {
-		color: '#8A99AE',
-		fontSize: 11,
-		fontWeight: '700',
-		letterSpacing: 0,
-		marginBottom: 8,
-	},
-	input: {
-		backgroundColor: '#E9EEF5',
-		borderRadius: 12,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
-		color: '#1F2B3E',
-		fontSize: 14,
-		borderWidth: 1,
-		borderColor: '#D0DAE8',
-	},
-	inputError: {
-		borderColor: '#E24B4A',
+	noMargin: {
+		marginBottom: 0,
 	},
 	helperText: {
+		...getTypographyStyle('c2Caption'),
+		color: colors.textSecondary,
 		marginTop: 10,
-		color: '#8A99AE',
-		fontSize: 12,
-		fontWeight: '600',
-	},
-	errorText: {
-		marginTop: 6,
-		color: '#E24B4A',
-		fontSize: 12,
-		fontWeight: '600',
 	},
 	bottomActions: {
 		marginTop: 'auto',
 	},
-	primaryButton: {
-		backgroundColor: '#1E6FD9',
-		borderRadius: 12,
-		paddingVertical: 13,
-		alignItems: 'center',
+	sendButton: {
 		marginTop: 10,
 		marginBottom: 12,
-	},
-	primaryButtonText: {
-		color: '#ffffff',
-		fontSize: 15,
-		fontWeight: '800',
 	},
 	footerRow: {
 		flexDirection: 'row',
@@ -208,13 +181,11 @@ const styles = StyleSheet.create({
 		gap: 3,
 	},
 	footerPrompt: {
-		color: '#8A99AE',
-		fontSize: 13,
-		fontWeight: '600',
+		...getTypographyStyle('c1Caption'),
+		color: colors.textSecondary,
 	},
 	footerAction: {
-		color: '#1E63CA',
-		fontSize: 13,
-		fontWeight: '800',
+		...getTypographyStyle('c1Caption'),
+		color: colors.primary,
 	},
 });

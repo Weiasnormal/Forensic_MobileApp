@@ -2,9 +2,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+	KeyboardAvoidingView,
+	Platform,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from 'react-native';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type VerificationCodeFormValues, verificationCodeSchema } from '../../../utils/validation';
@@ -14,8 +26,9 @@ export default function VerifyPage() {
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
+
 	const [codeValues, setCodeValues] = useState(Array(6).fill(''));
-	const [codeRefs] = useState<(TextInput | null)[]>([]);
+	const codeRefs = useRef<(TextInput | null)[]>([]);
 	const {
 		setValue,
 		handleSubmit,
@@ -35,7 +48,13 @@ export default function VerifyPage() {
 		setValue('code', nextValues.join(''), { shouldValidate: true, shouldDirty: true });
 
 		if (nextValue && index < 5) {
-			codeRefs[index + 1]?.focus();
+			codeRefs.current[index + 1]?.focus();
+		}
+	};
+
+	const handleCodeKeyPress = (index: number, key: string) => {
+		if (key === 'Backspace' && !codeValues[index] && index > 0) {
+			codeRefs.current[index - 1]?.focus();
 		}
 	};
 
@@ -45,17 +64,24 @@ export default function VerifyPage() {
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
+			<StatusBar style="light" translucent backgroundColor={colors.primary} />
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+			<ScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
+				bounces={false}
+				keyboardShouldPersistTaps="handled"
+			>
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
+						<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
 					</TouchableOpacity>
 
 					<View style={styles.heroCopy}>
 						<Text allowFontScaling={false} style={styles.title}>Check Your Email</Text>
-						<Text allowFontScaling={false} style={styles.subtitle}>We sent a 6-digit code to {roleConfig.verificationEmail}</Text>
+						<Text allowFontScaling={false} style={styles.subtitle}>
+							We sent a 6-digit code to {roleConfig.verificationEmail}
+						</Text>
 					</View>
 				</View>
 
@@ -64,26 +90,29 @@ export default function VerifyPage() {
 
 					<View style={styles.codeRow}>
 						{codeValues.map((value, index) => (
-							<View key={index} style={styles.codeBox}>
+							<View key={index} style={[styles.codeBox, errors.code && styles.codeBoxError]}>
 								<TextInput
 									ref={(ref): void => {
-										codeRefs[index] = ref;
+										codeRefs.current[index] = ref;
 									}}
 									style={styles.codeInput}
 									keyboardType="number-pad"
 									maxLength={1}
- 									textContentType="oneTimeCode"
- 									autoComplete="one-time-code"
- 									value={value}
- 									onChangeText={(text) => handleCodeChange(index, text)}
+									textContentType="oneTimeCode"
+									autoComplete="one-time-code"
+									value={value}
+									onChangeText={(text) => handleCodeChange(index, text)}
+									onKeyPress={(e) => handleCodeKeyPress(index, e.nativeEvent.key)}
 									placeholder=""
-									placeholderTextColor="#8FA0B7"
+									placeholderTextColor={colors.textTertiary}
 								/>
 							</View>
 						))}
 					</View>
 
-					{errors.code?.message ? <Text style={styles.errorText}>{errors.code.message}</Text> : null}
+					{errors.code?.message ? (
+						<Text allowFontScaling={false} style={styles.errorText}>{errors.code.message}</Text>
+					) : null}
 
 					<View style={styles.metaRow}>
 						<Text allowFontScaling={false} style={styles.metaText}>Code expires in: 4:30</Text>
@@ -93,17 +122,21 @@ export default function VerifyPage() {
 					</View>
 
 					<View style={styles.bottomActions}>
-						<TouchableOpacity
-							style={styles.primaryButton}
-							activeOpacity={0.9}
+						<PrimaryButton
+							label="Verify"
 							onPress={handleSubmit(handleVerify)}
-						>
-							<Text allowFontScaling={false} style={styles.primaryButtonText}>Verify</Text>
-						</TouchableOpacity>
+							size="large"
+							style={styles.verifyButton}
+						/>
 
 						<View style={styles.footerRow}>
 							<Text allowFontScaling={false} style={styles.footerPrompt}>Wrong email? </Text>
-							<TouchableOpacity activeOpacity={0.7} onPress={() => router.push({ pathname: '/_login/forgot_password/enterEmail', params: { role: activeRole } })}>
+							<TouchableOpacity
+								activeOpacity={0.7}
+								onPress={() =>
+									router.push({ pathname: '/_login/forgot_password/enterEmail', params: { role: activeRole } })
+								}
+							>
 								<Text allowFontScaling={false} style={styles.footerAction}>Change email</Text>
 							</TouchableOpacity>
 						</View>
@@ -117,65 +150,60 @@ export default function VerifyPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollContent: {
 		flexGrow: 1,
 		paddingBottom: 10,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollView: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	hero: {
-		backgroundColor: '#1E6FD9',
-		paddingHorizontal: 16,
-		paddingTop: 38,
-		paddingBottom: 20,
-		borderBottomLeftRadius: 25,
-		borderBottomRightRadius: 25,
+		backgroundColor: colors.primary,
+		paddingHorizontal: 20,
+		paddingTop: 44,
+		paddingBottom: 28,
+		borderBottomLeftRadius: 28,
+		borderBottomRightRadius: 28,
 	},
 	title: {
-		color: '#ffffff',
-		fontSize: 33,
-		lineHeight: 40,
-		fontWeight: '800',
-		letterSpacing: -0.6,
+		...getTypographyStyle('t1Title'),
+		fontSize: 28,
+		color: colors.primaryText,
 	},
 	subtitle: {
-		color: 'rgba(233, 241, 255, 0.9)',
+		...getTypographyStyle('body'),
 		fontSize: 14,
-		lineHeight: 20,
+		color: 'rgba(255,255,255,0.85)',
 		marginTop: 4,
-		fontWeight: '500',
 	},
 	heroCopy: {
-		marginTop: 18,
-		marginBottom: 2,
+		marginTop: 20,
 	},
 	backButton: {
 		width: 36,
 		height: 36,
 		borderRadius: 10,
 		borderWidth: 1,
-		borderColor: 'rgba(233, 243, 255, 0.9)',
-		backgroundColor: 'rgba(47, 112, 200, 0.35)',
+		borderColor: 'rgba(255,255,255,0.5)',
+		backgroundColor: 'rgba(255,255,255,0.15)',
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	content: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 16,
+		backgroundColor: colors.background2,
+		paddingHorizontal: 20,
 		paddingTop: 24,
 		paddingBottom: 20,
 	},
 	sectionLabel: {
+		...getTypographyStyle('c1Caption'),
 		alignSelf: 'center',
-		color: '#8A99AE',
-		fontSize: 12,
-		fontWeight: '700',
+		color: colors.textSecondary,
 		marginBottom: 18,
 	},
 	codeRow: {
@@ -188,24 +216,26 @@ const styles = StyleSheet.create({
 		height: 52,
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: '#D0DAE8',
-		backgroundColor: '#E9EEF5',
+		borderColor: colors.inputBorder,
+		backgroundColor: colors.background,
 		alignItems: 'center',
 		justifyContent: 'center',
+	},
+	codeBoxError: {
+		borderColor: colors.danger,
 	},
 	codeInput: {
 		width: '100%',
 		height: '100%',
 		textAlign: 'center',
-		fontSize: 18,
-		color: '#1F2B3E',
+		...getTypographyStyle('t3Title'),
+		color: colors.textPrimary,
 		paddingVertical: 0,
 	},
 	errorText: {
+		...getTypographyStyle('c2Caption'),
 		marginTop: 10,
-		color: '#E24B4A',
-		fontSize: 12,
-		fontWeight: '600',
+		color: colors.danger,
 		textAlign: 'center',
 	},
 	metaRow: {
@@ -215,30 +245,19 @@ const styles = StyleSheet.create({
 		marginTop: 10,
 	},
 	metaText: {
-		color: '#8A99AE',
-		fontSize: 12,
-		fontWeight: '600',
+		...getTypographyStyle('c2Caption'),
+		color: colors.textSecondary,
 	},
 	metaAction: {
-		color: '#1E63CA',
-		fontSize: 12,
-		fontWeight: '800',
+		...getTypographyStyle('c2Caption', 'bold'),
+		color: colors.primary,
 	},
 	bottomActions: {
 		marginTop: 'auto',
 	},
-	primaryButton: {
-		backgroundColor: '#1E6FD9',
-		borderRadius: 12,
-		paddingVertical: 13,
-		alignItems: 'center',
+	verifyButton: {
 		marginTop: 10,
 		marginBottom: 12,
-	},
-	primaryButtonText: {
-		color: '#ffffff',
-		fontSize: 15,
-		fontWeight: '800',
 	},
 	footerRow: {
 		flexDirection: 'row',
@@ -247,13 +266,11 @@ const styles = StyleSheet.create({
 		gap: 3,
 	},
 	footerPrompt: {
-		color: '#8A99AE',
-		fontSize: 13,
-		fontWeight: '600',
+		...getTypographyStyle('c1Caption'),
+		color: colors.textSecondary,
 	},
 	footerAction: {
-		color: '#1E63CA',
-		fontSize: 13,
-		fontWeight: '800',
+		...getTypographyStyle('c1Caption', 'bold'),
+		color: colors.primary,
 	},
 });
