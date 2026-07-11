@@ -15,7 +15,7 @@ export default function GetStartedPage() {
 
 	const handleGetStarted = () => {
 		router.push('/_login/OnBoardingpage');
-		//router.push('/_login/_signup/PendingUser&Admin');
+		//router.push('/_login/forgot_password/enterEmail');
 	};
 
 	const handleSignIn = () => {

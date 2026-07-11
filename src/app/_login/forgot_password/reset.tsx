@@ -4,7 +4,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 
 import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { resolveRole } from '../../../constants/roles';
@@ -36,7 +40,8 @@ export default function ResetPasswordPage() {
 	const passwordValue = watch('password') ?? '';
 	const passwordStrength = usePasswordStrength(passwordValue);
 	const showPasswordGuidance = isPasswordFocused;
-	const showPasswordError = wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
+	const showPasswordError =
+		wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
 
 	const handleReset = async (_values: ResetPasswordFormValues) => {
 		setIsSubmitting(true);
@@ -49,12 +54,17 @@ export default function ResetPasswordPage() {
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
+			<StatusBar style="light" translucent backgroundColor={colors.primary} />
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+			<ScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
+				bounces={false}
+				keyboardShouldPersistTaps="handled"
+			>
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
+						<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
 					</TouchableOpacity>
 
 					<View style={styles.heroCopy}>
@@ -65,84 +75,87 @@ export default function ResetPasswordPage() {
 
 				<View style={styles.content}>
 					<View style={styles.inputGroup}>
-						<Text allowFontScaling={false} style={styles.label}>New password</Text>
-						<View style={[styles.passwordInputWrap, isPasswordFocused && styles.passwordInputWrapFocused, showPasswordError && styles.passwordInputWrapError]}>
-							<Controller
-								control={control}
-								name="password"
-								render={({ field: { onChange, onBlur, value } }) => (
-									<TextInput
-										style={styles.passwordInput}
-										placeholder="Create a password"
-										placeholderTextColor="#8FA0B7"
-										secureTextEntry={!showPassword}
-										autoCapitalize="none"
-										autoCorrect={false}
-										textContentType="newPassword"
-										autoComplete="new-password"
-										value={value}
-										onFocus={() => {
-											setIsPasswordFocused(true);
-											setWasPasswordBlurred(false);
-										}}
-										onBlur={() => {
-											onBlur();
-											setIsPasswordFocused(false);
-											setWasPasswordBlurred(true);
-										}}
-										onChangeText={onChange}
-									/>
-								)}
-							/>
-							<TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
-								<Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
-							</TouchableOpacity>
-						</View>
-						<PasswordStrengthGuide password={passwordValue} isVisible={showPasswordGuidance} showError={showPasswordError} errorMessage="Password does not meet requirements" />
+						<Controller
+							control={control}
+							name="password"
+							render={({ field: { onChange, onBlur, value } }) => (
+								<FormField
+									label="New password"
+									value={value}
+									onChangeText={onChange}
+									onFocus={() => {
+										setIsPasswordFocused(true);
+										setWasPasswordBlurred(false);
+									}}
+									onBlur={() => {
+										onBlur();
+										setIsPasswordFocused(false);
+										setWasPasswordBlurred(true);
+									}}
+									placeholder="Create a password"
+									secureTextEntry={!showPassword}
+									autoCapitalize="none"
+									textContentType="newPassword"
+									autoComplete="new-password"
+									focused={isPasswordFocused}
+									error={showPasswordError ? undefined : undefined}
+									rightIcon={
+										<Ionicons
+											name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+											size={20}
+											color={colors.textTertiary}
+										/>
+									}
+									onRightIconPress={() => setShowPassword((v) => !v)}
+									style={styles.noMargin}
+								/>
+							)}
+						/>
+						<PasswordStrengthGuide
+							password={passwordValue}
+							isVisible={showPasswordGuidance}
+							showError={showPasswordError}
+							errorMessage="Password does not meet requirements"
+						/>
 					</View>
 
 					<View style={styles.inputGroup}>
-						<Text allowFontScaling={false} style={styles.label}>Confirm new password</Text>
-						<View style={styles.passwordInputWrap}>
-							<Controller
-								control={control}
-								name="confirmPassword"
-								render={({ field: { onChange, onBlur, value } }) => (
-									<TextInput
-										style={[styles.passwordInput, errors.confirmPassword && styles.inputError]}
-										placeholder="Repeat password"
-										placeholderTextColor="#8FA0B7"
-										secureTextEntry={!showConfirmPassword}
-										autoCapitalize="none"
-										autoCorrect={false}
-										textContentType="newPassword"
-										autoComplete="password"
-										value={value}
-										onBlur={onBlur}
-										onChangeText={onChange}
-									/>
-								)}
-							/>
-							<TouchableOpacity activeOpacity={0.7} style={styles.eyeButton} onPress={() => setShowConfirmPassword((v) => !v)}>
-								<Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9AA6B7" />
-							</TouchableOpacity>
-						</View>
-						{errors.confirmPassword?.message ? <Text style={styles.errorText}>{errors.confirmPassword.message}</Text> : null}
+						<Controller
+							control={control}
+							name="confirmPassword"
+							render={({ field: { onChange, onBlur, value } }) => (
+								<FormField
+									label="Confirm new password"
+									value={value}
+									onChangeText={onChange}
+									onBlur={onBlur}
+									placeholder="Repeat password"
+									secureTextEntry={!showConfirmPassword}
+									autoCapitalize="none"
+									textContentType="newPassword"
+									autoComplete="password"
+									error={errors.confirmPassword?.message}
+									rightIcon={
+										<Ionicons
+											name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+											size={20}
+											color={colors.textTertiary}
+										/>
+									}
+									onRightIconPress={() => setShowConfirmPassword((v) => !v)}
+								/>
+							)}
+						/>
 					</View>
 
 					<View style={styles.bottomActions}>
-						<TouchableOpacity
-							style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}
-							activeOpacity={0.9}
-							disabled={isSubmitting}
+						<PrimaryButton
+							label="Reset password"
 							onPress={handleSubmit(handleReset)}
-						>
-							{isSubmitting ? (
-								<ActivityIndicator color="#ffffff" size="small" />
-							) : (
-								<Text allowFontScaling={false} style={styles.primaryButtonText}>Reset password</Text>
-							)}
-						</TouchableOpacity>
+							size="large"
+							loading={isSubmitting}
+							style={styles.resetButton}
+						/>
 
 						<View style={styles.footerRow}>
 							<Text allowFontScaling={false} style={styles.footerPrompt}>Don&apos;t have an account? </Text>
@@ -160,126 +173,68 @@ export default function ResetPasswordPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollContent: {
 		flexGrow: 1,
 		paddingBottom: 10,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollView: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	hero: {
-		backgroundColor: '#1E6FD9',
-		paddingHorizontal: 16,
-		paddingTop: 38,
-		paddingBottom: 20,
-		borderBottomLeftRadius: 25,
-		borderBottomRightRadius: 25,
+		backgroundColor: colors.primary,
+		paddingHorizontal: 20,
+		paddingTop: 44,
+		paddingBottom: 28,
+		borderBottomLeftRadius: 28,
+		borderBottomRightRadius: 28,
 	},
 	title: {
-		color: '#ffffff',
-		fontSize: 33,
-		lineHeight: 40,
-		fontWeight: '800',
-		letterSpacing: -0.6,
+		...getTypographyStyle('t1Title'),
+		fontSize: 28,
+		color: colors.primaryText,
 	},
 	subtitle: {
-		color: 'rgba(233, 241, 255, 0.9)',
+		...getTypographyStyle('body'),
 		fontSize: 14,
-		lineHeight: 20,
+		color: 'rgba(255,255,255,0.85)',
 		marginTop: 4,
-		fontWeight: '500',
 	},
 	heroCopy: {
-		marginTop: 18,
-		marginBottom: 2,
+		marginTop: 20,
 	},
 	backButton: {
 		width: 36,
 		height: 36,
 		borderRadius: 10,
 		borderWidth: 1,
-		borderColor: 'rgba(233, 243, 255, 0.9)',
-		backgroundColor: 'rgba(47, 112, 200, 0.35)',
+		borderColor: 'rgba(255,255,255,0.5)',
+		backgroundColor: 'rgba(255,255,255,0.15)',
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	content: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 16,
+		backgroundColor: colors.background2,
+		paddingHorizontal: 20,
 		paddingTop: 24,
 		paddingBottom: 20,
 	},
 	inputGroup: {
 		marginBottom: 18,
 	},
-	label: {
-		color: '#8A99AE',
-		fontSize: 11,
-		fontWeight: '700',
-		letterSpacing: 0,
-		marginBottom: 8,
-	},
-	passwordInputWrap: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		backgroundColor: '#E9EEF5',
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: '#D0DAE8',
-	},
-	passwordInputWrapFocused: {
-		borderColor: '#1E6FD9',
-		backgroundColor: '#F5F9FF',
-	},
-	passwordInputWrapError: {
-		borderColor: '#E24B4A',
-		backgroundColor: '#FFF6F6',
-	},
-	passwordInput: {
-		flex: 1,
-		paddingHorizontal: 14,
-		paddingVertical: 12,
-		color: '#1F2B3E',
-		fontSize: 14,
-	},
-	inputError: {
-		borderColor: '#E24B4A',
-	},
-	eyeButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 9,
-	},
-	errorText: {
-		marginTop: 6,
-		color: '#E24B4A',
-		fontSize: 12,
-		fontWeight: '600',
+	noMargin: {
+		marginBottom: 0,
 	},
 	bottomActions: {
 		marginTop: 'auto',
 	},
-	primaryButton: {
-		backgroundColor: '#1E6FD9',
-		borderRadius: 12,
-		paddingVertical: 13,
-		alignItems: 'center',
-		justifyContent: 'center',
-		minHeight: 48,
+	resetButton: {
 		marginTop: 10,
 		marginBottom: 12,
-	},
-	primaryButtonDisabled: {
-		opacity: 0.7,
-	},
-	primaryButtonText: {
-		color: '#ffffff',
-		fontSize: 15,
-		fontWeight: '800',
 	},
 	footerRow: {
 		flexDirection: 'row',
@@ -288,13 +243,11 @@ const styles = StyleSheet.create({
 		gap: 3,
 	},
 	footerPrompt: {
-		color: '#8A99AE',
-		fontSize: 13,
-		fontWeight: '600',
+		...getTypographyStyle('c1Caption'),
+		color: colors.textSecondary,
 	},
 	footerAction: {
-		color: '#1E63CA',
-		fontSize: 13,
-		fontWeight: '800',
+		...getTypographyStyle('c1Caption', 'bold'),
+		color: colors.primary,
 	},
 });

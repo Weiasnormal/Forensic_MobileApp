@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react-native';
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { ButtonSize } from './PrimaryButton';
@@ -19,6 +19,7 @@ interface TertiaryButtonProps {
   iconColor?: string;
   iconSize?: number;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 const SIZE_CONFIG: Record<
@@ -68,10 +69,12 @@ const TertiaryButton: React.FC<TertiaryButtonProps> = ({
   iconColor,
   iconSize,
   disabled = false,
+  loading = false,
 }) => {
   const sizeConfig = SIZE_CONFIG[size];
   const resolvedTextVariant = textVariant ?? sizeConfig.textVariant;
   const resolvedTextColor = textColor ?? colors.textSecondary;
+  const isDisabled = disabled || loading;
 
   return (
     <TouchableOpacity
@@ -84,31 +87,37 @@ const TertiaryButton: React.FC<TertiaryButtonProps> = ({
         },
         backgroundColor ? { backgroundColor } : null,
         borderColor ? { borderWidth: 1, borderColor } : null,
-        disabled && styles.disabledButton,
+        isDisabled && styles.disabledButton,
         style,
       ]}
       onPress={onPress}
       activeOpacity={0.75}
-      disabled={disabled}
+      disabled={isDisabled}
     >
-      <Text
-        style={[
-          styles.label,
-          getTypographyStyle(resolvedTextVariant),
-          { color: resolvedTextColor },
-          textStyle,
-          disabled && styles.disabledLabel,
-        ]}
-      >
-        {label}
-      </Text>
-      {showArrow ? (
-        <ArrowRight
-          size={iconSize ?? sizeConfig.iconSize}
-          color={iconColor ?? resolvedTextColor}
-          style={styles.icon}
-        />
-      ) : null}
+      {loading ? (
+        <ActivityIndicator color={resolvedTextColor} size="small" />
+      ) : (
+        <>
+          <Text
+            style={[
+              styles.label,
+              getTypographyStyle(resolvedTextVariant),
+              { color: resolvedTextColor },
+              textStyle,
+              disabled && styles.disabledLabel,
+            ]}
+          >
+            {label}
+          </Text>
+          {showArrow ? (
+            <ArrowRight
+              size={iconSize ?? sizeConfig.iconSize}
+              color={iconColor ?? resolvedTextColor}
+              style={styles.icon}
+            />
+          ) : null}
+        </>
+      )}
     </TouchableOpacity>
   );
 };
