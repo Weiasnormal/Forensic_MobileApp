@@ -14,6 +14,8 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type InviteCodeFormValues, inviteCodeSchema } from '../../../utils/validation';
@@ -72,45 +74,52 @@ export default function UserAndAdminCodePage() {
 			style={styles.container}
 			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
 		>
-			<StatusBar style="light" translucent backgroundColor="#2D72D1" />
+			<StatusBar style="light" translucent backgroundColor={colors.primary} />
 
-			<ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} bounces={false} keyboardShouldPersistTaps="handled">
+			<ScrollView
+				style={styles.scrollView}
+				contentContainerStyle={styles.scrollContent}
+				bounces={false}
+				keyboardShouldPersistTaps="handled"
+			>
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={22} color="#EAF3FF" />
+						<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
 					</TouchableOpacity>
 
-					<Text style={styles.title}>{roleConfig.title}</Text>
-					<Text style={styles.subtitle}>{roleConfig.subtitle}</Text>
+					<Text allowFontScaling={false} style={styles.title}>{roleConfig.title}</Text>
+					<Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.subtitle}</Text>
 				</View>
 
 				<View style={styles.formArea}>
-					<Text style={styles.label}>Invite code</Text>
+					<Text allowFontScaling={false} style={styles.label}>Invite code</Text>
 
 					<View style={styles.codeInputContainer}>
 						{codeValues.map((value, index) => (
 							<View key={index}>
-								{index === 3 && <Text style={styles.codeHyphen}>-</Text>}
+								{index === 3 && <Text allowFontScaling={false} style={styles.codeHyphen}>-</Text>}
 								<TextInput
 									ref={(ref): void => {
 										inputRefs.current[index] = ref;
 									}}
-									style={styles.codeInput}
+									style={[styles.codeInput, errors.code && styles.codeInputError]}
 									keyboardType="number-pad"
 									maxLength={1}
 									value={value}
 									onChangeText={(text) => handleCodeChange(index, text)}
 									onKeyPress={(e) => handleCodeKeyPress(index, e.nativeEvent.key)}
 									placeholder=""
-									placeholderTextColor="#94a3b8"
+									placeholderTextColor={colors.textTertiary}
 								/>
 							</View>
 						))}
 					</View>
 
-					{errors.code?.message ? <Text style={styles.errorText}>{errors.code.message}</Text> : null}
+					{errors.code?.message ? (
+						<Text allowFontScaling={false} style={styles.errorText}>{errors.code.message}</Text>
+					) : null}
 
-					<Text style={styles.helperText}>{roleConfig.noCodeText}</Text>
+					<Text allowFontScaling={false} style={styles.helperText}>{roleConfig.noCodeText}</Text>
 
 					<TouchableOpacity
 						style={[styles.primaryButton, codeValues.join('').length !== 7 && styles.primaryButtonDisabled]}
@@ -118,7 +127,7 @@ export default function UserAndAdminCodePage() {
 						onPress={handleSubmit(handleVerify)}
 						disabled={codeValues.join('').length !== 7}
 					>
-						<Text style={styles.primaryButtonText}>Verify & continue</Text>
+						<Text allowFontScaling={false} style={styles.primaryButtonText}>Verify & continue</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>
@@ -129,62 +138,57 @@ export default function UserAndAdminCodePage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollView: {
 		flex: 1,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	scrollContent: {
 		flexGrow: 1,
 		paddingBottom: 10,
-		backgroundColor: '#ffffff',
+		backgroundColor: colors.background2,
 	},
 	hero: {
-		backgroundColor: '#1E6FD9',
-		paddingHorizontal: 16,
-		paddingTop: 38,
-		paddingBottom: 20,
-		borderBottomLeftRadius: 25,
-		borderBottomRightRadius: 25,
+		backgroundColor: colors.primary,
+		paddingHorizontal: 20,
+		paddingTop: 44,
+		paddingBottom: 28,
+		borderBottomLeftRadius: 28,
+		borderBottomRightRadius: 28,
 	},
 	backButton: {
 		width: 36,
 		height: 36,
 		borderRadius: 10,
 		borderWidth: 1,
-		borderColor: 'rgba(233, 243, 255, 0.9)',
-		backgroundColor: 'rgba(47, 112, 200, 0.35)',
+		borderColor: 'rgba(255,255,255,0.5)',
+		backgroundColor: 'rgba(255,255,255,0.15)',
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	title: {
-		color: '#ffffff',
-		fontSize: 33,
-		lineHeight: 40,
-		fontWeight: '800',
-		letterSpacing: -0.6,
-		marginTop: 18,
+		...getTypographyStyle('t1Title'),
+		fontSize: 28,
+		color: colors.primaryText,
+		marginTop: 20,
 	},
 	subtitle: {
-		color: 'rgba(233, 241, 255, 0.9)',
+		...getTypographyStyle('body'),
 		fontSize: 14,
-		lineHeight: 20,
+		color: 'rgba(255,255,255,0.85)',
 		marginTop: 4,
-		fontWeight: '500',
 	},
 	formArea: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 16,
+		backgroundColor: colors.background2,
+		paddingHorizontal: 20,
 		paddingTop: 32,
 		paddingBottom: 22,
 	},
 	label: {
-		color: '#8A99AE',
-		fontSize: 11,
-		fontWeight: '700',
-		letterSpacing: 0,
+		...getTypographyStyle('c1Caption'),
+		color: colors.textSecondary,
 		marginBottom: 8,
 		textAlign: 'center',
 	},
@@ -200,49 +204,49 @@ const styles = StyleSheet.create({
 		height: 50,
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: '#D0DAE8',
-		backgroundColor: '#F8FAFC',
+		borderColor: colors.inputBorder,
+		backgroundColor: colors.background,
 		textAlign: 'center',
-		color: '#0f172a',
-		fontSize: 18,
-		fontWeight: '600',
+		...getTypographyStyle('t3Title'),
+		color: colors.textPrimary,
+	},
+	codeInputError: {
+		borderColor: colors.danger,
 	},
 	codeHyphen: {
 		position: 'absolute',
 		top: -7,
-		color: '#8A99AE',
+		color: colors.textSecondary,
 		fontSize: 22,
 		fontWeight: '300',
 		right: -16,
 	},
 	helperText: {
-		color: '#8A99AE',
-		fontSize: 12,
+		...getTypographyStyle('c2Caption'),
+		color: colors.textSecondary,
 		textAlign: 'center',
 		marginBottom: 24,
 	},
 	errorText: {
-		color: '#E24B4A',
-		fontSize: 12,
-		fontWeight: '600',
+		...getTypographyStyle('c2Caption'),
+		color: colors.danger,
 		textAlign: 'center',
 		marginBottom: 10,
 	},
 	primaryButton: {
-		backgroundColor: '#1E6FD9',
+		backgroundColor: colors.primary,
 		borderRadius: 12,
-		paddingVertical: 13,
+		paddingVertical: 15,
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginTop: 'auto',
 		marginBottom: 12,
 	},
 	primaryButtonDisabled: {
-		backgroundColor: '#C9D7EA',
+		backgroundColor: colors.primaryDisabled,
 	},
 	primaryButtonText: {
-		color: '#ffffff',
-		fontSize: 15,
-		fontWeight: '800',
+		...getTypographyStyle('b1Button'),
+		color: colors.primaryText,
 	},
 });
