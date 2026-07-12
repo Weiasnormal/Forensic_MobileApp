@@ -3,6 +3,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 import { useRippleTransition } from '../_components/transition';
 
@@ -38,7 +40,12 @@ export default function IntroPage() {
 				<View style={styles.logoLockup}>
 					<Image source={averaMark} style={styles.logo} resizeMode="contain" />
 
-					<Animated.Text style={[styles.brandName, { opacity: brandOpacity, transform: [{ translateY: brandTranslateY }] }]}>
+					<Animated.Text
+						style={[
+							styles.brandName,
+							{ opacity: brandOpacity, transform: [{ translateY: brandTranslateY }] },
+						]}
+					>
 						Avera
 					</Animated.Text>
 				</View>
@@ -60,7 +67,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#000000',
 	},
 	brandStage: {
-		backgroundColor: '#2A71D8',
+		backgroundColor: colors.primary,
 	},
 	ripple: {
 		position: 'absolute',
@@ -79,10 +86,10 @@ const styles = StyleSheet.create({
 		height: 98,
 	},
 	brandName: {
+		...getTypographyStyle('largeTitle'),
 		marginTop: 4,
-		color: '#FFFFFF',
+		color: colors.primaryText,
 		fontSize: 34,
-		fontWeight: '800',
 		letterSpacing: 0.2,
 		textAlign: 'center',
 		fontFamily: 'Sora_800ExtraBold',
