@@ -78,4 +78,20 @@ export const colors = {
   // Skeleton loading
   skeletonBase: '#C8D3E3',
   skeletonLight: '#D4DDEB',
+
+  // Upload slot (dashed border, generic)
+uploadSlotBorder: '#D8E3EF',
+
+// Icon badges (translucent white circles over images)
+iconBadgeBackground: '#FFFFFFE0',
+iconBadgeBackgroundStrong: '#FFFFFFE6',
+
+// Suspect signature accent (new amber/warning-toned family — nothing
+// in the current palette covers this; "warning*" tokens are gray, not amber)
+suspectAccent: '#D97706',
+suspectAccentBg: '#FDE68A',
+suspectBorder: '#FDE68A',
+suspectBackground: '#FFFBEB',
+suspectBackgroundFilled: '#FFFBEB',
+suspectSubtext: '#D97706',
 };

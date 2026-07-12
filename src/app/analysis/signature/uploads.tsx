@@ -1,29 +1,26 @@
 import MediaSourcePicker, { scanForensicDocument } from '@/_components/modals/media_source_picker';
 import { hasCompleteUploads, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
+import { Plus } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-
-
-const ACCENT = '#1E6FD9';
-const SCREEN_BG = '#F7F9FC';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 
 export default function SignatureUploadsRoute() {
   const router = useRouter();
   const nav = router as any;
   const insets = useSafeAreaInsets();
-  //const [permission, requestPermission] = useCameraPermissions();
-  //const [cameraVisible, setCameraVisible] = useState(false);
   const [currentUploadTarget, setCurrentUploadTarget] = useState<'reference' | 'suspect' | null>(null);
   const [currentReferenceIndex, setCurrentReferenceIndex] = useState<number | null>(null);
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
-  //const cameraRef = useRef(null);
   const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
@@ -43,50 +40,30 @@ export default function SignatureUploadsRoute() {
   );
 
   const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
-  if (target === 'suspect') {
-    const allRefsFilled = uploads.references.every(Boolean);
-    if (!allRefsFilled) {
-      Alert.alert(
-        'Complete references first',
-        'Please upload all 4 reference signatures (SIG 01–04) before adding the suspected signature.'
-      );
-      return;
+    if (target === 'suspect') {
+      const allRefsFilled = uploads.references.every(Boolean);
+      if (!allRefsFilled) {
+        Alert.alert(
+          'Complete references first',
+          'Please upload all 4 reference signatures (SIG 01–04) before adding the suspected signature.'
+        );
+        return;
+      }
     }
-  }
 
-   setCurrentUploadTarget(target);
-  if (refIndex !== undefined) {
-    setCurrentReferenceIndex(refIndex);
-  }
-
-  scanForensicDocument((scannedUri) => {
-    if (target === 'reference' && refIndex !== undefined) {
-      setDraftUpload('reference', refIndex, scannedUri);
-    } else if (target === 'suspect') {
-      setDraftUpload('suspect', 0, scannedUri);
+    setCurrentUploadTarget(target);
+    if (refIndex !== undefined) {
+      setCurrentReferenceIndex(refIndex);
     }
-  });
-};
 
-  // const handleCapture = async () => {
-  //   if (!cameraRef.current) return;
-  //   try {
-  //     const photo = await (cameraRef.current as any).takePictureAsync({ base64: true });
-  //     if (photo?.uri) {
-  //       if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-  //         setDraftUpload('reference', currentReferenceIndex, photo.uri);
-  //       } else if (currentUploadTarget === 'suspect') {
-  //         setDraftUpload('suspect', 0, photo.uri);
-  //       }
-  //     }
-  //     setCameraVisible(false);
-  //     setCurrentUploadTarget(null);
-  //     setCurrentReferenceIndex(null);
-  //   } catch (error) {
-  //     console.error('Error taking picture:', error);
-  //     Alert.alert('Error', 'Failed to capture image. Please try again.');
-  //   }
-  // };
+    scanForensicDocument((scannedUri) => {
+      if (target === 'reference' && refIndex !== undefined) {
+        setDraftUpload('reference', refIndex, scannedUri);
+      } else if (target === 'suspect') {
+        setDraftUpload('suspect', 0, scannedUri);
+      }
+    });
+  };
 
   const handleSubmit = () => {
     if (!canRun || isSubmitting) return;
@@ -138,7 +115,7 @@ export default function SignatureUploadsRoute() {
                   {!uri ? (
                     <View style={styles.uploadSlotContent}>
                       <View style={styles.uploadButton}>
-                        <Ionicons name="add" size={18} color="#94A3B8" />
+                        <Plus size={18} color={colors.label} strokeWidth={3} />
                       </View>
                       <Text style={styles.uploadSlotText}>Add photo</Text>
                     </View>
@@ -146,7 +123,7 @@ export default function SignatureUploadsRoute() {
                     <>
                       <Image source={{ uri }} style={styles.uploadedImage} resizeMode="cover" />
                       <View style={styles.uploadCheckBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color={ACCENT} />
+                        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                       </View>
                       <Pressable
                         style={styles.clearImageButton}
@@ -158,7 +135,7 @@ export default function SignatureUploadsRoute() {
                           ]);
                         }}
                       >
-                        <Ionicons name="trash" size={14} color="#0F172A" />
+                        <Ionicons name="trash" size={14} color={colors.textPrimary} />
                       </Pressable>
                     </>
                   )}
@@ -185,7 +162,7 @@ export default function SignatureUploadsRoute() {
           {!uploads.suspect ? (
             <View style={styles.suspectSlotContent}>
               <View style={styles.suspectUploadButton}>
-                <Ionicons name="add" size={28} color="#D97706" />
+                <Ionicons name="add" size={28} color={colors.suspectAccent} />
               </View>
               <Text style={styles.suspectSlotTitle}>Add suspected signature</Text>
               <Text style={styles.suspectSlotSubtitle}>Tap to upload or take a photo</Text>
@@ -194,7 +171,7 @@ export default function SignatureUploadsRoute() {
             <>
               <Image source={{ uri: uploads.suspect }} style={styles.uploadedSuspectImage} resizeMode="cover" />
               <View style={styles.uploadCheckBadgeLarge}>
-                <Ionicons name="checkmark-circle" size={28} color="#D97706" />
+                <Ionicons name="checkmark-circle" size={28} color={colors.suspectAccent} />
               </View>
               <Pressable
                 style={styles.clearImageButtonLarge}
@@ -206,16 +183,20 @@ export default function SignatureUploadsRoute() {
                   ]);
                 }}
               >
-                <Ionicons name="trash" size={16} color="#0F172A" />
+                <Ionicons name="trash" size={16} color={colors.textPrimary} />
               </Pressable>
             </>
           )}
         </Pressable>
       </ScrollView>
       <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}>
-        <Pressable onPress={handleSubmit} disabled={!canRun || isSubmitting} style={[styles.primaryButton, (!canRun || isSubmitting) && styles.disabledButton]}>
-          <Text style={styles.primaryButtonText}>{isSubmitting ? 'Saving...' : 'Run Analysis'}</Text>
-        </Pressable>
+        <PrimaryButton
+          label={isSubmitting ? 'Saving...' : 'Run Analysis'}
+          onPress={handleSubmit}
+          disabled={!canRun}
+          loading={isSubmitting}
+          size="medium"
+        />
       </View>
       <MediaSourcePicker
         visible={showSourcePicker}
@@ -225,7 +206,6 @@ export default function SignatureUploadsRoute() {
 
           try {
             if (choice === 'camera') {
-              // Trigger the ML Kit Document Scanner
               await scanForensicDocument((scannedUri) => {
                 if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
                   setDraftUpload('reference', currentReferenceIndex, scannedUri);
@@ -236,15 +216,12 @@ export default function SignatureUploadsRoute() {
               return;
             }
 
-            // duplicate Checker
             const isDuplicate = (asset: any) => {
-              // Create a unique fingerprint using iOS assetId, Android fileName, or fileSize as a fallback
               const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
               if (!identifier) return false;
 
               const searchStr = `?id=${encodeURIComponent(identifier)}`;
 
-              // Check if this unique ID is already anywhere in our uploads
               const isRefDup = uploads.references.some((uri) => uri?.includes(searchStr));
               const isSuspectDup = uploads.suspect?.includes(searchStr);
 
@@ -278,7 +255,6 @@ export default function SignatureUploadsRoute() {
                   const slotIndex = currentReferenceIndex + addedCount;
                   if (slotIndex > 3) break;
 
-                  // Attach the fingerprint to the URI before saving to the global store
                   const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
                   const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
 
@@ -296,7 +272,6 @@ export default function SignatureUploadsRoute() {
               return;
             }
 
-            // SUSPECT SIGNATURE 
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
               allowsEditing: false,
@@ -307,7 +282,6 @@ export default function SignatureUploadsRoute() {
               const asset = result.assets?.[0];
               if (asset && asset.uri) {
                 if (isDuplicate(asset)) {
-                  // Instantly alert the user if they pick a duplicate for the Suspect slot
                   Alert.alert('Already Selected', 'This image is already being used as a reference signature.');
                   return;
                 }
@@ -335,7 +309,7 @@ export default function SignatureUploadsRoute() {
             <View style={styles.previewHeader}>
               <Text style={styles.previewTitle}>{previewLabel}</Text>
               <Pressable onPress={closePreview} style={styles.previewCloseButton}>
-                <Ionicons name="close" size={22} color="#0F172A" />
+                <Ionicons name="close" size={22} color={colors.textPrimary} />
               </Pressable>
             </View>
             {previewUri ? <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" /> : null}
@@ -352,7 +326,7 @@ function TopBar({ title, step, onBackPress }: { title: string; step: string; onB
       <View style={styles.topBar}>
         <Pressable onPress={onBackPress} style={styles.backButton}>
           <View style={styles.backButtonBox}>
-            <Ionicons name="chevron-back" size={20} color="#0F172A" />
+            <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
           </View>
         </Pressable>
         <Text style={styles.topBarTitle}>{title}</Text>
@@ -365,12 +339,12 @@ function TopBar({ title, step, onBackPress }: { title: string; step: string; onB
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: SCREEN_BG,
+    backgroundColor: colors.background,
   },
   topBarWrapper: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background2,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.disabledBorder,
   },
   topBar: {
     flexDirection: 'row',
@@ -378,7 +352,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background2,
   },
   backButton: {
     padding: 4,
@@ -388,29 +362,27 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.disabledBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topBarTitle: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    ...getTypographyStyle('t3Title'),
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   stepCounter: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#94A3B8',
+    ...getTypographyStyle('l1List'),
+    color: colors.label,
   },
   progressBar: {
     height: 3,
-    backgroundColor: '#E8EBF0',
+    backgroundColor: colors.border,
     width: '100%',
   },
   progressBarFull: {
-    backgroundColor: ACCENT,
+    backgroundColor: colors.primary,
   },
   content: {
     paddingHorizontal: 16,
@@ -422,16 +394,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionHeading: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...getTypographyStyle('t3Title'),
+    color: colors.textPrimary,
     letterSpacing: -0.3,
   },
   sectionSubheading: {
+    ...getTypographyStyle('c1Caption', 'regular'),
     marginTop: 4,
-    fontSize: 13,
-    color: '#64748B',
     lineHeight: 18,
+    color: colors.textSecondary,
   },
   referenceGrid: {
     flexDirection: 'row',
@@ -443,19 +414,18 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   slotLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
+    ...getTypographyStyle('c3Caption', 'bold'),
+    color: colors.label,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   uploadSlot: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#D8E3EF',
+    borderColor: colors.uploadSlotBorder,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background2,
     paddingVertical: 24,
     alignItems: 'center',
     justifyContent: 'center',
@@ -464,7 +434,7 @@ const styles = StyleSheet.create({
   },
   uploadSlotFilled: {
     borderStyle: 'solid',
-    backgroundColor: '#F0F6FF',
+    backgroundColor: colors.primaryLight,
   },
   uploadSlotContent: {
     alignItems: 'center',
@@ -474,14 +444,13 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 999,
-    backgroundColor: '#E8EBF0',
+    backgroundColor: colors.warningBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
   uploadSlotText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
+    ...getTypographyStyle('c2Caption'),
+    color: colors.textSecondary,
   },
   uploadedImage: {
     ...StyleSheet.absoluteFillObject,
@@ -493,28 +462,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: '#FFFFFFE0',
+    backgroundColor: colors.iconBadgeBackground,
     borderRadius: 999,
   },
   uploadCheckBadgeLarge: {
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: '#FFFFFFE0',
+    backgroundColor: colors.iconBadgeBackground,
     borderRadius: 999,
-  },
-  changeImageButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFFE6',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   clearImageButton: {
     position: 'absolute',
@@ -523,9 +479,9 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#FFFFFFE6',
+    backgroundColor: colors.iconBadgeBackgroundStrong,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.disabledBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -536,9 +492,9 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#FFFFFFE6',
+    backgroundColor: colors.iconBadgeBackgroundStrong,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.disabledBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -549,9 +505,9 @@ const styles = StyleSheet.create({
   suspectSlot: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: '#FED7AA',
+    borderColor: colors.suspectBorder,
     borderRadius: 12,
-    backgroundColor: '#FFFBF0',
+    backgroundColor: colors.suspectBackground,
     paddingVertical: 32,
     alignItems: 'center',
     justifyContent: 'center',
@@ -560,7 +516,7 @@ const styles = StyleSheet.create({
   },
   suspectSlotFilled: {
     borderStyle: 'solid',
-    backgroundColor: '#FEF9F3',
+    backgroundColor: colors.suspectBackgroundFilled,
   },
   suspectSlotContent: {
     alignItems: 'center',
@@ -569,118 +525,37 @@ const styles = StyleSheet.create({
   suspectUploadButton: {
     width: 46,
     height: 46,
-    borderRadius: 999,
-    backgroundColor: '#FCD34D',
+    borderRadius: 99,
+    backgroundColor: colors.suspectAccentBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   suspectSlotTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#D97706',
+    ...getTypographyStyle('b2Button'),
+    color: colors.suspectAccent,
   },
   suspectSlotSubtitle: {
-    fontSize: 12,
-    color: '#F59E0B',
-    fontWeight: '500',
-  },
-  primaryButton: {
-    borderRadius: 12,
-    backgroundColor: ACCENT,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#CBD5E1',
-    opacity: 1,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
+    ...getTypographyStyle('b3Button', 'medium'),
+    color: colors.suspectSubtext,
   },
   buttonContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background2,
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E8EBF0',
-  },
-  cameraOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000000',
-    zIndex: 1000,
-  },
-  cameraContainer: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  cameraHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  cameraDismiss: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cameraViewContainer: {
-    flex: 1,
-    backgroundColor: '#000000',
-    overflow: 'hidden',
-  },
-  cameraView: {
-    flex: 1,
-  },
-  cameraFooter: {
-    backgroundColor: '#000000',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  captureInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: ACCENT,
-  },
-  cameraHint: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 12,
-    fontWeight: '600',
+    borderTopColor: colors.border,
   },
   previewBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.72)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
   previewSheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 12,
     maxHeight: '82%',
@@ -693,24 +568,23 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
+    ...getTypographyStyle('b2Button'),
+    color: colors.textPrimary,
   },
   previewCloseButton: {
     width: 34,
     height: 34,
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.disabledBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.cardBackground,
   },
   previewImage: {
     width: '100%',
     height: 420,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
 });
