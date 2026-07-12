@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder } from 'react-native';
+import { Animated, Easing, LayoutChangeEvent, PanResponder } from 'react-native';
 
 interface BottomSheetTransitionOptions {
 	visible: boolean;
@@ -14,19 +14,39 @@ interface BottomSheetTransitionOptions {
 export function useBottomSheetTransition({
 	visible,
 	onClose,
-	hiddenY = 420,
+	hiddenY: hiddenYProp = 560,
 	closeDragThreshold = 140,
 	closeVelocityThreshold = 1.1,
 	openDuration = 280,
 	closeDuration = 220,
 }: BottomSheetTransitionOptions) {
 	const [isMounted, setIsMounted] = useState(visible);
-	const sheetY = useRef(new Animated.Value(visible ? 0 : hiddenY)).current;
+	// hiddenYRef holds the real off-screen distance once measured, so the sheet
+	// always starts fully hidden regardless of how tall its content actually is.
+	const hiddenYRef = useRef(hiddenYProp);
+	const [hiddenY, setHiddenY] = useState(hiddenYProp);
+	const sheetY = useRef(new Animated.Value(visible ? 0 : hiddenYProp)).current;
 	const onCloseRef = useRef(onClose);
 
 	useEffect(() => {
 		onCloseRef.current = onClose;
 	}, [onClose]);
+
+	const onSheetLayout = (event: LayoutChangeEvent) => {
+		// Add a small buffer so the sheet clears the bottom edge with room to spare.
+		const measured = Math.ceil(event.nativeEvent.layout.height) + 24;
+
+		if (Math.abs(measured - hiddenYRef.current) > 1) {
+			hiddenYRef.current = measured;
+			setHiddenY(measured);
+
+			// Only snap the imperative value if we're still hidden — never yank a
+			// sheet that's already animating open or fully visible.
+			if (!visible) {
+				sheetY.setValue(measured);
+			}
+		}
+	};
 
 	const snapToOpen = () => {
 		Animated.spring(sheetY, {
@@ -61,7 +81,7 @@ export function useBottomSheetTransition({
 	useEffect(() => {
 		if (visible) {
 			setIsMounted(true);
-			sheetY.setValue(hiddenY);
+			sheetY.setValue(hiddenYRef.current);
 			Animated.timing(sheetY, {
 				toValue: 0,
 				duration: openDuration,
@@ -72,7 +92,7 @@ export function useBottomSheetTransition({
 		}
 
 		Animated.timing(sheetY, {
-			toValue: hiddenY,
+			toValue: hiddenYRef.current,
 			duration: closeDuration,
 			easing: Easing.in(Easing.cubic),
 			useNativeDriver: true,
@@ -81,7 +101,7 @@ export function useBottomSheetTransition({
 				setIsMounted(false);
 			}
 		});
-	}, [visible, sheetY, hiddenY, openDuration, closeDuration]);
+	}, [visible, sheetY, openDuration, closeDuration]);
 
 	const backdropOpacity = useMemo(
 		() =>
@@ -98,5 +118,6 @@ export function useBottomSheetTransition({
 		sheetY,
 		backdropOpacity,
 		dragHandlePanHandlers: panResponder.panHandlers,
+		onSheetLayout,
 	};
 }

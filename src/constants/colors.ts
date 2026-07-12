@@ -5,7 +5,7 @@ export const colors = {
   border: '#E8EDF3',
 
   textPrimary: '#0F172A',
-  textSecondary: '#8A93A2',
+  textSecondary: '#64748B',
   textTertiary: '#B0B7C3',
 
   primary: '#1E6FD9',
@@ -32,7 +32,7 @@ export const colors = {
   inputBackground: '#FFFFFF',
   inputBorder: '#E2E8F0',
 
-  badgeBackground: '#E0EDFF',
+  badgeBackground: '#EBF3FF',
 
   // Case status
   statusSuspected: '#DC2626',
@@ -47,4 +47,16 @@ export const colors = {
   priorityHigh: '#64748B',
   priorityMedium: '#64748B',
   priorityLow: '#64748B',
+
+  // Case list screen
+  searchBorder: '#E6EEF9',
+  textMuted: '#64748B',
+  chipTextInactive: '#475569',
+  iconAccent: '#1F5DA8',
+
+  // Filter modal
+  sheetBorder: '#E7EFFC',
+  sheetHandle: '#D9E2EE',
+  dividerLight: '#EEF2FF',
+  overlay: 'rgba(15, 23, 42, 0.56)',
 };
