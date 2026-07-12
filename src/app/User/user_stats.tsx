@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 8,
     borderRadius: 999,
-    backgroundColor: colors.skeletonBaseLight,
+    backgroundColor: colors.skeletonLight,
     marginBottom: 14,
   },
   skeletonLineLg: {
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     height: 126,
     borderRadius: 63,
     borderWidth: 12,
-    borderColor: colors.skeletonDonutRing,
+    borderColor: colors.skeletonBase,
     backgroundColor: colors.statsBackground,
   },
   skeletonCardChart: {
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 58,
     borderRadius: 8,
-    backgroundColor: colors.skeletonBar,
+    backgroundColor: colors.skeletonLight,
   },
   skeletonTick: {
     width: 18,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     width: 74,
     height: 8,
     borderRadius: 999,
-    backgroundColor: colors.skeletonLegend,
+    backgroundColor: colors.skeletonLight,
   },
   skeletonCardList: {
     borderRadius: 16,
@@ -657,12 +657,12 @@ const styles = StyleSheet.create({
     width: '72%',
     height: 8,
     borderRadius: 999,
-    backgroundColor: colors.skeletonList,
+    backgroundColor: colors.skeletonLight,
   },
   skeletonListDot: {
     width: 12,
     height: 8,
     borderRadius: 999,
-    backgroundColor: colors.skeletonList,
+    backgroundColor: colors.skeletonLight,
   },
 });

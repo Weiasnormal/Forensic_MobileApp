@@ -77,9 +77,5 @@ export const colors = {
 
   // Skeleton loading
   skeletonBase: '#C8D3E3',
-  skeletonBaseLight: '#D4DDEB',
-  skeletonDonutRing: '#CDD6E4',
-  skeletonBar: '#D9E1EE',
-  skeletonLegend: '#D1DAE9',
-  skeletonList: '#CDD7E5',
+  skeletonLight: '#D4DDEB',
 };

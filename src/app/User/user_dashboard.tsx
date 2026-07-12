@@ -204,40 +204,44 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 				</>
 			) : null}
 
-			<ListSectionHeader
-        title="Recent Cases"
-        actionLabel="View all"
-        onActionPress={onViewAllPress}
-      />
-
-      // Empty state
-      {(!cases || cases.length === 0) ? (
-        <EmptyState
-          icon={FolderOpen}
-          title="No cases yet"
-          subtitle="Start a new analysis to populate the dashboard."
-          style={{ marginTop: 24, marginHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.searchBorder, backgroundColor: colors.background2 }}
-        />
-      ) : null}
-
-			<View style={styles.recentList}>
-				{latestCases.map((item) => (
-					<CaseCard
-						key={item.caseId}
-						caseCode={item.caseCode ?? item.caseId}
-						createdAt={item.createdAt}
-						type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
-						priority={item.priority}
-						name={`${item.examiner} · ${item.documentType}`}
-						status={item.status}
-						onPress={() => goToCaseDestination(item)}
+			{cases && cases.length > 0 ? (
+				<>
+					<ListSectionHeader
+						title="Recent Cases"
+						actionLabel="View all"
+						onActionPress={onViewAllPress}
 					/>
-				))}
-			</View>
 
-			{(!cases || cases.length === 0) ? (
-				<ListSectionHeader title="Pending Cases" />
-			) : null}
+					<View style={styles.recentList}>
+						{latestCases.map((item) => (
+							<CaseCard
+								key={item.caseId}
+								caseCode={item.caseCode ?? item.caseId}
+								createdAt={item.createdAt}
+								type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+								priority={item.priority}
+								name={`${item.examiner} · ${item.documentType}`}
+								status={item.status}
+								onPress={() => goToCaseDestination(item)}
+							/>
+						))}
+					</View>
+				</>
+			) : (
+				<EmptyState
+					icon={FolderOpen}
+					title="No cases yet"
+					subtitle="Start a new analysis to populate the dashboard."
+					style={{
+						marginTop: 24,
+						marginHorizontal: 16,
+						borderRadius: 20,
+						borderWidth: 1,
+						borderColor: colors.searchBorder,
+						backgroundColor: colors.background2,
+					}}
+				/>
+			)}
 		</>
 	);
 }

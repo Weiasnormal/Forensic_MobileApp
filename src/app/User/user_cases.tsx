@@ -177,61 +177,65 @@ export default function UserCasesScreen() {
 			</View>
 
 			{totalCases === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="No cases yet"
-          subtitle="Run a new analysis to see cases appear here."
-        />
+        <View style={[styles.emptyStateWrapper, { marginTop: headerHeight }]}>
+          <EmptyState
+            icon={FileText}
+            title="No cases yet"
+            subtitle="Run a new analysis to see cases appear here."
+          />
+        </View>
       ) : sections.length === 0 ? (
-        <EmptyState
-          icon={Search}
-          title="No matching cases"
-          subtitle="Try a case ID, subject, examiner, document type, priority, or analysis type."
-          action={
-            <SecondaryButton label="Clear search" onPress={() => setQuery('')} size="small" />
-          }
+        <View style={[styles.emptyStateWrapper, { marginTop: headerHeight }]}>
+          <EmptyState
+            icon={Search}
+            title="No matching cases"
+            subtitle="Try a case ID, subject, examiner, document type, priority, or analysis type."
+            action={
+              <SecondaryButton label="Clear search" onPress={() => setQuery('')} size="small" />
+            }
+          />
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.caseId}
+          renderItem={({ item }) => (
+            <CaseCard
+              caseCode={item.caseCode ?? item.caseId}
+              createdAt={item.createdAt}
+              type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+              priority={item.priority}
+              name={`${item.subjectName} · ${item.documentType}`}
+              status={item.status}
+              onPress={() => {
+                setActiveSignatureCaseId(item.caseId);
+
+                if (item.status === 'Processing') {
+                  if (item.analysisType === 'HW') {
+                    nav.push('/analysis/handwriting/processing');
+                    return;
+                  }
+
+                  nav.push('/analysis/signature/processing');
+                  return;
+                }
+
+                if (item.analysisType === 'HW') {
+                  nav.push('/analysis/handwriting/results');
+                } else {
+                  nav.push(`/analysis/signature/results/${item.caseId}`);
+                }
+              }}
+            />
+          )}
+          renderSectionHeader={({ section }) => (
+            <Text allowFontScaling={false} style={styles.sectionHeader}>{section.title}</Text>
+          )}
+          showsVerticalScrollIndicator={false}
+          style={[styles.list, { marginTop: headerHeight }]}
+          contentContainerStyle={styles.listContent}
         />
-			) : (
-				<SectionList
-					sections={sections}
-					keyExtractor={(item) => item.caseId}
-					renderItem={({ item }) => (
-						<CaseCard
-							caseCode={item.caseCode ?? item.caseId}
-							createdAt={item.createdAt}
-							type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
-							priority={item.priority}
-							name={`${item.subjectName} · ${item.documentType}`}
-							status={item.status}
-							onPress={() => {
-								setActiveSignatureCaseId(item.caseId);
-
-								if (item.status === 'Processing') {
-									if (item.analysisType === 'HW') {
-										nav.push('/analysis/handwriting/processing');
-										return;
-									}
-
-									nav.push('/analysis/signature/processing');
-									return;
-								}
-
-								if (item.analysisType === 'HW') {
-									nav.push('/analysis/handwriting/results');
-								} else {
-									nav.push(`/analysis/signature/results/${item.caseId}`);
-								}
-							}}
-						/>
-					)}
-					renderSectionHeader={({ section }) => (
-						<Text allowFontScaling={false} style={styles.sectionHeader}>{section.title}</Text>
-					)}
-					showsVerticalScrollIndicator={false}
-					style={[styles.list, { marginTop: headerHeight }]}
-					contentContainerStyle={styles.listContent}
-				/>
-			)}
+      )}
 			<FilterCasesModal
 				visible={showFilter}
 				onClose={() => setShowFilter(false)}
@@ -334,35 +338,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		color: colors.textMuted,
 	},
-	emptyArea: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingHorizontal: 24,
-		paddingTop: 160,
-		gap: 10,
-	},
-	emptyBadge: {
-		width: 72,
-		height: 72,
-		borderRadius: 22,
-		alignItems: 'center',
-		justifyContent: 'center',
-		backgroundColor: colors.background,
-		borderWidth: 1,
-		borderColor: colors.disabledBorder,
-	},
-	emptyTitle: {
-		...getTypographyStyle('t3Title'),
-		color: colors.textPrimary,
-	},
-	emptySubtitle: {
-		...getTypographyStyle('c2Caption', 'regular'),
-		fontSize: 12,
-		lineHeight: 17,
-		color: colors.textMuted,
-		textAlign: 'center',
-	},
 	clearSearchButton: {
 		paddingHorizontal: 10,
 		paddingVertical: 6,
@@ -422,25 +397,9 @@ const styles = StyleSheet.create({
 		color: colors.label,
 		letterSpacing: 0.5,
 	},
-	emptySearchArea: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingHorizontal: 32,
-		paddingTop: 120,
-		gap: 10,
-	},
-	emptySearchTitle: {
-		...getTypographyStyle('t3Title'),
-		fontSize: 18,
-		color: colors.textPrimary,
-	},
-	emptySearchText: {
-		...getTypographyStyle('c1Caption', 'regular'),
-		lineHeight: 18,
-		textAlign: 'center',
-		color: colors.textMuted,
-	},
+  emptyStateWrapper: {
+    flex: 1,
+  },
 	clearSearchButtonLarge: {
 		marginTop: 4,
 		paddingHorizontal: 14,

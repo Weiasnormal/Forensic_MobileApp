@@ -1,7 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Home, ClipboardList, BarChart3, User, Plus, LucideIcon } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 export type TabKey = 'home' | 'cases' | 'stats' | 'profile';
 
@@ -11,64 +13,56 @@ interface NavbarProps {
 	onNewPress: () => void;
 }
 
-const tabs: Array<{
+interface TabDefinition {
 	key: TabKey;
 	label: string;
-	activeIcon: keyof typeof Ionicons.glyphMap;
-	inactiveIcon: keyof typeof Ionicons.glyphMap;
-}> = [
-	{ key: 'home', label: 'Home', activeIcon: 'home', inactiveIcon: 'home-outline' },
-	{ key: 'cases', label: 'Cases', activeIcon: 'folder-open', inactiveIcon: 'folder-open-outline' },
-	{ key: 'stats', label: 'Stats', activeIcon: 'bar-chart', inactiveIcon: 'bar-chart-outline' },
-	{ key: 'profile', label: 'Profile', activeIcon: 'person', inactiveIcon: 'person-outline' },
+	icon: LucideIcon;
+}
+
+const TABS: TabDefinition[] = [
+	{ key: 'home', label: 'Home', icon: Home },
+	{ key: 'cases', label: 'Cases', icon: ClipboardList },
+	{ key: 'stats', label: 'Stats', icon: BarChart3 },
+	{ key: 'profile', label: 'Profile', icon: User },
 ];
 
 export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarProps) {
-	const leftTabs = tabs.slice(0, 2);
-	const rightTabs = tabs.slice(2);
+	const leftTabs = TABS.slice(0, 2);
+	const rightTabs = TABS.slice(2);
 	const insets = useSafeAreaInsets();
+
+	const renderTab = ({ key, label, icon: Icon }: TabDefinition) => {
+		const active = activeTab === key;
+		const tint = active ? colors.primary : colors.textTertiary;
+
+		return (
+			<TouchableOpacity
+				key={key}
+				style={[styles.navItem, active && styles.navItemActive]}
+				onPress={() => onTabChange(key)}
+				activeOpacity={0.82}
+			>
+				<Icon size={22} color={tint} />
+				<Text allowFontScaling={false} style={[styles.navLabel, { color: tint }]}>
+					{label}
+				</Text>
+			</TouchableOpacity>
+		);
+	};
 
 	return (
 		<View style={[styles.bottomNavShell, { paddingBottom: insets.bottom }]}>
 			<View style={styles.bottomNav}>
-				{leftTabs.map((tab) => {
-				const active = activeTab === tab.key;
-
-				return (
-					<TouchableOpacity
-						key={tab.key}
-						style={[styles.navItem, active && styles.navItemActive]}
-						onPress={() => onTabChange(tab.key)}
-						activeOpacity={0.82}
-					>
-						<Ionicons name={active ? tab.activeIcon : tab.inactiveIcon} size={22} color={active ? '#185FA5' : '#94A3B8'} />
-						<Text style={[styles.navLabel, active && styles.navLabelActive]}>{tab.label}</Text>
-					</TouchableOpacity>
-				);
-			})}
+				{leftTabs.map(renderTab)}
 
 				<View style={styles.centerSlot}>
 					<TouchableOpacity style={styles.newButton} activeOpacity={0.84} onPress={onNewPress}>
-						<Ionicons name="add" size={26} color="#FFFFFF" />
+						<Plus size={26} color={colors.primaryText} />
 					</TouchableOpacity>
-					<Text style={styles.newLabel}>New</Text>
+					<Text allowFontScaling={false} style={styles.newLabel}>New</Text>
 				</View>
 
-				{rightTabs.map((tab) => {
-				const active = activeTab === tab.key;
-
-				return (
-					<TouchableOpacity
-						key={tab.key}
-						style={[styles.navItem, active && styles.navItemActive]}
-						onPress={() => onTabChange(tab.key)}
-						activeOpacity={0.82}
-					>
-						<Ionicons name={active ? tab.activeIcon : tab.inactiveIcon} size={22} color={active ? '#185FA5' : '#94A3B8'} />
-						<Text style={[styles.navLabel, active && styles.navLabelActive]}>{tab.label}</Text>
-					</TouchableOpacity>
-				);
-			})}
+				{rightTabs.map(renderTab)}
 			</View>
 		</View>
 	);
@@ -76,14 +70,14 @@ export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarPro
 
 const styles = StyleSheet.create({
 	bottomNavShell: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 	},
 	bottomNav: {
 		flexDirection: 'row',
 		alignItems: 'flex-end',
-		backgroundColor: '#FFFFFF',
+		backgroundColor: colors.background2,
 		borderTopWidth: 1,
-		borderTopColor: '#E2E8F0',
+		borderTopColor: colors.disabledBorder,
 		paddingTop: 8,
 		paddingBottom: 12,
 		paddingHorizontal: 8,
@@ -100,32 +94,26 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	newButton: {
-		width: 50,
-		height: 50,
-		borderRadius: 25,
-		backgroundColor: '#1E6FD9',
+		width: 60,
+		height: 60,
+		borderRadius: 999,
+		backgroundColor: colors.primary,
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginTop: -24,
 		borderWidth: 2,
-		borderColor: '#EAF3FF',
+		borderColor: colors.primaryLight,
 	},
 	newLabel: {
+		...getTypographyStyle('c3Caption', 'bold'),
 		marginTop: 3,
-		fontSize: 10,
-		color: '#1E6FD9',
-		fontWeight: '700',
+		color: colors.primary,
 	},
 	navItemActive: {
-		backgroundColor: '#EAF3FF',
+		backgroundColor: colors.primaryLight,
 	},
 	navLabel: {
+		...getTypographyStyle('c3Caption', 'bold'),
 		marginTop: 3,
-		fontSize: 10,
-		color: '#94A3B8',
-		fontWeight: '700',
-	},
-	navLabelActive: {
-		color: '#1E6FD9',
 	},
 });
