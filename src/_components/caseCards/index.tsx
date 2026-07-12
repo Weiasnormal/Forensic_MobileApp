@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
 		left: 6,
 	},
 	typeLabel: {
-		...getTypographyStyle('c3Caption'),
+		...getTypographyStyle('c2Caption', 'regular'),
 		color: colors.textSecondary,
 		left: 6,
 	},
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
 		...getTypographyStyle('l2List'),
 	},
 	nameLabel: {
-		...getTypographyStyle('c1Caption'),
+		...getTypographyStyle('c1Caption', 'regular'),
 		color: colors.textSecondary,
 		left: 6,
 	},

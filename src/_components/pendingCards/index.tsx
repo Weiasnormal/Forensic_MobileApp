@@ -1,5 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import { CheckCircle2, ChevronRight, FileText, LucideIcon, RefreshCw } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 export type PendingCardStatus = 'result-ready' | 'draft' | 'processing';
 
@@ -13,33 +15,34 @@ interface PendingCardProps {
 
 const statusStyles: Record<
 	PendingCardStatus,
-	{ iconName: keyof typeof Ionicons.glyphMap; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }
+	{ icon: LucideIcon; statusText: string; statusColor: string; bgColor: string; iconBgColor: string }
 > = {
 	'result-ready': {
-		iconName: 'checkmark-circle-outline',
+		icon: CheckCircle2,
 		statusText: 'RESULT READY',
-		statusColor: '#2E9F5C',
-		bgColor: '#ffffff',
-		iconBgColor: '#F1FAF4',
+		statusColor: colors.statusGenuine,
+		bgColor: colors.background2,
+		iconBgColor: colors.statusGenuineBg,
 	},
 	draft: {
-		iconName: 'document-outline',
+		icon: FileText,
 		statusText: 'DRAFT',
-		statusColor: '#94A3B8',
-		bgColor: '#ffffff',
-		iconBgColor: '#EFEFEF',
+		statusColor: colors.statusDraft,
+		bgColor: colors.background2,
+		iconBgColor: colors.statusDraftBg,
 	},
 	processing: {
-		iconName: 'sync-outline',
+		icon: RefreshCw,
 		statusText: 'PROCESSING',
-		statusColor: '#2D72D1',
-		bgColor: '#ffffff',
-		iconBgColor: '#EBF3FF',
+		statusColor: colors.statusProcessing,
+		bgColor: colors.background2,
+		iconBgColor: colors.statusProcessingBg,
 	},
 };
 
 export default function PendingCard({ caseCode, name, type, status, onPress }: PendingCardProps) {
 	const style = statusStyles[status];
+	const Icon = style.icon;
 
 	return (
 		<TouchableOpacity
@@ -48,19 +51,21 @@ export default function PendingCard({ caseCode, name, type, status, onPress }: P
 			onPress={onPress}
 		>
 			<View style={[styles.iconContainer, { backgroundColor: style.iconBgColor }]}>
-				<Ionicons name={style.iconName} size={24} color={style.statusColor} />
+				<Icon size={22} color={style.statusColor} />
 			</View>
 
 			<View style={styles.content}>
-				<Text style={[styles.statusText, { color: style.statusColor }]}>{style.statusText}</Text>
-				<Text style={styles.id}>{caseCode}</Text>
-				<Text style={styles.nameType}>
-                    {name} {type ? `• ${type}` : ''}
-                </Text>
+				<Text allowFontScaling={false} style={[styles.statusText, { color: style.statusColor }]}>
+					{style.statusText}
+				</Text>
+				<Text allowFontScaling={false} style={styles.id}>{caseCode}</Text>
+				<Text allowFontScaling={false} style={styles.nameType}>
+					{name} {type ? `• ${type}` : ''}
+				</Text>
 			</View>
 
 			<View style={styles.chevron}>
-				<Text style={styles.chevronIcon}>›</Text>
+				<ChevronRight size={22} color={colors.textMuted} />
 			</View>
 		</TouchableOpacity>
 	);
@@ -93,28 +98,20 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	statusText: {
-		fontSize: 10,
-		fontWeight: '700',
+		...getTypographyStyle('c2Caption'),
 		letterSpacing: 0.5,
 		marginBottom: 2,
 	},
 	id: {
-		fontSize: 14,
-		fontWeight: '800',
-		color: '#1F2B3E',
+		...getTypographyStyle('c1Caption', 'bold'),
+		color: colors.textPrimary,
 		marginBottom: 2,
 	},
 	nameType: {
-        fontSize: 12,
-        color: '#8A99AE', 
-        fontWeight: '500',
-    },
+		...getTypographyStyle('c1Caption', 'regular'),
+		color: colors.textSecondary,
+	},
 	chevron: {
 		padding: 8,
-	},
-	chevronIcon: {
-		fontSize: 24,
-		color: '#64748B',
-		fontWeight: '300',
 	},
 });

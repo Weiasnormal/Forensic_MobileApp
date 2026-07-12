@@ -41,6 +41,9 @@ export const colors = {
   statusGenuineBg: '#F1FAF4',
   statusProcessing: '#1E6FD9',
   statusProcessingBg: '#EBF3FF',
+  statusDraft: '#64748B',
+  statusDraftBg: '#EFEFEF',
+
 
   // Case priority
   priorityUrgent: '#DC2626',
