@@ -11,6 +11,7 @@ import Divider from '@/_components/common/Divider';
 import Stepper from '@/_components/common/Stepper';
 import ToggleRow from '@/_components/common/ToggleRow';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface MemberDetailsScreenProps {
   memberInitials: string;
@@ -49,8 +50,8 @@ const MemberDetailsScreen: React.FC<MemberDetailsScreenProps> = ({
 
       <ScrollView contentContainerStyle={styles.content}>
         <Avatar initials={memberInitials} size={80} variant="light" />
-        <Text style={styles.name}>{memberName}</Text>
-        <Text style={styles.role}>{memberRole}</Text>
+        <Text allowFontScaling={false} style={styles.name}>{memberName}</Text>
+        <Text allowFontScaling={false} style={styles.role}>{memberRole}</Text>
 
         <SectionLabel label="Case Management" style={styles.sectionSpacing} />
         <SettingsRow
@@ -63,8 +64,8 @@ const MemberDetailsScreen: React.FC<MemberDetailsScreenProps> = ({
 
         <View style={styles.limitRow}>
           <View style={styles.limitTextWrapper}>
-            <Text style={styles.limitTitle}>Daily Case Limit</Text>
-            <Text style={styles.limitSubtitle}>Maximum cases per day</Text>
+            <Text allowFontScaling={false} style={styles.limitTitle}>Daily Case Limit</Text>
+            <Text allowFontScaling={false} style={styles.limitSubtitle}>Maximum cases per day</Text>
           </View>
           <Stepper value={dailyCaseLimit} onDecrease={onDecreaseLimit} onIncrease={onIncreaseLimit} />
         </View>
@@ -104,15 +105,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   name: {
+    ...getTypographyStyle('t3Title'),
     textAlign: 'center',
-    fontSize: 19,
-    fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 14,
   },
   role: {
+    ...getTypographyStyle('headline', 'regular'),
     textAlign: 'center',
-    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
     marginBottom: 8,
@@ -130,12 +130,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   limitTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...getTypographyStyle('body', 'semiBold'),
     color: colors.textPrimary,
   },
   limitSubtitle: {
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption', 'regular'),
     color: colors.textSecondary,
     marginTop: 2,
   },
