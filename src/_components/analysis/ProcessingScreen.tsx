@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
+import { getTypographyStyle } from '@/constants/typography';
 
 export interface ProcessingStep {
   id: string;
@@ -143,7 +144,7 @@ export default function ProcessingScreen({
             </View>
           </View>
 
-          <Text style={styles.progressLabel}>{statusText ?? 'Running AI pipeline'}</Text>
+          <Text style={styles.title}>{statusText ?? 'Running AI pipeline'}</Text>
         </View>
 
         <View style={styles.divider} />
@@ -223,29 +224,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressText: {
-    fontSize: 38,
-    fontWeight: '800',
+    ...getTypographyStyle('largeTitle', 'bold'),
     letterSpacing: -1,
     marginBottom: -2,
   },
   progressLabel: {
-    fontSize: 12,
-    fontWeight: '800',
+    ...getTypographyStyle('c1Caption', 'medium'),
     letterSpacing: 1,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    ...getTypographyStyle('t1Title', 'bold'),
     color: '#0F172A',
     textAlign: 'center',
     letterSpacing: -0.5,
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 15,
+    ...getTypographyStyle('c1Caption'),
     color: '#64748B',
     textAlign: 'center',
-    fontWeight: '400',
   },
   divider: {
     width: '100%',
@@ -298,21 +295,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepTitle: {
-    fontSize: 15,
+    ...getTypographyStyle('c1Caption', 'bold'),
     marginBottom: 2,
   },
   stepTitleActive: {
     color: '#0F172A',
-    fontWeight: '700',
+    ...getTypographyStyle('c1Caption', 'bold'),
   },
   stepTitlePending: {
     color: '#94A3B8',
-    fontWeight: '600',
+    ...getTypographyStyle('c1Caption', 'bold'),
   },
   stepSubtitle: {
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption', 'regular'),
     color: '#64748B',
-    fontWeight: '400',
   },
   statusWrap: {
     minWidth: 60,
@@ -320,11 +316,9 @@ const styles = StyleSheet.create({
   },
   statusTextDone: {
     color: '#22C55E',
-    fontWeight: '700',
-    fontSize: 14,
+    ...getTypographyStyle('c1Caption', 'bold'),
   },
   statusTextRunning: {
-    fontWeight: '700',
-    fontSize: 14,
+    ...getTypographyStyle('c1Caption', 'bold'),
   },
 });
