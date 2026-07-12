@@ -13,9 +13,11 @@ import { formatAnalysisTypeLabel, getPendingCards, type SavedCase, useCaseStore 
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
-import { Pencil } from 'lucide-react-native';
+import { FolderOpen, Pencil } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import EmptyState from '@/_components/common/EmptyState';
+import ListSectionHeader from '@/_components/common/ListSectionHeader';
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
 
@@ -202,12 +204,21 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 				</>
 			) : null}
 
-			<View style={styles.sectionHeader}>
-				<Text allowFontScaling={false} style={styles.sectionTitle}>Recent Cases</Text>
-				<TouchableOpacity onPress={onViewAllPress}>
-					<Text allowFontScaling={false} style={styles.sectionLink}>View all</Text>
-				</TouchableOpacity>
-			</View>
+			<ListSectionHeader
+        title="Recent Cases"
+        actionLabel="View all"
+        onActionPress={onViewAllPress}
+      />
+
+      // Empty state
+      {(!cases || cases.length === 0) ? (
+        <EmptyState
+          icon={FolderOpen}
+          title="No cases yet"
+          subtitle="Start a new analysis to populate the dashboard."
+          style={{ marginTop: 24, marginHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.searchBorder, backgroundColor: colors.background2 }}
+        />
+      ) : null}
 
 			<View style={styles.recentList}>
 				{latestCases.map((item) => (
@@ -225,13 +236,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 			</View>
 
 			{(!cases || cases.length === 0) ? (
-				<View style={styles.emptyArea}>
-					<View style={styles.emptyBadge}>
-						<Ionicons name="folder-open-outline" size={34} color={colors.label} />
-					</View>
-					<Text allowFontScaling={false} style={styles.emptyTitle}>No cases yet</Text>
-					<Text allowFontScaling={false} style={styles.emptySubtitle}>Start a new analysis to populate the dashboard.</Text>
-				</View>
+				<ListSectionHeader title="Pending Cases" />
 			) : null}
 		</>
 	);

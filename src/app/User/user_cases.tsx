@@ -18,6 +18,9 @@ import { caseMatchesSearch, normalizeCaseSearchQuery } from '../../utils/caseSea
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import EmptyState from '@/_components/common/EmptyState';
+import { FileText, Search } from 'lucide-react-native';
+import SecondaryButton from '@/_components/common/SecondaryButton';
 
 const quickFilters = ['All', 'Genuine', 'Suspected', 'Processing'];
 const DEFAULT_HEADER_HEIGHT = 140;
@@ -174,24 +177,20 @@ export default function UserCasesScreen() {
 			</View>
 
 			{totalCases === 0 ? (
-				<View style={styles.emptyArea}>
-					<View style={styles.emptyBadge}>
-						<Ionicons name="document-text-outline" size={34} color={colors.label} />
-					</View>
-					<Text allowFontScaling={false} style={styles.emptyTitle}>No cases yet</Text>
-					<Text allowFontScaling={false} style={styles.emptySubtitle}>Run a new analysis to see cases appear here.</Text>
-				</View>
-			) : sections.length === 0 ? (
-				<View style={styles.emptySearchArea}>
-					<Ionicons name="search-outline" size={34} color={colors.label} />
-					<Text allowFontScaling={false} style={styles.emptySearchTitle}>No matching cases</Text>
-					<Text allowFontScaling={false} style={styles.emptySearchText}>
-						Try a case ID, subject, examiner, document type, priority, or analysis type.
-					</Text>
-					<TouchableOpacity style={styles.clearSearchButtonLarge} activeOpacity={0.88} onPress={() => setQuery('')}>
-						<Text allowFontScaling={false} style={styles.clearSearchTextLarge}>Clear search</Text>
-					</TouchableOpacity>
-				</View>
+        <EmptyState
+          icon={FileText}
+          title="No cases yet"
+          subtitle="Run a new analysis to see cases appear here."
+        />
+      ) : sections.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title="No matching cases"
+          subtitle="Try a case ID, subject, examiner, document type, priority, or analysis type."
+          action={
+            <SecondaryButton label="Clear search" onPress={() => setQuery('')} size="small" />
+          }
+        />
 			) : (
 				<SectionList
 					sections={sections}
