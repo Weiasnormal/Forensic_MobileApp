@@ -1,72 +1,64 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
-import TertiaryButton from '@/_components/common/TertiaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 
 interface DraftSavedModalProps {
   visible: boolean;
-  onContinue: () => void;
-  onDismiss?: () => void;
-  onSecondaryPress?: () => void;
-  onTertiaryPress?: () => void;
+  onSaveDraft: () => void;
+  onDiscard: () => void;
+  onGoBack: () => void;
   title?: string;
   message?: string;
-  primaryLabel?: string;
-  secondaryLabel?: string;
-  tertiaryLabel?: string;
+  saveLabel?: string;
+  discardLabel?: string;
+  goBackLabel?: string;
+  isSaving?: boolean;
 }
 
 export default function DraftSavedModal({
   visible,
-  onContinue,
-  onDismiss,
-  onSecondaryPress,
-  onTertiaryPress,
-  title = 'Draft saved',
-  message = 'Your case details were saved before you left, so you can continue from where you stopped.',
-  primaryLabel = 'Continue later',
-  secondaryLabel,
-  tertiaryLabel,
+  onSaveDraft,
+  onDiscard,
+  onGoBack,
+  title = 'Save Draft',
+  message = 'How would you like to proceed?',
+  saveLabel = 'Save as Draft',
+  discardLabel = 'Discard',
+  goBackLabel = 'Go Back',
+  isSaving = false,
 }: DraftSavedModalProps) {
-  const handleClose = onDismiss ?? onContinue;
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onGoBack}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
           <PrimaryButton
-            label={primaryLabel}
-            onPress={onContinue}
-            backgroundColor="#1E6FD9"
-            style={styles.primaryButton}
+            label={saveLabel}
+            onPress={onSaveDraft}
+            loading={isSaving}
+            size="large"
+            style={styles.button}
           />
 
-          {secondaryLabel ? (
-            <SecondaryButton
-              label={secondaryLabel}
-              onPress={onSecondaryPress ?? handleClose}
-              backgroundColor="#FFFFFF"
-              textVariant="b3Button"
-              style={styles.secondaryButton}
-            />
-          ) : null}
+          <SecondaryButton
+            label={discardLabel}
+            onPress={onDiscard}
+            textColor={colors.danger}
+            size="large"
+            style={styles.button}
+          />
 
-          {tertiaryLabel ? (
-            <TertiaryButton
-              label={tertiaryLabel}
-              onPress={onTertiaryPress ?? handleClose}
-              backgroundColor="#FFFFFF"
-              textVariant="b3Button"
-              style={styles.tertiaryButton}
-            />
-          ) : null}
+          <SecondaryButton
+            label={goBackLabel}
+            onPress={onGoBack}
+            size="large"
+            style={styles.button}
+          />
         </View>
       </View>
     </Modal>
@@ -76,42 +68,34 @@ export default function DraftSavedModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
   card: {
     width: '100%',
-    maxWidth: 360,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 18,
-    paddingVertical: 18,
+    maxWidth: 380,
+    borderRadius: 24,
+    backgroundColor: colors.cardBackground,
+    paddingHorizontal: 22,
+    paddingVertical: 28,
     alignItems: 'center',
   },
   title: {
-    ...getTypographyStyle('t3Title'),
-    color: '#0F172A',
-    marginBottom: 8,
+    ...getTypographyStyle('t1Title'),
+    color: colors.textPrimary,
+    marginBottom: 10,
     textAlign: 'center',
   },
   message: {
+    ...getTypographyStyle('body'),
+    color: colors.textSecondary,
     textAlign: 'center',
-    color: '#64748B',
-    ...getTypographyStyle('headline', 'regular'),
-    marginBottom: 14,
+    marginBottom: 22,
   },
-  primaryButton: {
+  button: {
     width: '100%',
-    marginTop: 2,
-  },
-  secondaryButton: {
-    width: '100%',
-    marginTop: 10,
-  },
-  tertiaryButton: {
-    width: '100%',
-    marginTop: 10,
+    marginTop: 12,
   },
 });
