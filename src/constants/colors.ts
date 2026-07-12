@@ -62,4 +62,24 @@ export const colors = {
   sheetHandle: '#D9E2EE',
   dividerLight: '#EEF2FF',
   overlay: 'rgba(15, 23, 42, 0.56)',
+
+  // Stats screen
+  statsBackground: '#F5F8FC',
+  statsTextPrimary: '#1E293B',
+  statsTextDeep: '#111827',
+  statsTextMuted: '#8FA2BE',
+  cardBorderMuted: '#DDE6F2',
+  successBg: '#ECFDF3',
+  dangerBgAlt: '#FFF1F1',
+  chartGenuineLight: '#BEE6C8',
+  chartSuspectedLight: '#F5C0C0',
+  donutRingBorder: '#E5EDF7',
+
+  // Skeleton loading
+  skeletonBase: '#C8D3E3',
+  skeletonBaseLight: '#D4DDEB',
+  skeletonDonutRing: '#CDD6E4',
+  skeletonBar: '#D9E1EE',
+  skeletonLegend: '#D1DAE9',
+  skeletonList: '#CDD7E5',
 };

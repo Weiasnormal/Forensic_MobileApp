@@ -2,6 +2,8 @@ import { useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 const monthlyBars = [
   { month: 'Nov', genuine: 36, suspected: 18 },
@@ -82,15 +84,15 @@ export default function UserStatsScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <Text style={styles.title}>Statistics</Text>
+          <Text allowFontScaling={false} style={styles.title}>Statistics</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.skeletonInfoCard}>
             <View>
-              <Ionicons name="information-circle-outline" size={24} color="#8FA2BE" />
+              <Ionicons name="information-circle-outline" size={24} color={colors.statsTextMuted} />
             </View>
-            <Text style={styles.skeletonInfoTextLabel}>
+            <Text allowFontScaling={false} style={styles.skeletonInfoTextLabel}>
               Submit your first case to start seeing data here.
             </Text>
           </View>
@@ -138,21 +140,21 @@ export default function UserStatsScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <Text style={styles.title}>Statistics</Text>
+        <Text allowFontScaling={false} style={styles.title}>Statistics</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         <View style={styles.heroCard}>
           <View style={styles.heroLeft}>
-            <Text style={styles.bigNumber}>{summary.total}</Text>
-            <Text style={styles.bigLabel}>TOTAL CASES</Text>
+            <Text allowFontScaling={false} style={styles.bigNumber}>{summary.total}</Text>
+            <Text allowFontScaling={false} style={styles.bigLabel}>TOTAL CASES</Text>
 
             <View style={styles.statPillGreen}>
-              <Text style={styles.statPillGreenText}>{summary.genuine} genuine</Text>
+              <Text allowFontScaling={false} style={styles.statPillGreenText}>{summary.genuine} genuine</Text>
             </View>
             <View style={styles.statPillRed}>
-              <Text style={styles.statPillRedText}>{summary.suspected} suspected</Text>
+              <Text allowFontScaling={false} style={styles.statPillRedText}>{summary.suspected} suspected</Text>
             </View>
           </View>
 
@@ -165,20 +167,20 @@ export default function UserStatsScreen() {
                 <View style={styles.donutRightArc} />
               </View>
               <View style={styles.donutCenter}>
-                <Text style={styles.donutPercent}>{summary.genuinePercent}%</Text>
-                <Text style={styles.donutCaption}>Genuine</Text>
+                <Text allowFontScaling={false} style={styles.donutPercent}>{summary.genuinePercent}%</Text>
+                <Text allowFontScaling={false} style={styles.donutCaption}>Genuine</Text>
               </View>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionHeader}>Monthly Trend</Text>
+        <Text allowFontScaling={false} style={styles.sectionHeader}>Monthly Trend</Text>
 
         <View style={styles.chartCard}>
           <View style={styles.chartHeaderRow}>
-            <Text style={styles.cardTitle}>Cases over time</Text>
+            <Text allowFontScaling={false} style={styles.cardTitle}>Cases over time</Text>
             <View style={styles.trendBadge}>
-              <Text style={styles.trendBadgeText}>18% vs last month</Text>
+              <Text allowFontScaling={false} style={styles.trendBadgeText}>18% vs last month</Text>
             </View>
           </View>
 
@@ -189,31 +191,31 @@ export default function UserStatsScreen() {
                   <View style={[styles.barSegment, styles.barGenuine, { height: `${bar.genuine}%` }]} />
                   <View style={[styles.barSegment, styles.barSuspected, { height: `${bar.suspected}%` }]} />
                 </View>
-                <Text style={styles.barLabel}>{bar.month}</Text>
+                <Text allowFontScaling={false} style={styles.barLabel}>{bar.month}</Text>
               </View>
             ))}
           </View>
 
           <View style={styles.legendRow}>
-            <LegendItem color="#16A34A" label="Genuine" />
-            <LegendItem color="#E24B4A" label="Suspected" />
+            <LegendItem color={colors.labelsuccess} label="Genuine" />
+            <LegendItem color={colors.danger} label="Suspected" />
           </View>
         </View>
 
-        <Text style={styles.sectionHeader}>Document Types</Text>
+        <Text allowFontScaling={false} style={styles.sectionHeader}>Document Types</Text>
 
         <View style={styles.chartCard}>
           {summary.documentTypes.length > 0 ? summary.documentTypes.map((item) => (
             <View key={item.label} style={styles.docRow}>
-              <Text style={styles.docLabel}>{item.label}</Text>
+              <Text allowFontScaling={false} style={styles.docLabel}>{item.label}</Text>
               <View style={styles.progressWrap}>
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${item.width * 100}%` }]} />
                 </View>
               </View>
-              <Text style={styles.docCount}>{item.count}</Text>
+              <Text allowFontScaling={false} style={styles.docCount}>{item.count}</Text>
             </View>
-          )) : <Text style={styles.emptyState}>No cases yet</Text>}
+          )) : <Text allowFontScaling={false} style={styles.emptyState}>No cases yet</Text>}
         </View>
       </ScrollView>
     </View>
@@ -224,7 +226,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
+      <Text allowFontScaling={false} style={styles.legendText}>{label}</Text>
     </View>
   );
 }
@@ -232,15 +234,15 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F5F8FC',
+    backgroundColor: colors.statsBackground,
   },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background2,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.disabledBorder,
   },
   content: {
     paddingHorizontal: 16,
@@ -248,19 +250,19 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   title: {
-    color: '#1E293B',
+    ...getTypographyStyle('t1Title'),
     fontSize: 26,
-    fontWeight: '900',
+    color: colors.statsTextPrimary,
     letterSpacing: -0.8,
   },
   heroCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background2,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DDE6F2',
+    borderColor: colors.cardBorderMuted,
     padding: 16,
     marginBottom: 18,
     shadowColor: '#0F172A',
@@ -274,44 +276,43 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   bigNumber: {
-    color: '#111827',
+    ...getTypographyStyle('largeTitle'),
     fontSize: 42,
     lineHeight: 42,
-    fontWeight: '900',
+    color: colors.statsTextDeep,
     letterSpacing: -1.2,
   },
   bigLabel: {
+    ...getTypographyStyle('l1List'),
     marginTop: 4,
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '800',
+    color: colors.label,
     letterSpacing: 0.8,
   },
   statPillGreen: {
     alignSelf: 'flex-start',
     marginTop: 12,
-    backgroundColor: '#ECFDF3',
+    backgroundColor: colors.successBg,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   statPillGreenText: {
-    color: '#16A34A',
+    ...getTypographyStyle('c2Caption'),
     fontSize: 11,
-    fontWeight: '800',
+    color: colors.labelsuccess,
   },
   statPillRed: {
     alignSelf: 'flex-start',
     marginTop: 8,
-    backgroundColor: '#FFF1F1',
+    backgroundColor: colors.dangerBgAlt,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   statPillRedText: {
-    color: '#E24B4A',
+    ...getTypographyStyle('c2Caption'),
     fontSize: 11,
-    fontWeight: '800',
+    color: colors.danger,
   },
   donutArea: {
     width: 132,
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background2,
   },
   donutLeftHalf: {
     position: 'absolute',
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 10,
-    borderColor: '#16A34A',
+    borderColor: colors.labelsuccess,
     borderRightColor: 'transparent',
     borderBottomColor: 'transparent',
     transform: [{ rotate: '-20deg' }],
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 10,
-    borderColor: '#E24B4A',
+    borderColor: colors.danger,
     borderLeftColor: 'transparent',
     borderBottomColor: 'transparent',
     transform: [{ rotate: '22deg' }],
@@ -373,36 +374,33 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: 37,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5EDF7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   donutPercent: {
-    color: '#111827',
+    ...getTypographyStyle('t3Title', 'bold'),
     fontSize: 18,
-    fontWeight: '900',
+    color: colors.textPrimary,
     letterSpacing: -0.4,
   },
   donutCaption: {
-    marginTop: 1,
-    color: '#16A34A',
+    ...getTypographyStyle('c2Caption'),
     fontSize: 11,
-    fontWeight: '800',
+    marginTop: 1,
+    color: colors.labelsuccess,
   },
   sectionHeader: {
-    color: '#1E293B',
+    ...getTypographyStyle('t3Title', 'bold'),
     fontSize: 16,
-    fontWeight: '800',
+    color: colors.textPrimary,
     marginBottom: 10,
     marginTop: 2,
   },
   chartCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background2,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DDE6F2',
+    borderColor: colors.cardBorderMuted,
     padding: 16,
     marginBottom: 16,
     shadowColor: '#0F172A',
@@ -418,20 +416,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardTitle: {
-    color: '#1E293B',
-    fontSize: 14,
-    fontWeight: '800',
+    ...getTypographyStyle('headline'),
+    color: colors.statsTextPrimary,
   },
   trendBadge: {
-    backgroundColor: '#ECFDF3',
+    backgroundColor: colors.successBg,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   trendBadgeText: {
-    color: '#16A34A',
+    ...getTypographyStyle('c2Caption'),
     fontSize: 11,
-    fontWeight: '800',
+    color: colors.labelsuccess,
   },
   barChartWrap: {
     flexDirection: 'row',
@@ -456,16 +453,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   barGenuine: {
-    backgroundColor: '#BEE6C8',
+    backgroundColor: colors.chartGenuineLight,
   },
   barSuspected: {
-    backgroundColor: '#F5C0C0',
+    backgroundColor: colors.chartSuspectedLight,
   },
   barLabel: {
-    marginTop: 6,
-    color: '#94A3B8',
+    ...getTypographyStyle('c3Caption', 'regular'),
     fontSize: 11,
-    fontWeight: '600',
+    marginTop: 6,
+    color: colors.label,
   },
   legendRow: {
     flexDirection: 'row',
@@ -483,9 +480,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   legendText: {
-    color: '#64748B',
+    ...getTypographyStyle('c2Caption'),
     fontSize: 11,
-    fontWeight: '600',
+    color: colors.textMuted,
   },
   docRow: {
     flexDirection: 'row',
@@ -493,10 +490,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   docLabel: {
-    width: 112,
-    color: '#1E293B',
-    fontSize: 14,
-    fontWeight: '700',
+    ...getTypographyStyle('c1Caption'),
+    width: 160,
+    color: colors.statsTextPrimary,
   },
   progressWrap: {
     flex: 1,
@@ -505,25 +501,23 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 5,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.disabledBorder,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#1D63D6',
+    backgroundColor: colors.primary,
   },
   docCount: {
+    ...getTypographyStyle('c1Caption'),
     width: 20,
     textAlign: 'right',
-    color: '#1E293B',
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.statsTextPrimary,
   },
   emptyState: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '600',
+    ...getTypographyStyle('c1Caption'),
+    color: colors.label,
     textAlign: 'center',
     paddingVertical: 10,
   },
@@ -531,8 +525,8 @@ const styles = StyleSheet.create({
     minHeight: 62,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DDE6F2',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.cardBorderMuted,
+    backgroundColor: colors.background2,
     marginBottom: 16,
     paddingHorizontal: 14,
     flexDirection: 'row',
@@ -540,16 +534,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   skeletonInfoTextLabel: {
+    ...getTypographyStyle('c1Caption'),
     flex: 1,
-    color: '#8FA2BE',
-    fontSize: 13,
-    fontWeight: '600',
+    color: colors.statsTextMuted,
   },
   skeletonCardLarge: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DDE6F2',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.cardBorderMuted,
+    backgroundColor: colors.background2,
     marginBottom: 16,
     minHeight: 168,
     padding: 16,
@@ -558,21 +551,21 @@ const styles = StyleSheet.create({
     width: 108,
     height: 22,
     borderRadius: 999,
-    backgroundColor: '#C8D3E3',
+    backgroundColor: colors.skeletonBase,
     marginBottom: 14,
   },
   skeletonLineMd: {
     width: 110,
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#D4DDEB',
+    backgroundColor: colors.skeletonBaseLight,
     marginBottom: 14,
   },
   skeletonLineLg: {
     width: 100,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#C8D3E3',
+    backgroundColor: colors.skeletonBase,
     marginBottom: 8,
   },
   skeletonDonut: {
@@ -583,14 +576,14 @@ const styles = StyleSheet.create({
     height: 126,
     borderRadius: 63,
     borderWidth: 12,
-    borderColor: '#CDD6E4',
-    backgroundColor: '#F5F8FC',
+    borderColor: colors.skeletonDonutRing,
+    backgroundColor: colors.statsBackground,
   },
   skeletonCardChart: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DDE6F2',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.cardBorderMuted,
+    backgroundColor: colors.background2,
     marginBottom: 16,
     padding: 16,
   },
@@ -603,13 +596,13 @@ const styles = StyleSheet.create({
     width: 120,
     height: 7,
     borderRadius: 999,
-    backgroundColor: '#C8D3E3',
+    backgroundColor: colors.skeletonBase,
   },
   skeletonHeaderPill: {
     width: 126,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#C8D3E3',
+    backgroundColor: colors.skeletonBase,
   },
   skeletonBarsWrap: {
     flexDirection: 'row',
@@ -625,13 +618,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 58,
     borderRadius: 8,
-    backgroundColor: '#D9E1EE',
+    backgroundColor: colors.skeletonBar,
   },
   skeletonTick: {
     width: 18,
     height: 6,
     borderRadius: 999,
-    backgroundColor: '#C8D3E3',
+    backgroundColor: colors.skeletonBase,
     marginTop: 8,
   },
   skeletonLegendRow: {
@@ -643,13 +636,13 @@ const styles = StyleSheet.create({
     width: 74,
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#D1DAE9',
+    backgroundColor: colors.skeletonLegend,
   },
   skeletonCardList: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DDE6F2',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.cardBorderMuted,
+    backgroundColor: colors.background2,
     marginBottom: 16,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -664,12 +657,12 @@ const styles = StyleSheet.create({
     width: '72%',
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#CDD7E5',
+    backgroundColor: colors.skeletonList,
   },
   skeletonListDot: {
     width: 12,
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#CDD7E5',
+    backgroundColor: colors.skeletonList,
   },
 });

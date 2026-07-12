@@ -50,14 +50,16 @@ export default function UserProfileScreen() {
 
 	return (
 		<View style={styles.safeArea}>
-			<View style={[styles.header, { paddingTop: insets.top + 40 }]}>
+			<ScreenStatusBar variant="onBrand" />
+
+			<View style={[styles.header, { paddingTop: insets.top }]}>
 				<View style={styles.headerGlow} />
 
 				<View style={styles.headerTopRow}>
 					<Avatar initials={initials} size={64} variant="onDark" />
 					<View style={styles.headerCopy}>
-						<Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-						<Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+						<Text allowFontScaling={false} style={styles.name}>{user.firstName} {user.lastName}</Text>
+						<Text allowFontScaling={false} style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
 							{user.role} • {user.organization}
 						</Text>
 					</View>
@@ -165,8 +167,8 @@ function getInitials(first = '', last = '') {
 function HeroStat({ value, label, last }: { value: string; label: string; last?: boolean }) {
 	return (
 		<View style={[styles.heroStat, last && styles.heroStatLast]}>
-			<Text style={styles.heroStatValue}>{value}</Text>
-			<Text style={styles.heroStatLabel}>{label}</Text>
+			<Text allowFontScaling={false} style={styles.heroStatValue}>{value}</Text>
+			<Text allowFontScaling={false} style={styles.heroStatLabel}>{label}</Text>
 		</View>
 	);
 }
@@ -231,16 +233,15 @@ const styles = StyleSheet.create({
 		borderRightWidth: 0,
 	},
 	heroStatValue: {
-		color: colors.primaryText,
+		...getTypographyStyle('t3Title', 'bold'),
 		fontSize: 19,
-		fontWeight: '900',
+		color: colors.primaryText,
 		letterSpacing: -0.3,
 	},
 	heroStatLabel: {
+		...getTypographyStyle('c3Caption', 'bold'),
 		marginTop: 3,
 		color: 'rgba(255,255,255,0.64)',
-		fontSize: 10,
-		fontWeight: '700',
 		letterSpacing: 0.5,
 	},
 	scrollArea: {
