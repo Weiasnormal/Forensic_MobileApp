@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Avera",
-    "slug": "forensic",
+    "slug": "avera",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -54,7 +54,14 @@
         }
       ],
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "941bc4fe-82f8-42c3-83c9-9e48bd50bd30"
+      }
+    },
+    "owner": "averaapp"
   },
   "experiments": {
     "typedRoutes": true,
