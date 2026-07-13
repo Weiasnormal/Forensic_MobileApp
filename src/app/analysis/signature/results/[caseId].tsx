@@ -1,4 +1,4 @@
-import { SignatureResultsScreen } from '@/_components/modals/signature_analysis';
+ import { SignatureResultsScreen } from '@/_components/modals/signature_results';
 import { useCaseStore } from '@/store/caseStore';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect } from 'react';
