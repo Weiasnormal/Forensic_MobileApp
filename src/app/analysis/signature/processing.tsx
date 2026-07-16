@@ -18,10 +18,6 @@ interface ProcessingStepInfo {
   heroSubtitle: string;
 }
 
-// heroTitle/heroSubtitle are literal reference copy from the design (see
-// getHeroContent) — the gerund word-order flip ("Feature extraction" ->
-// "Extracting features...") isn't reliably auto-derivable from label/detail,
-// so each step carries its own hero strings rather than computing them.
 const PROCESSING_STEPS: ProcessingStepInfo[] = [
   {
     id: 'sig-preprocess',
@@ -65,11 +61,6 @@ const RING_STROKE = 12;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-// Hero copy always reflects the most recently *completed* step (matching
-// the reference screenshots, where title/subtitle lag one step behind the
-// "Running" row) — except before anything has finished, when it falls back
-// to the running step's own copy, and at 0%, a dedicated "Initializing..."
-// state.
 function getHeroContent(progress: number) {
   if (progress <= 0) {
     return { title: 'Initializing...', subtitle: 'Preparing signature images' };
@@ -96,13 +87,8 @@ export default function SignatureProcessingRoute() {
 
   const targetProgress = Math.min(100, Math.max(0, submissionProgress ?? 0));
 
-  // Eased/creeping progress display, ported from the original ProcessingScreen:
-  // ramps smoothly toward the store's real progress, and if the backend
-  // stalls before 100%, gently creeps forward (capped) so the ring never
-  // looks frozen. The uncontrolled/demo timer mode from the original
-  // component was dropped — this route always has a controlled value from
-  // the store, so that branch was unreachable dead code here.
-  const [displayProgress, setDisplayProgress] = useState(0);
+
+  const [displayProgress, setDisplayProgress] = useState(targetProgress);
   const [isCompleteFired, setIsCompleteFired] = useState(false);
   const targetRef = useRef(targetProgress);
   const creepAccumulatorRef = useRef(0);
@@ -373,7 +359,7 @@ const styles = StyleSheet.create({
   iconPending: {
     backgroundColor: colors.cardBackground,
     borderWidth: 2,
-    borderColor: colors.disabledBorder, // exact match for original #E2E8F0
+    borderColor: colors.disabledBorder, 
   },
   stepTextWrap: {
     flex: 1,
@@ -399,7 +385,7 @@ const styles = StyleSheet.create({
   },
   statusTextDone: {
     ...getTypographyStyle('c1Caption', 'bold'),
-    color: colors.statusGenuine, // same approximation as iconDone above
+    color: colors.statusGenuine, 
   },
   statusTextRunning: {
     ...getTypographyStyle('c1Caption', 'bold'),

@@ -478,6 +478,8 @@ export const useCaseStore = create<CaseStore>()(
               throw new Error(`Create case failed (${createRes.status})`);
             }
 
+            
+
             let rawCaseId: string | null = null;
             let caseCode: string | null = null;
             try {
@@ -500,6 +502,31 @@ export const useCaseStore = create<CaseStore>()(
               throw new Error('Unable to determine created case id from response');
             }
             const caseId: string = rawCaseId;
+            
+            set((state) => {
+              const placeholderCase: SavedCase = {
+                ...currentDraft,
+                caseId,
+                caseCode: caseCode ?? caseId,
+                createdAt: new Date().toISOString(),
+                status: 'Processing',
+                analysisType: DEFAULT_ANALYSIS_TYPE,
+                resultViewed: false,
+                mockTemplateNumber: state.nextMockTemplateNumber,
+              };
+
+              const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
+              const nextCases = [...filteredCases, placeholderCase];
+              const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+
+              return {
+                cases: nextCases,
+                draftSignatureCase: createInitialDraft(nextCaseNumber),
+                nextCaseNumber,
+                activeSignatureCaseId: caseId,
+              };
+            });
+            
 
             caseLog.info('CaseStore:Submit', 'Uploading images for case', { caseId });
             set({ submissionStep: 'Uploading reference signatures', submissionProgress: 10 });
@@ -630,30 +657,28 @@ export const useCaseStore = create<CaseStore>()(
               hasSuspect: !!savedCase.uploads?.suspect,
             });
 
-            set((state) => {
-              const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
-              const nextCases: SavedCase[] = [...filteredCases, savedCase];
-              const nextCaseNumber = getNextCaseNumberFromCases(nextCases);
+            const hasVerdict = Boolean(analysisResult?.verdict);
 
-              return {
-                cases: nextCases,
-                draftSignatureCase: createInitialDraft(nextCaseNumber),
-                nextCaseNumber,
-                nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
-                activeSignatureCaseId: caseId,
-                signatureAnalysisResults: {
-                  ...state.signatureAnalysisResults,
-                  [caseId]: analysisResult,
-                },
-                submissionStatus: 'success',
-                submissionStep: 'Complete',
-                submissionProgress: 100,
-              };
-            });
-
+            set((state) => ({
+              cases: state.cases.map((item) =>
+                item.caseId === caseId
+                  ? { ...item, status: finalStatus, mockTemplateNumber: state.nextMockTemplateNumber }
+                  : item,
+              ),
+              nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
+              signatureAnalysisResults: {
+                ...state.signatureAnalysisResults,
+                [caseId]: analysisResult,
+              },
+              submissionStatus: hasVerdict ? 'success' : 'error',
+              submissionStep: hasVerdict ? 'Complete' : '',
+              submissionProgress: hasVerdict ? 100 : state.submissionProgress,
+              submissionError: hasVerdict ? null : 'Analysis did not return a valid verdict.',
+            }));
             caseLog.info('CaseStore:Submit', '✓ Case submitted successfully', { caseId, analysisResult });
 
-            return savedCase;
+            const finalCase = get().cases.find((c) => c.caseId === caseId)!;
+            return finalCase;
           } catch (e) {
             const error = e as Error;
             caseLog.error('CaseStore:Submit', 'Submission failed', error);
