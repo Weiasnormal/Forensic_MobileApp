@@ -195,7 +195,7 @@ export default function SignatureProcessingRoute() {
           <View style={styles.ringWrap}>
             <Svg width={RING_SIZE} height={RING_SIZE}>
               <Circle
-                stroke={colors.statsBackground} // closest existing token to original #F1F5F9 — not exact, ~10 hex units off
+                stroke={colors.statsBackground} 
                 fill="none"
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
@@ -272,7 +272,7 @@ export default function SignatureProcessingRoute() {
         <View style={styles.backgroundHint}>
           <Info size={14} color={colors.label} />
           <Text style={styles.backgroundHintText}>
-            You may continue using the app while processing runs in the background. We'll notify you once it's complete.
+            You may continue using the app while processing runs in the background. We`&apos;`ll notify you once it`&apos;s complete.
           </Text>
         </View>
         <PrimaryButton label="Back to Home" onPress={handleBackToHome} size="medium" />
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...getTypographyStyle('largeTitle'),
-    color: colors.textPrimary, // closest existing token to original #000000 — no true-black token exists
+    color: colors.textPrimary, 
     letterSpacing: -1,
     marginBottom: -2,
   },
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   divider: {
     width: '100%',
     height: 1,
-    backgroundColor: colors.statsBackground, // same #F1F5F9 approximation as the ring track above
+    backgroundColor: colors.statsBackground,
     marginBottom: 24,
   },
   checklistSection: {
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconDone: {
-    backgroundColor: colors.statusGenuine, // closest existing green to original #22C55E — not exact
+    backgroundColor: colors.statusGenuine, 
   },
   iconActive: {
     backgroundColor: colors.cardBackground,

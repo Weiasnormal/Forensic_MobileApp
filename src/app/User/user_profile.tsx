@@ -8,6 +8,7 @@ import SignOutButton from '@/_components/common/SignOutButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import LogoutModal from '@/_components/modals/logout';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import { StatusBar } from 'expo-status-bar';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useUser } from '@/store/userStore';
@@ -17,7 +18,8 @@ import { useRouter } from 'expo-router';
 import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function UserProfileScreen() {
 	const router = useRouter();
@@ -49,8 +51,8 @@ export default function UserProfileScreen() {
 	};
 
 	return (
-		<View style={styles.safeArea}>
-			<ScreenStatusBar variant="onBrand" />
+		<SafeAreaView edges = {['left', 'right']} style={styles.safeArea}>
+			<ScreenStatusBar variant ="onBrand"  />
 
 			<View style={[styles.header, { paddingTop: insets.top }]}>
 				<View style={styles.headerGlow} />
@@ -156,7 +158,7 @@ export default function UserProfileScreen() {
 				onCancel={() => setLogoutModalVisible(false)}
 				onLogout={handleConfirmSignOut}
 			/>
-		</View>
+		</SafeAreaView>
 	);
 }
 

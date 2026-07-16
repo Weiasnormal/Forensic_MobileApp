@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Animated, KeyboardAvoidingView, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
+import { Animated, KeyboardAvoidingView, LayoutChangeEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
 import { type SignInFormValues, signInSchema } from '../../utils/validation';
 import { colors } from '@/constants/colors';
@@ -65,7 +65,6 @@ export default function LogInPage() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
     >
       <StatusBar style="light" translucent backgroundColor={colors.primary} />
         <View style={styles.hero}>
@@ -311,6 +310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
+    paddingBottom: 20,
   },
   footerPrompt: {
     ...getTypographyStyle('c1Caption'),

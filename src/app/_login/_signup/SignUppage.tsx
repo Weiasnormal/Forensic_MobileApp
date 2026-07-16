@@ -4,14 +4,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import {
-  Animated,
-  LayoutChangeEvent,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
@@ -418,6 +411,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 14,
+    paddingBottom: 20,
   },
   footerPrompt: {
     ...getTypographyStyle('c1Caption'),
