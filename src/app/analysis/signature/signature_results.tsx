@@ -20,9 +20,9 @@ import {
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
 } from '@/services/signatureAnalysis';
-import { API_ENDPOINTS, buildApiUrl } from '../../constants/api';
-import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
-import { type CaseStatus, useCaseStore } from '../../store/caseStore';
+import { API_ENDPOINTS, buildApiUrl } from '../../../constants/api';
+import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
+import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
 
 const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
 const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
@@ -32,17 +32,9 @@ const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
 };
 type ViewMode = SignatureAnalysisViewMode;
 
-// NOTE: This is a 3-way tint/edge/badge ramp per view mode (Heatmap = blue,
-// Bounding Box = sky blue, Stroke Diff = neutral gray), used only for the
-// empty-slot placeholder theming below. It isn't a near-duplicate of
-// colors.primary — it's a distinct 3-stop system with no equivalent in
-// constants/colors.ts today. Left as local constants rather than guessing
-// at new global tokens; flagging for your call on whether this should
-// become a formal `colors.viewMode*` token family.
 const VIEW_MODE_THEME: Record<ViewMode, { bg: string; edge: string; badge: string }> = {
   'Heatmap': { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' },
   'Bounding Box': { bg: '#E0F2FE', edge: '#38BDF8', badge: '#0369A1' },
-  // Stroke Diff reuses exact existing tokens (inputBorder/disabledBorder + label/textMuted)
   'Stroke Diff': { bg: colors.inputBorder, edge: colors.label, badge: colors.statsTextPrimary },
 };
 
@@ -170,12 +162,6 @@ export function SignatureResultsScreen() {
   const { verdictLabel, isSuspected, confidence: confidenceValue } =
     resolveCaseVerdict(currentCase, activeResult);
 
-  // NOTE: cardBg/iconBg/text below are approximations of the original raw
-  // hex values against the closest existing tokens, not exact matches:
-  //   suspected cardBg  #FEF1F1 -> dangerLight  #FEF2F2  (near-exact)
-  //   suspected iconBg/text #EB5757 -> danger    #DC2626  (same red family, not exact)
-  //   genuine  cardBg  #F1FAF3 -> statusGenuineBg #F1FAF4 (near-exact)
-  //   genuine  iconBg  #22B24C -> statusGenuine   #16A34A (close, not exact)
   const resultCardTheme = isSuspected
     ? {
         cardBg: colors.dangerLight,
@@ -565,8 +551,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   thumbLabel: { ...getTypographyStyle('b3Button'), color: colors.textPrimary },
-  // #10B981 (emerald) has no match in the palette's green family (statusGenuine
-  // is #16A34A, a noticeably different forest green) — approximated, flagging.
   thumbTag: { ...getTypographyStyle('l2List'), color: colors.statusGenuine, marginTop: 4 },
 
   largeThumbImageWrap: {
@@ -580,7 +564,7 @@ const styles = StyleSheet.create({
   largeThumbWrap: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.statsBackground, // see viewTabActive note above — same approximation
+    borderColor: colors.statsBackground, 
     backgroundColor: colors.cardBackground,
     padding: 12,
     alignItems: 'center',
