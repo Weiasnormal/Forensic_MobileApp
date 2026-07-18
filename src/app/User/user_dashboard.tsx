@@ -148,7 +148,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 			return;
 		}
 
-		nav.push(`/analysis/signature/results/${item.caseId}`);
+		nav.push(`/analysis/signature/signature_results`);
 	};
 
 	return (

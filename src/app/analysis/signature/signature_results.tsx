@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -71,6 +71,20 @@ function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string,
 export function SignatureResultsScreen() {
   const router = useRouter();
   const nav = router as any;
+
+  const params = useLocalSearchParams<{ caseId?: string }>();
+  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
+
+  useEffect(() => {
+    if (params.caseId) {
+      setActiveSignatureCaseId(params.caseId);
+    }
+
+    return () => {
+      setActiveSignatureCaseId(null);
+    };
+  }, [params.caseId, setActiveSignatureCaseId]);
+
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
 

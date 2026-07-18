@@ -168,7 +168,7 @@ export default function SignatureProcessingRoute() {
     const doneTimer = setTimeout(() => {
       setIsCompleteFired(true);
       if (submissionStatus === 'success' && currentCaseId) {
-        nav.replace(`/analysis/signature/results/${currentCaseId}`);
+        nav.replace(`/analysis/signature/signature_results`);
       }
     }, 200);
     return () => clearTimeout(doneTimer);

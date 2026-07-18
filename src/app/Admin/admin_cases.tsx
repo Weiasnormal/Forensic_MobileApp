@@ -209,7 +209,7 @@ export default function AdminCasesScreen() {
 								if (item.analysisType === 'HW') {
 									nav.push('/analysis/handwriting/results');
 								} else {
-									nav.push(`/analysis/signature/results/${item.caseId}`);
+									nav.push(`/analysis/signature/signature_results`);
 								}
 							}}
 						/>
