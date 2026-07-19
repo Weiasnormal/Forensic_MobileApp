@@ -6,30 +6,32 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
-
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import {
+    findOverlayImage, 
+    REFERENCE_SLOTS,
     getSignatureAnalysisCaseStatus,
     getSignatureAnalysisVerdictLabel,
-    parseGradcamBlobIds,
     resolveCaseVerdict,
-    type OverlayVariant,
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
+    type OverlayVariant,
 } from '@/services/signatureAnalysis';
 import { API_ENDPOINTS, buildApiUrl } from '../../../constants/api';
 import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
 
 const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
+
 const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
-  'Heatmap': 'overlay',
-  'Bounding Box': 'bbox',
-  'Stroke Diff': 'stroke_diff',
+  'Heatmap': 'Overlay',
+  'Bounding Box': 'Bbox',
+  'Stroke Diff': 'StrokeDiff',
 };
+
 type ViewMode = SignatureAnalysisViewMode;
 
 const VIEW_MODE_THEME: Record<ViewMode, { bg: string; edge: string; badge: string }> = {
@@ -110,26 +112,22 @@ export function SignatureResultsScreen() {
     return buildPayloadRows(analysisResult, verdictLabel, currentCase);
   }, [analysisResult, currentCase]);
 
-  const gradcamSlots = useMemo(
-    () => parseGradcamBlobIds(analysisResult?.gradcam_blob_ids ?? []),
-    [analysisResult],
-  );
-
   const referenceOverlayUris = useMemo(() => {
-    return gradcamSlots.references.map((refSlot) => {
-      const ref = refSlot[VIEW_MODE_TO_VARIANT[activeView]];
+  const variant = VIEW_MODE_TO_VARIANT[activeView];
+    return REFERENCE_SLOTS.map((slot) => {
+      const ref = findOverlayImage(analysisResult?.overlay_images, slot, variant);
       return currentCaseId && ref
-        ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.folder, ref.fileName))
+        ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.id))
         : null;
     });
-  }, [currentCaseId, gradcamSlots, activeView]);
+  }, [currentCaseId, analysisResult, activeView]);
 
   const suspectOverlayUri = useMemo(() => {
-    const ref = gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]];
+    const ref = findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]);
     return currentCaseId && ref
-      ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.folder, ref.fileName))
+      ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.id))
       : null;
-  }, [currentCaseId, gradcamSlots, activeView]);
+  }, [currentCaseId, analysisResult, activeView]);
 
   // Prefetch all overlay images to reduce flicker when switching views
   useEffect(() => {
@@ -339,7 +337,7 @@ export function SignatureResultsScreen() {
             <Pressable
               style={styles.largeThumbWrap}
               onPress={() => {
-                const hasOverlay = Boolean(gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]]);
+                const hasOverlay = Boolean(findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]));
                 openPreview(
                   { uri: hasOverlay ? suspectOverlayUri! : uploadedSuspect.split('?')[0] },
                   hasOverlay ? `Suspected Signature — ${activeView}` : 'Uploaded Suspected Signature'
@@ -347,7 +345,7 @@ export function SignatureResultsScreen() {
               }}
             >
               <View style={styles.largeThumbImageWrap}>
-                {gradcamSlots.suspect[VIEW_MODE_TO_VARIANT[activeView]] ? (
+                {findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]) ? (
                   <ExpoImage
                     source={{ uri: suspectOverlayUri! }}
                     style={StyleSheet.absoluteFill}
