@@ -54,7 +54,7 @@ export const API_ENDPOINTS = {
     //updateResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
   },
   ml: {
-  getBlobImage: (caseId: string, folder: string, fileName: string) =>
-    `/cases/${caseId}/blob/${folder}/${fileName}`,
+  getBlobImage: (caseId: string, imageId: string) =>
+    `/cases/${caseId}/images/${imageId}`,
 },
 } as const;
