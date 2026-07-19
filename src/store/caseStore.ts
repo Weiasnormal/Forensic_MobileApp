@@ -4,10 +4,32 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl } from '@/constants/api';
-import {
-    getSignatureAnalysisCaseStatus,
-    type SignatureAnalysisResult,
-} from '@/services/signatureAnalysis';
+import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
+
+const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
+const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'Bbox', 'StrokeDiff'];
+
+function parseOverlayImages(raw: unknown): OverlayImageRef[] {
+  if (!Array.isArray(raw)) return [];
+
+  const result: OverlayImageRef[] = [];
+
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null) continue;
+
+    const id = (entry as any).id ?? (entry as any).Id;
+    const slot = (entry as any).slot ?? (entry as any).Slot;
+    const variant = (entry as any).variant ?? (entry as any).Variant;
+
+    if (typeof id !== 'string' || !id.trim()) continue;
+    if (!VALID_SLOTS.includes(slot)) continue;
+    if (!VALID_VARIANTS.includes(variant)) continue;
+
+    result.push({ id, slot, variant });
+  }
+
+  return result;
+}
 
 const caseLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -614,7 +636,15 @@ export const useCaseStore = create<CaseStore>()(
                 const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
                 const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
                 const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
-                const gradcamBlobIds = processResponse?.GradcamBlobIds ?? processResponse?.gradcam_blob_ids ?? [];
+                const rawOverlayImages = processResponse?.OverlayImages ?? processResponse?.overlay_images ?? [];
+                const overlayImages = parseOverlayImages(rawOverlayImages);
+
+                if (rawOverlayImages.length > 0 && overlayImages.length === 0) {
+                  caseLog.warn('CaseStore:Submit', 'All overlay image entries failed validation and were dropped', {
+                    caseId,
+                    rawCount: rawOverlayImages.length,
+                  });
+                }
 
                 if (verdict) {
                   finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
@@ -625,7 +655,7 @@ export const useCaseStore = create<CaseStore>()(
                   confidence_forged: confidenceForged,
                   confidence_genuine: confidenceGenuine,
                   distance,
-                  gradcam_blob_ids: gradcamBlobIds,
+                  overlay_images: overlayImages,
                   threshold,
                   verdict: verdict as any,
                   Verdict: verdict as any,
