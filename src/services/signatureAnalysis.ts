@@ -5,7 +5,8 @@ export interface SignatureAnalysisResult {
   confidence_forged: number;
   confidence_genuine: number;
   distance: number;
-  gradcam_blob_ids: string[];
+  
+  overlay_images: OverlayImageRef[];
 
   threshold?: number;
   Threshold?: number;
@@ -14,6 +15,25 @@ export interface SignatureAnalysisResult {
 
   report_filename?: string; 
   analysisTimeMs?: number;
+}
+
+export type OverlaySlot = 'Reference1' | 'Reference2' | 'Reference3' | 'Reference4' | 'Suspected';
+export type OverlayVariant = 'Original' | 'Heatmap' | 'Overlay' | 'Bbox' | 'StrokeDiff';
+
+export interface OverlayImageRef {
+  id: string;        
+  slot: OverlaySlot;
+  variant: OverlayVariant;
+}
+
+export const REFERENCE_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4'];
+
+export function findOverlayImage(
+  overlayImages: OverlayImageRef[] | undefined,
+  slot: OverlaySlot,
+  variant: OverlayVariant,
+): OverlayImageRef | undefined {
+  return overlayImages?.find((item) => item.slot === slot && item.variant === variant);
 }
 
 export interface ResolvedCaseVerdict {
@@ -49,48 +69,6 @@ export function getSignatureAnalysisCaseStatus(result: SignatureAnalysisResult):
   return verdict === 'FORGED' ? 'Suspected' : 'Genuine';
 }
 
-export type OverlayVariant = 'original' | 'heatmap' | 'overlay' | 'bbox' | 'stroke_diff';
-
-export interface BlobImageRef {
-  folder: string;
-  fileName: string;
-}
-
-export interface ParsedGradcamSlots {
-  references: Record<OverlayVariant, BlobImageRef | null>[];
-  suspect: Record<OverlayVariant, BlobImageRef | null>;
-}
-
-export function parseGradcamBlobIds(blobIds: string[]): ParsedGradcamSlots {
-  const empty = (): Record<OverlayVariant, BlobImageRef | null> => ({
-    original: null, heatmap: null, overlay: null, bbox: null, stroke_diff: null,
-  });
-
-  const references = [empty(), empty(), empty(), empty()];
-  const suspect = empty();
-
-  for (const path of blobIds) {
-    if (!path.endsWith('.png')) continue;
-    const segments = path.split('/');
-    const folder = segments[segments.length - 2];
-    const fileName = segments[segments.length - 1];
-
-    const variantMatch = fileName.match(/_(original|heatmap|overlay|bbox|stroke_diff)\.png$/i);
-    if (!variantMatch) continue;
-    const variant = variantMatch[1] as OverlayVariant;
-
-    const ref: BlobImageRef = { folder, fileName };
-
-    if (folder === 'suspected') {
-      suspect[variant] = ref;
-    } else {
-      const idx = Number(folder.replace('genuine_', '')) - 1;
-      if (idx >= 0 && idx <= 3) references[idx][variant] = ref;
-    }
-  }
-
-  return { references, suspect };
-}
 
 export function resolveCaseVerdict(
   currentCase: VerdictSource,
