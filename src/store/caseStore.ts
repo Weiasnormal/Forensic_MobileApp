@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { fetchBackendCases } from '@/services/backendCases';
-import { API_ENDPOINTS, buildApiUrl } from '@/constants/api';
+import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
 
 const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
@@ -492,6 +492,7 @@ export const useCaseStore = create<CaseStore>()(
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
+                'X-Api-Key': API_KEY || '',
               },
               body: JSON.stringify(createRequest),
             });
@@ -582,7 +583,10 @@ export const useCaseStore = create<CaseStore>()(
 
               const upRes = await fetch(uploadPath, {
                 method: 'POST',
-                headers: { Accept: 'application/json' },
+                headers: { 
+                  Accept: 'application/json',
+                  'X-Api-Key': API_KEY || '',
+                },
                 body: fd as any,
               });
 
@@ -607,7 +611,10 @@ export const useCaseStore = create<CaseStore>()(
               const upPath = buildApiUrl(`${API_ENDPOINTS.signatures.uploadSuspected(caseId)}?index=1`);
               const upRes = await fetch(upPath, {
                 method: 'POST',
-                headers: { Accept: 'application/json' },
+                headers: { 
+                  Accept: 'application/json',
+                  'X-Api-Key': API_KEY || '',
+                },
                 body: fd as any,
               });
 
@@ -620,7 +627,13 @@ export const useCaseStore = create<CaseStore>()(
             set({ submissionStep: 'Running AI forensic comparison', submissionProgress: 65 });
             set({ submissionStep: 'Analyzing forensic features', submissionProgress: 72 });
 
-            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { method: 'GET' });
+            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { 
+              method: 'GET',
+              headers: {
+                Accept: 'application/json',
+                'X-Api-Key': API_KEY || '',
+              },
+            });
             const timeTakenMs = Date.now() - startTime;
 
             let analysisResult: any = null;

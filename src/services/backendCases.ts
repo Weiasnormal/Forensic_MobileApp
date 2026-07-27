@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, buildApiUrl } from '@/constants/api';
+import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 
 import type { AnalysisPriority, AnalysisType, CaseStatus, SavedCase } from '@/store/caseStore';
 
@@ -119,6 +119,7 @@ export async function fetchBackendCases() {
     method: 'GET',
     headers: {
       Accept: 'application/json',
+      'X-Api-Key': API_KEY || '',
     },
   });
 

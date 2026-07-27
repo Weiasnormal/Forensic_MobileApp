@@ -1,6 +1,8 @@
 export const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL;
 export const API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL;
 
+export const API_KEY = process.env.EXPO_PUBLIC_AVERA_API_KEY;
+
 export function buildApiUrl(path: string) {
   if (/^https?:\/\//i.test(path)) {
     return path;
