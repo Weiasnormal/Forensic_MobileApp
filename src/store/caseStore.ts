@@ -7,17 +7,18 @@ import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
 
 const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
-const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'Bbox', 'StrokeDiff'];
+const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'BoundingBox', 'StrokeDiff'];
 
 function parseOverlayImages(raw: unknown): OverlayImageRef[] {
   if (!Array.isArray(raw)) return [];
-
   const result: OverlayImageRef[] = [];
 
   for (const entry of raw) {
     if (typeof entry !== 'object' || entry === null) continue;
 
-    const id = (entry as any).id ?? (entry as any).Id;
+    const id =
+      (entry as any).image_id ?? (entry as any).ImageId ??
+      (entry as any).id ?? (entry as any).Id;
     const slot = (entry as any).slot ?? (entry as any).Slot;
     const variant = (entry as any).variant ?? (entry as any).Variant;
 
@@ -27,7 +28,6 @@ function parseOverlayImages(raw: unknown): OverlayImageRef[] {
 
     result.push({ id, slot, variant });
   }
-
   return result;
 }
 
@@ -649,8 +649,9 @@ export const useCaseStore = create<CaseStore>()(
                 const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
                 const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
                 const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
-                const rawOverlayImages = processResponse?.OverlayImages ?? processResponse?.overlay_images ?? [];
-                const overlayImages = parseOverlayImages(rawOverlayImages);
+                const rawOverlayImages = processResponse?.GradcamImages ??processResponse?.gradcam_images ??
+                processResponse?.OverlayImages ?? processResponse?.overlay_images ??[];
+              const overlayImages = parseOverlayImages(rawOverlayImages);
 
                 if (rawOverlayImages.length > 0 && overlayImages.length === 0) {
                   caseLog.warn('CaseStore:Submit', 'All overlay image entries failed validation and were dropped', {
