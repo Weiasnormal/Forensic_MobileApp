@@ -18,7 +18,7 @@ export interface SignatureAnalysisResult {
 }
 
 export type OverlaySlot = 'Reference1' | 'Reference2' | 'Reference3' | 'Reference4' | 'Suspected';
-export type OverlayVariant = 'Original' | 'Heatmap' | 'Overlay' | 'Bbox' | 'StrokeDiff';
+export type OverlayVariant = 'Original' | 'Heatmap' | 'Overlay' | 'BoundingBox' | 'StrokeDiff';
 
 export interface OverlayImageRef {
   id: string;        
