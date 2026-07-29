@@ -20,15 +20,29 @@ import {
     type SignatureAnalysisViewMode,
     type OverlayVariant,
 } from '@/services/signatureAnalysis';
-import { API_ENDPOINTS, buildApiUrl } from '../../../constants/api';
+import { API_ENDPOINTS, buildApiUrl, API_KEY } from '../../../constants/api';
 import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
 
+const getAuthImageSource = (uri?: string | null) => {
+  if (!uri) return undefined;
+
+  if (uri.startsWith('file://') || uri.startsWith('data:')) {
+    return { uri };
+  }
+  
+  return {
+    uri,
+    headers: {
+      'X-Api-Key': API_KEY || '',
+    },
+  };
+};
 const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
 
 const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
   'Heatmap': 'Overlay',
-  'Bounding Box': 'Bbox',
+  'Bounding Box': 'BoundingBox',
   'Stroke Diff': 'StrokeDiff',
 };
 
