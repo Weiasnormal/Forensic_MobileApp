@@ -146,14 +146,14 @@ export function SignatureResultsScreen() {
   // Prefetch all overlay images to reduce flicker when switching views
   useEffect(() => {
     const refs = currentCase?.uploads.references ?? [];
-    const urisToPrefetch = [
-      ...refs.filter(Boolean).map((uri) => uri!.split('?')[0]),
-      suspectOverlayUri,
-      ...referenceOverlayUris,
-    ].filter(Boolean) as string[];
+    const localUris = refs.filter(Boolean).map((uri) => uri!.split('?')[0]);
+    const backendUris = [suspectOverlayUri, ...referenceOverlayUris].filter(Boolean) as string[];
 
-    if (urisToPrefetch.length > 0) {
-      ExpoImage.prefetch(urisToPrefetch);
+    if (localUris.length > 0) {
+      ExpoImage.prefetch(localUris);
+    }
+    if (backendUris.length > 0) {
+      ExpoImage.prefetch(backendUris, { headers: { 'X-Api-Key': API_KEY || '' } });
     }
   }, [currentCase, suspectOverlayUri, referenceOverlayUris]);
 
@@ -325,7 +325,7 @@ export function SignatureResultsScreen() {
                   >
                     <View style={styles.thumbImageWrap}>
                       <ExpoImage
-                        source={{ uri: displayUri }}
+                        source={ getAuthImageSource(displayUri)}
                         style={StyleSheet.absoluteFill}
                         contentFit="cover"
                       />
@@ -360,18 +360,18 @@ export function SignatureResultsScreen() {
             >
               <View style={styles.largeThumbImageWrap}>
                 {findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]) ? (
-                  <ExpoImage
-                    source={{ uri: suspectOverlayUri! }}
-                    style={StyleSheet.absoluteFill}
-                    contentFit="contain"
-                  />
-                ) : (
-                  <ExpoImage
-                    source={{ uri: uploadedSuspect.split('?')[0] }}
-                    style={StyleSheet.absoluteFill}
-                    contentFit="contain"
-                  />
-                )}
+                <ExpoImage
+                  source={getAuthImageSource(suspectOverlayUri)}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
+                />
+              ) : (
+                <ExpoImage
+                  source={{ uri: uploadedSuspect.split('?')[0] }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
+                />
+              )}
               </View>
 
               <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
@@ -394,9 +394,6 @@ export function SignatureResultsScreen() {
           </View>
           <View style={styles.findingsList}>
             {payloadRows.map((item) => {
-              // Exact match for the "genuine" case (statusGenuine); "suspected"
-              // case reuses colors.danger as the closest existing red (see
-              // resultCardTheme note above — not an exact hex match).
               const findingTone = isSuspected
                 ? { line: colors.danger, text: colors.danger }
                 : { line: colors.statusGenuine, text: colors.statusGenuine };
@@ -428,7 +425,7 @@ export function SignatureResultsScreen() {
             </View>
             {previewSource !== null ? (
               <View style={[styles.previewImage, { overflow: 'hidden' }]}>
-                <ExpoImage source={previewSource} style={StyleSheet.absoluteFill} contentFit="contain" />
+                <ExpoImage source={getAuthImageSource(previewSource.uri)} style={StyleSheet.absoluteFill} contentFit="contain" />
               </View>
             ) : null}
           </Pressable>
