@@ -178,12 +178,11 @@ function mergeCasesById(existingCases: SavedCase[], incomingCases: SavedCase[]) 
   });
 
   incomingCases.forEach((item) => {
-    
     const existing = mergedCases.get(item.caseId);
-    
     if (existing && existing.uploads && existing.uploads.suspect) {
-        item.uploads = existing.uploads;
+      item.uploads = existing.uploads;
     }
+    mergedCases.set(item.caseId, item); 
   });
 
   return Array.from(mergedCases.values());
