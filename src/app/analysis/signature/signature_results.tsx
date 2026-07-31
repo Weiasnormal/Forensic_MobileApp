@@ -11,12 +11,7 @@ import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import KeyFindingsModal from '@/_components/modals/key_findingsmodal';
-import {
-    findOverlayImage, 
-    REFERENCE_SLOTS,
-    getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisVerdictLabel,
-    resolveCaseVerdict,
+import { findOverlayImage, REFERENCE_SLOTS, getSignatureAnalysisCaseStatus, getSignatureAnalysisVerdictLabel, resolveCaseVerdict,
     type SignatureAnalysisResult,
     type SignatureAnalysisViewMode,
     type OverlayVariant,
