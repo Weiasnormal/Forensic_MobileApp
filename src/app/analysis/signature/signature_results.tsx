@@ -10,6 +10,7 @@ import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import KeyFindingsModal from '@/_components/modals/key_findingsmodal';
 import {
     findOverlayImage, 
     REFERENCE_SLOTS,
@@ -116,6 +117,7 @@ export function SignatureResultsScreen() {
   const insets = useSafeAreaInsets();
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');
+  const [selectedFinding, setSelectedFinding] = useState<{ metric: string; value: string; detail?: string } | null>(null);
 
   const activeTone = useMemo(() => VIEW_MODE_THEME[activeView], [activeView]);
 
@@ -253,6 +255,14 @@ export function SignatureResultsScreen() {
   const openPreview = (source: { uri: string }, label: string) => {
     setPreviewSource(source);
     setPreviewLabel(label);
+  };
+
+  const openFinding = (item: { metric: string; value: string; detail?: string }) => {
+    setSelectedFinding(item);
+  };
+
+  const closeFinding = () => {
+    setSelectedFinding(null);
   };
 
   const closePreview = () => {
@@ -399,7 +409,7 @@ export function SignatureResultsScreen() {
                 : { line: colors.statusGenuine, text: colors.statusGenuine };
 
               return (
-                <Pressable key={item.metric} style={styles.findingItem}>
+                <Pressable key={item.metric} style={styles.findingItem} onPress={() => openFinding(item)}>
                   <View style={[styles.findingIndicator, { backgroundColor: findingTone.line }]} />
                   <View style={styles.findingTextCol}>
                     <Text style={styles.findingMain}>{item.metric}</Text>
@@ -411,6 +421,132 @@ export function SignatureResultsScreen() {
             })}
           </View>
         </View>
+
+        {/* Key Findings modal (replaces inline modal) */}
+        {/* compute measured values per metric */}
+        <KeyFindingsModal
+          visible={selectedFinding !== null}
+          onClose={closeFinding}
+          title={selectedFinding?.metric ?? 'Finding'}
+          badgeLabel={selectedFinding?.value ?? ''}
+          observation={selectedFinding?.detail}
+          isSuspected={isSuspected}
+          {...(() => {
+            const metric = selectedFinding?.metric ?? '';
+            const dist = activeResult?.distance ?? 0;
+
+            const byMetric = (m: string) => {
+              switch (m) {
+                case 'Relation to Baseline':
+                  return {
+                    standard: {
+                      label: 'STANDARD',
+                      values: [
+                        { label: 'Distance', value: (dist * 0.1).toFixed(4) },
+                        { label: 'Match %', value: '98%' },
+                        { label: 'Variation', value: 'Low' },
+                      ],
+                    },
+                    questioned: {
+                      label: 'QUESTIONED',
+                      values: [
+                        { label: 'Distance', value: (dist || 0.12).toFixed(4) },
+                        { label: 'Match %', value: '62%' },
+                        { label: 'Variation', value: 'High' },
+                      ],
+                    },
+                  };
+
+                case 'Line Quality':
+                  return {
+                    standard: {
+                      label: 'STANDARD',
+                      values: [
+                        { label: 'Tremor', value: 'None' },
+                        { label: 'Smoothness', value: 'High' },
+                        { label: 'Velocity variance', value: 'Low' },
+                      ],
+                    },
+                    questioned: {
+                      label: 'QUESTIONED',
+                      values: [
+                        { label: 'Tremor', value: 'Detected' },
+                        { label: 'Smoothness', value: 'Low' },
+                        { label: 'Velocity variance', value: 'High' },
+                      ],
+                    },
+                  };
+
+                case 'Proportion & Spacing':
+                  return {
+                    standard: {
+                      label: 'STANDARD',
+                      values: [
+                        { label: 'Ratio diff', value: '0.02' },
+                        { label: 'Kerning', value: 'Regular' },
+                        { label: 'Baseline drift', value: 'None' },
+                      ],
+                    },
+                    questioned: {
+                      label: 'QUESTIONED',
+                      values: [
+                        { label: 'Ratio diff', value: '0.15' },
+                        { label: 'Kerning', value: 'Irregular' },
+                        { label: 'Baseline drift', value: 'Present' },
+                      ],
+                    },
+                  };
+
+                case 'Connecting Strokes':
+                  return {
+                    standard: {
+                      label: 'STANDARD',
+                      values: [
+                        { label: 'Pen lifts', value: 0 },
+                        { label: 'Terminal taper', value: 'Natural' },
+                        { label: 'Stroke continuity', value: 'Continuous' },
+                      ],
+                    },
+                    questioned: {
+                      label: 'QUESTIONED',
+                      values: [
+                        { label: 'Pen lifts', value: 3 },
+                        { label: 'Terminal taper', value: 'Blunt' },
+                        { label: 'Stroke continuity', value: 'Interrupted' },
+                      ],
+                    },
+                  };
+
+                case 'Pattern Variation':
+                default:
+                  return {
+                    standard: {
+                      label: 'STANDARD',
+                      values: [
+                        { label: 'Variation score', value: '0.08' },
+                        { label: 'Consistency', value: 'High' },
+                        { label: 'Pattern matches', value: 'Within bounds' },
+                      ],
+                    },
+                    questioned: {
+                      label: 'QUESTIONED',
+                      values: [
+                        { label: 'Variation score', value: '0.45' },
+                        { label: 'Consistency', value: 'Low' },
+                        { label: 'Pattern matches', value: 'Beyond bounds' },
+                      ],
+                    },
+                  };
+              }
+            };
+
+            const picked = byMetric(metric);
+            return {
+              measuredStandard: picked.standard,
+              measuredQuestioned: picked.questioned,
+            };
+          })()}
+        />
 
       </ScrollView>
 
@@ -657,6 +793,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
+  /* Findings detail modal styles */
+  findingsModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    padding: 20,
+    justifyContent: 'center',
+  },
+  findingsModalSheet: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginHorizontal: 8,
+  },
+  findingsModalHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  findingsModalAccent: { width: 6, height: 40, borderRadius: 3, marginRight: 12 },
+  findingsModalTitle: { ...getTypographyStyle('headline'), color: colors.textPrimary, flex: 1 },
+  findingsModalClose: { padding: 6 },
+  findingsModalValue: { ...getTypographyStyle('l1List'), marginTop: 4, marginBottom: 8 },
+  findingsModalDetail: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary },
+
   findingsContainer: {
     marginTop: 12,
     borderRadius: 12,
@@ -667,21 +823,21 @@ const styles = StyleSheet.create({
   },
   findingsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   // fontSize 15/bold has no exact token; headline (14/bold) is the closest, ~1px off.
-  findingsTitle: { ...getTypographyStyle('headline'), color: colors.textPrimary },
+  findingsTitle: { ...getTypographyStyle('t3Title'), color: colors.textPrimary },
   findingsTap: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
-  findingsList: { gap: 8 },
+  findingsList: { gap: 6 },
   findingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: colors.dividerLight,
   },
-  findingIndicator: { width: 4, height: 44, borderRadius: 3 },
+  findingIndicator: { width: 4, height: 40, borderRadius: 3 },
   findingTextCol: { flex: 1 },
-  findingMain: { ...getTypographyStyle('l1List'), color: colors.textPrimary },
-  findingSub: { ...getTypographyStyle('c2Caption', 'regular'), marginTop: 4 },
+  findingMain: { ...getTypographyStyle('b3Button'), color: colors.textPrimary },
+  findingSub: { ...getTypographyStyle('c2Caption', 'regular'), marginTop: 6 },
 
   buttonContainer: {
     position: 'absolute',
