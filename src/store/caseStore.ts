@@ -510,7 +510,9 @@ export const useCaseStore = create<CaseStore>()(
                 rawCaseId = (json.id ?? json).toString();
                 caseCode = json.caseCode ?? json.CaseCode ?? null;
               }
-            } catch (_) {}
+            } catch {
+              // intentionally ignore malformed/non-JSON responses
+            }
 
             if (!rawCaseId) {
               const loc = createRes.headers.get('Location') || createRes.headers.get('location');

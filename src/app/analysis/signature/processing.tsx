@@ -131,7 +131,6 @@ export default function SignatureProcessingRoute() {
   }, []);
 
   const progress = displayProgress;
-  const isComplete = progress >= 100;
   const stepWidth = 100 / PROCESSING_STEPS.length;
   const activeStepIndex = Math.min(PROCESSING_STEPS.length - 1, Math.floor(progress / stepWidth));
   const hero = useMemo(() => getHeroContent(progress), [progress]);

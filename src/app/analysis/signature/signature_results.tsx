@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 18,
     marginBottom: 8,
-    shadowColor: '#000000', // no black token exists in colors.ts; native shadow color, left as-is
+    shadowColor: '#000000', 
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -667,8 +667,6 @@ const styles = StyleSheet.create({
     borderColor: colors.dividerLight,
     backgroundColor: colors.cardBackground,
   },
-  // #F1F5F9 has no exact token match; closest available (~10 hex units off)
-  // is statsBackground. Flagging as an approximation, not exact.
   viewTabActive: { backgroundColor: colors.cardBackground, borderColor: colors.statsBackground },
   viewTabText: { ...getTypographyStyle('b3Button'), color: colors.textSecondary },
   viewTabTextActive: { color: colors.textPrimary },
@@ -817,7 +815,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   findingsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  // fontSize 15/bold has no exact token; headline (14/bold) is the closest, ~1px off.
   findingsTitle: { ...getTypographyStyle('t3Title'), color: colors.textPrimary },
   findingsTap: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
   findingsList: { gap: 6 },
