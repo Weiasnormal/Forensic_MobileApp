@@ -8,7 +8,6 @@ import SignOutButton from '@/_components/common/SignOutButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import LogoutModal from '@/_components/modals/logout';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
-import { StatusBar } from 'expo-status-bar';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useUser } from '@/store/userStore';
@@ -27,6 +26,8 @@ export default function UserProfileScreen() {
 	const { user, load } = useUser();
 	const cases = useCaseStore((state) => state.cases);
 	const resetMockDatabase = useCaseStore((state) => state.resetMockDatabase);
+	const allowUploadSourceChoice = useCaseStore((state) => state.allowUploadSourceChoice);
+	const setAllowUploadSourceChoice = useCaseStore((state) => state.setAllowUploadSourceChoice);
 	const { totalCases, genuineCount, suspectCount } = getCaseSummary(cases);
 
 	useFocusEffect(
@@ -130,6 +131,14 @@ export default function UserProfileScreen() {
 							}
 						}}
 					/>
+							<Divider />
+							<ToggleRow
+								icon={Upload}
+								title="Choose Camera or Gallery"
+								subtitle="When enabled, uploads let you pick between the camera and the image library."
+								value={allowUploadSourceChoice}
+								onValueChange={setAllowUploadSourceChoice}
+							/>
 				</GroupedCard>
 
 				<SecondaryButton

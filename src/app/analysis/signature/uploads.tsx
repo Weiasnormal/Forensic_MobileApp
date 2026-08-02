@@ -16,6 +16,7 @@ export default function SignatureUploadsRoute() {
   const router = useRouter();
   const nav = router as any;
   const insets = useSafeAreaInsets();
+  const allowUploadSourceChoice = useCaseStore((state) => state.allowUploadSourceChoice);
   const [currentUploadTarget, setCurrentUploadTarget] = useState<'reference' | 'suspect' | null>(null);
   const [currentReferenceIndex, setCurrentReferenceIndex] = useState<number | null>(null);
   const [showSourcePicker, setShowSourcePicker] = useState(false);
@@ -39,7 +40,15 @@ export default function SignatureUploadsRoute() {
     }, [nav])
   );
 
-  const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
+  const applyScannedUpload = (target: 'reference' | 'suspect', refIndex: number | undefined, scannedUri: string) => {
+    if (target === 'reference' && refIndex !== undefined) {
+      setDraftUpload('reference', refIndex, scannedUri);
+    } else if (target === 'suspect') {
+      setDraftUpload('suspect', 0, scannedUri);
+    }
+  };
+
+  const startCameraScan = async (target: 'reference' | 'suspect', refIndex?: number) => {
     if (target === 'suspect') {
       const allRefsFilled = uploads.references.every(Boolean);
       if (!allRefsFilled) {
@@ -51,18 +60,20 @@ export default function SignatureUploadsRoute() {
       }
     }
 
-    setCurrentUploadTarget(target);
-    if (refIndex !== undefined) {
-      setCurrentReferenceIndex(refIndex);
+    await scanForensicDocument((scannedUri) => {
+      applyScannedUpload(target, refIndex, scannedUri);
+    });
+  };
+
+  const handleUploadPress = (target: 'reference' | 'suspect', refIndex?: number) => {
+    if (allowUploadSourceChoice) {
+      setCurrentUploadTarget(target);
+      setCurrentReferenceIndex(refIndex ?? null);
+      setShowSourcePicker(true);
+      return;
     }
 
-    scanForensicDocument((scannedUri) => {
-      if (target === 'reference' && refIndex !== undefined) {
-        setDraftUpload('reference', refIndex, scannedUri);
-      } else if (target === 'suspect') {
-        setDraftUpload('suspect', 0, scannedUri);
-      }
-    });
+    void startCameraScan(target, refIndex);
   };
 
   const handleSubmit = () => {
@@ -108,7 +119,7 @@ export default function SignatureUploadsRoute() {
                       return;
                     }
 
-                    handleCameraPress('reference', index);
+                    handleUploadPress('reference', index);
                   }}
                   style={[styles.uploadSlot, uri && styles.uploadSlotFilled]}
                 >
@@ -155,7 +166,7 @@ export default function SignatureUploadsRoute() {
               return;
             }
 
-            handleCameraPress('suspect');
+            handleUploadPress('suspect');
           }}
           style={[styles.suspectSlot, uploads.suspect && styles.suspectSlotFilled]}
         >
@@ -206,13 +217,7 @@ export default function SignatureUploadsRoute() {
 
           try {
             if (choice === 'camera') {
-              await scanForensicDocument((scannedUri) => {
-                if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
-                  setDraftUpload('reference', currentReferenceIndex, scannedUri);
-                } else if (currentUploadTarget === 'suspect') {
-                  setDraftUpload('suspect', 0, scannedUri);
-                }
-              });
+              await startCameraScan(currentUploadTarget ?? 'suspect', currentReferenceIndex ?? undefined);
               return;
             }
 

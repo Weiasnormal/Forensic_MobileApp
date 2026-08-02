@@ -97,6 +97,7 @@ interface CaseStore {
   nextMockTemplateNumber: number;
   activeSignatureCaseId: string | null;
   hiddenSavedCases: SavedCase[] | null;
+  allowUploadSourceChoice: boolean;
   signatureAnalysisResults: Record<string, SignatureAnalysisResult>;
   markCaseResultViewed: (caseId: string) => void;
   updateCaseStatus: (caseId: string, status: CaseStatus) => void;
@@ -105,6 +106,7 @@ interface CaseStore {
   refreshCasesFromBackend: () => Promise<boolean>;
   stashSavedCases: () => void;
   restoreSavedCases: () => void;
+  setAllowUploadSourceChoice: (value: boolean) => void;
   startNewSignatureDraft: () => void;
   discardSignatureDraft: () => void;
   updateDraftCase: <K extends DraftEditableField>(field: K, value: DraftCase[K]) => void;
@@ -280,6 +282,7 @@ export const useCaseStore = create<CaseStore>()(
         nextMockTemplateNumber: 1,
         activeSignatureCaseId: null,
         hiddenSavedCases: null,
+        allowUploadSourceChoice: false,
         signatureAnalysisResults: {},
 
         submissionStatus: 'idle',
@@ -379,6 +382,11 @@ export const useCaseStore = create<CaseStore>()(
               hiddenSavedCases: null,
             } as Partial<CaseStore> as CaseStore;
           });
+        },
+
+        setAllowUploadSourceChoice: (value) => {
+          caseLog.info('CaseStore:Action', 'Setting upload source choice preference', { value });
+          set({ allowUploadSourceChoice: value });
         },
 
         startNewSignatureDraft: () => {
@@ -769,6 +777,7 @@ export const useCaseStore = create<CaseStore>()(
         nextCaseNumber: state.nextCaseNumber,
         activeSignatureCaseId: state.activeSignatureCaseId,
         hiddenSavedCases: state.hiddenSavedCases,
+        allowUploadSourceChoice: state.allowUploadSourceChoice,
         signatureAnalysisResults: state.signatureAnalysisResults,
       }),
       merge: (persistedState, currentState) => {
