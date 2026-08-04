@@ -230,6 +230,11 @@ export function SignatureResultsScreen() {
       const { uri } = await FileSystem.downloadAsync(
         reportPdfUrl,
         localUri,
+        {
+          headers: {
+            'X-Api-Key': API_KEY || '',
+          },
+        },
       );
 
       if (await Sharing.isAvailableAsync()) {

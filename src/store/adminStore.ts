@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { buildApiUrl } from '@/constants/api';
+import { API_KEY, buildApiUrl } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
 import { MOCK_TEAM_MEMBERS } from '@/constants/adminMockData';
 
@@ -113,7 +113,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     try {
       const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.list), {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          'X-Api-Key': API_KEY || '',
+        },
       });
 
       if (!response.ok) {
@@ -174,7 +177,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     if (get().isUsingMockTeam) return;
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.approve(id)), { method: 'POST' });
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.approve(id)), {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': API_KEY || '',
+        },
+      });
       if (!response.ok) throw new Error(`Approve failed (${response.status})`);
     } catch (error) {
       adminLog.warn('AdminStore:Team', `Unable to approve member ${id} on the backend`, error);
@@ -190,7 +198,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     if (get().isUsingMockTeam) return;
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.reject(id)), { method: 'POST' });
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.reject(id)), {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': API_KEY || '',
+        },
+      });
       if (!response.ok) throw new Error(`Reject failed (${response.status})`);
     } catch (error) {
       adminLog.warn('AdminStore:Team', `Unable to reject member ${id} on the backend`, error);
@@ -207,7 +220,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     if (get().isUsingMockTeam) return;
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.suspend(id)), { method: 'POST' });
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.suspend(id)), {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': API_KEY || '',
+        },
+      });
       if (!response.ok) throw new Error(`Suspend failed (${response.status})`);
     } catch (error) {
       adminLog.warn('AdminStore:Team', `Unable to suspend member ${id} on the backend`, error);
@@ -219,6 +237,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     try {
       const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.invite), {
         method: 'POST',
+        headers: {
+          'X-Api-Key': API_KEY || '',
+        },
       });
 
       if (!response.ok) {
