@@ -18,6 +18,7 @@ import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User } from 'luc
 import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import DangerRow from '@/_components/admin/DangerRow';
 
 
 export default function UserProfileScreen() {
@@ -167,6 +168,7 @@ export default function UserProfileScreen() {
 				onCancel={() => setLogoutModalVisible(false)}
 				onLogout={handleConfirmSignOut}
 			/>
+
 		</SafeAreaView>
 	);
 }
