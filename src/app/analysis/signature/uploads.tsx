@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import PrimaryButton from '@/_components/common/PrimaryButton';
+import CameraDisclosureModal from '@/_components/modals/camera_disclosure';
 
 export default function SignatureUploadsRoute() {
   const router = useRouter();
@@ -28,6 +29,40 @@ export default function SignatureUploadsRoute() {
   const isSubmitting = useCaseStore((state) => state.isSubmitting);
   const canRun = hasCompleteUploads(uploads);
   const resetSubmissionState = useCaseStore((state) => state.resetSubmissionState);
+  const [showCameraDisclosure, setShowCameraDisclosure] = useState(false);
+  const [pendingUploadTarget, setPendingUploadTarget] = useState<{
+    target: 'reference' | 'suspect';
+    refIndex?: number;
+  } | null>(null);
+
+  const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
+    if (target === 'suspect') {
+      const allRefsFilled = uploads.references.every(Boolean);
+      if (!allRefsFilled) {
+        Alert.alert('Complete references first', '...');
+        return;
+      }
+    }
+    
+    setPendingUploadTarget({ target, refIndex });
+    setShowCameraDisclosure(true);
+  };
+
+  const confirmCameraDisclosure = () => {
+    setShowCameraDisclosure(false);
+    if (!pendingUploadTarget) return;
+
+    const { target, refIndex } = pendingUploadTarget;
+    scanForensicDocument((scannedUri) => {
+      if (target === 'reference' && refIndex !== undefined) {
+        setDraftUpload('reference', refIndex, scannedUri);
+      } else if (target === 'suspect') {
+        setDraftUpload('suspect', 0, scannedUri);
+      }
+    });
+    setPendingUploadTarget(null);
+  };
+
 
   useFocusEffect(
     useCallback(() => {
@@ -40,31 +75,6 @@ export default function SignatureUploadsRoute() {
     }, [nav])
   );
 
-  const applyScannedUpload = (target: 'reference' | 'suspect', refIndex: number | undefined, scannedUri: string) => {
-    if (target === 'reference' && refIndex !== undefined) {
-      setDraftUpload('reference', refIndex, scannedUri);
-    } else if (target === 'suspect') {
-      setDraftUpload('suspect', 0, scannedUri);
-    }
-  };
-
-  const startCameraScan = async (target: 'reference' | 'suspect', refIndex?: number) => {
-    if (target === 'suspect') {
-      const allRefsFilled = uploads.references.every(Boolean);
-      if (!allRefsFilled) {
-        Alert.alert(
-          'Complete references first',
-          'Please upload all 4 reference signatures (SIG 01–04) before adding the suspected signature.'
-        );
-        return;
-      }
-    }
-
-    await scanForensicDocument((scannedUri) => {
-      applyScannedUpload(target, refIndex, scannedUri);
-    });
-  };
-
   const handleUploadPress = (target: 'reference' | 'suspect', refIndex?: number) => {
     if (allowUploadSourceChoice) {
       setCurrentUploadTarget(target);
@@ -73,7 +83,7 @@ export default function SignatureUploadsRoute() {
       return;
     }
 
-    void startCameraScan(target, refIndex);
+    handleCameraPress(target, refIndex);
   };
 
   const handleSubmit = () => {
@@ -96,6 +106,7 @@ export default function SignatureUploadsRoute() {
     setPreviewUri(null);
     setPreviewLabel('');
   };
+
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -217,7 +228,7 @@ export default function SignatureUploadsRoute() {
 
           try {
             if (choice === 'camera') {
-              await startCameraScan(currentUploadTarget ?? 'suspect', currentReferenceIndex ?? undefined);
+              handleCameraPress(currentUploadTarget ?? 'suspect', currentReferenceIndex ?? undefined);
               return;
             }
 
@@ -305,6 +316,15 @@ export default function SignatureUploadsRoute() {
             console.warn('Gallery pick failed', e);
             Alert.alert('Error', 'Unable to pick image from gallery.');
           }
+        }}
+      />
+      
+      <CameraDisclosureModal
+        visible={showCameraDisclosure}
+        onConfirm={confirmCameraDisclosure}
+        onCancel={() => {
+          setShowCameraDisclosure(false);
+          setPendingUploadTarget(null);
         }}
       />
 
