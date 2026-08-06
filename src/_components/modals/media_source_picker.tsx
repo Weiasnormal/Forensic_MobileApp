@@ -3,7 +3,6 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text,  View, Alert} from 'react-native';
 import DocumentScanner, { ResponseType, ScanDocumentResponseStatus  } from 'react-native-document-scanner-plugin';
 
-
 interface Props {
   visible: boolean;
   onSelect: (choice: 'camera' | 'gallery') => void;
@@ -55,6 +54,10 @@ export default function MediaSourcePicker({ visible, onSelect, onCancel, title =
               <Text style={styles.message}>{message}</Text>
             </View>
           </View>
+
+          {__DEV__ && (
+            <Text style={styles.devBadge}>⚠ DEV ONLY — Production uses camera only</Text>
+          )}
 
           <View style={styles.twoColumnRow}>
             <Pressable style={[styles.optionButton, styles.primaryOption]} onPress={() => onSelect('camera')}>
@@ -192,4 +195,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  devBadge: {
+  fontSize: 11,
+  fontWeight: '800',
+  color: '#D97706',
+  backgroundColor: '#FEF3C7',
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 6,
+  alignSelf: 'flex-start',
+  marginBottom: 10,
+},
 });
