@@ -14,11 +14,12 @@ import { useUser } from '@/store/userStore';
 import { getCaseSummary, useCaseStore } from '@/store/caseStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User } from 'lucide-react-native';
+import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User, UserX } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import DangerRow from '@/_components/admin/DangerRow';
+import DeleteAccountModal from '@/_components/modals/delete_account';
 
 
 export default function UserProfileScreen() {
@@ -36,6 +37,8 @@ export default function UserProfileScreen() {
 			load();
 		}, [load]),
 	);
+	const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+	const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
@@ -161,14 +164,35 @@ export default function UserProfileScreen() {
 				/>
 
 				<SignOutButton style={styles.signOutSpacing} onPress={() => setLogoutModalVisible(true)} />
-			</ScrollView>
-
 			<LogoutModal
 				visible={logoutModalVisible}
 				onCancel={() => setLogoutModalVisible(false)}
 				onLogout={handleConfirmSignOut}
 			/>
-
+			<Divider />
+				<DangerRow
+				icon={UserX}
+				title="Delete Account"
+				subtitle="Permanently remove your login access"
+				onPress={() => setShowDeleteAccountModal(true)}
+				/>
+				<DeleteAccountModal
+				visible={showDeleteAccountModal}
+				isDeleting={isDeletingAccount}
+				onCancel={() => setShowDeleteAccountModal(false)}
+				onConfirm={async () => {
+					setIsDeletingAccount(true);
+					try {
+					// call your delete-account endpoint here once it exists
+					setShowDeleteAccountModal(false);
+					router.replace('/_login/SignInPage');
+					} catch (e) {
+					Alert.alert('Error', 'Unable to delete account. Please try again.');
+					} finally {
+					setIsDeletingAccount(false);
+					}
+				}}/>
+			</ScrollView>
 		</SafeAreaView>
 	);
 }

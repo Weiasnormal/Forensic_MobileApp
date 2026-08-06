@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Lock, Briefcase, Copy, Users, BarChart3, Bell, Upload, Info, FileText } from 'lucide-react-native';
+import { User, Lock, Briefcase, Copy, Users, BarChart3, Bell, Upload, Info, FileText, UserX } from 'lucide-react-native';
 import SectionLabel from '@/_components/common/SectionLabel';
 import GroupedCard from '@/_components/common/GroupedCard';
 import SettingsRow from '@/_components/common/SettingsRow';
@@ -13,7 +13,9 @@ import LogoutModal from '@/_components/modals/logout';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
-
+import DangerRow from '@/_components/admin/DangerRow';
+import DeleteAccountModal from '@/_components/modals/delete_account';
+import { router } from 'expo-router';
 
 interface ProfileScreenProps {
   initials: string;
@@ -56,7 +58,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
-
+  
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
         <ScreenStatusBar variant="onBrand" />
@@ -142,6 +146,29 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             onSignOutPress?.();
           }}
         />
+        <Divider />
+          <DangerRow
+            icon={UserX}
+            title="Delete Account"
+            subtitle="Permanently remove your login access"
+            onPress={() => setShowDeleteAccountModal(true)}
+          />
+          <DeleteAccountModal
+            visible={showDeleteAccountModal}
+            isDeleting={isDeletingAccount}
+            onCancel={() => setShowDeleteAccountModal(false)}
+            onConfirm={async () => {
+              setIsDeletingAccount(true);
+              try {
+                // call your delete-account endpoint here once it exists
+                setShowDeleteAccountModal(false);
+                router.replace('/_login/SignInPage');
+              } catch (e) {
+                Alert.alert('Error', 'Unable to delete account. Please try again.');
+              } finally {
+                setIsDeletingAccount(false);
+              }
+            }}/>
       </ScrollView>    
     </SafeAreaView>
   );
