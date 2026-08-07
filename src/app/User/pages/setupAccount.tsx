@@ -31,7 +31,7 @@ export default function SetupAccount() {
       if (permissionResult.status !== 'granted') return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 0.7,
         allowsEditing: true,
         aspect: [1, 1],
@@ -143,13 +143,15 @@ export default function SetupAccount() {
         visible={showSaveProfileModal}
         title="Save profile?"
         message="Do you want to save these profile changes?"
-        primaryLabel="Save profile"
-        secondaryLabel="No"
-        onContinue={() => {
+        saveLabel="Save profile"
+        discardLabel="No"
+        goBackLabel="Cancel"
+        onSaveDraft={() => {
           setShowSaveProfileModal(false);
           void handleSave();
         }}
-        onDismiss={() => setShowSaveProfileModal(false)}
+        onDiscard={() => setShowSaveProfileModal(false)}
+        onGoBack={() => setShowSaveProfileModal(false)}
       />
     </SafeAreaView>
   );

@@ -1,18 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import {
-	Animated,
-	Modal,
-	Pressable,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from 'react-native';
-
+import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAnalysisFlowStore } from '../../store/analysisFlowStore';
 import { useBottomSheetTransition } from '../transition';
+import { useCaseStore } from '../../store/caseStore';
 
 interface NewAnalysisModalProps {
 	visible: boolean;
@@ -57,16 +49,15 @@ export default function NewAnalysisModal({ visible, onClose }: NewAnalysisModalP
 	const router = useRouter();
 	const nav = router as any;
 	const initializeFlow = useAnalysisFlowStore((state) => state.initializeFlow);
+	const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
 
 	const handleOptionPress = (key: string) => {
 		if (key === 'signature') {
-			initializeFlow('signature');
+			startNewSignatureDraft();   
 			onClose();
-			setTimeout(() => {
-				nav.push('/analysis/signature/step1');
-			}, 220);
+			setTimeout(() => nav.push('/analysis/signature/step1'), 220);
 			return;
-		}
+	}
 
 		if (key === 'handwriting') {
 			initializeFlow('handwriting');

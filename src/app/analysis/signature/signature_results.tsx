@@ -576,6 +576,8 @@ export function SignatureResultsScreen() {
   );
 }
 
+export default SignatureResultsScreen;
+
 function TopBar({ title, step, onBackPress }: { title: string; step: string; onBackPress: () => void }) {
   return (
     <View style={styles.topBarWrapper}>
