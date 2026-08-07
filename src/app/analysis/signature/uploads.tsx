@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Plus } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -12,6 +13,57 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import CameraDisclosureModal from '@/_components/modals/camera_disclosure';
+
+const UPLOAD_DIRECTORY = `${FileSystem.documentDirectory ?? ''}case-uploads/`;
+
+function getFileExtension(uri: string): string {
+  const sanitizedUri = uri.split('?')[0].split('#')[0];
+  const lastSegment = sanitizedUri.split('/').pop() || '';
+  const lastDot = lastSegment.lastIndexOf('.');
+
+  if (lastDot <= 0 || lastDot === lastSegment.length - 1) {
+    return 'jpg';
+  }
+
+  const extension = lastSegment.slice(lastDot + 1).toLowerCase();
+  return /^[a-z0-9]+$/.test(extension) ? extension : 'jpg';
+}
+
+function addFingerprint(uri: string, identifier?: string): string {
+  if (!identifier) return uri;
+  const separator = uri.includes('?') ? '&' : '?';
+  return `${uri}${separator}id=${encodeURIComponent(identifier)}`;
+}
+
+async function persistUploadUri(sourceUri: string, label: string): Promise<string> {
+  const documentsRoot = FileSystem.documentDirectory;
+  if (!documentsRoot) {
+    return sourceUri;
+  }
+
+  if (sourceUri.startsWith(documentsRoot)) {
+    return sourceUri;
+  }
+
+  const ext = getFileExtension(sourceUri);
+  const fileName = `${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const targetUri = `${UPLOAD_DIRECTORY}${fileName}`;
+
+  try {
+    await FileSystem.makeDirectoryAsync(UPLOAD_DIRECTORY, { intermediates: true });
+
+    if (sourceUri.startsWith('content://')) {
+      await FileSystem.downloadAsync(sourceUri, targetUri);
+    } else {
+      await FileSystem.copyAsync({ from: sourceUri, to: targetUri });
+    }
+
+    return targetUri;
+  } catch (error) {
+    console.warn('Failed to persist selected image URI', { sourceUri, targetUri, error });
+    return sourceUri;
+  }
+}
 
 export default function SignatureUploadsRoute() {
   const router = useRouter();
@@ -27,7 +79,11 @@ export default function SignatureUploadsRoute() {
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
   const isSubmitting = useCaseStore((state) => state.isSubmitting);
-  const canRun = hasCompleteUploads(uploads);
+  const draftCase = useCaseStore((state) => state.draftSignatureCase);
+  const canRun =
+    hasCompleteUploads(uploads) &&
+    draftCase.subjectName.trim().length > 1 &&
+    draftCase.examiner.trim().length > 1;
   const resetSubmissionState = useCaseStore((state) => state.resetSubmissionState);
   const [showCameraDisclosure, setShowCameraDisclosure] = useState(false);
   const [pendingUploadTarget, setPendingUploadTarget] = useState<{
@@ -53,11 +109,12 @@ export default function SignatureUploadsRoute() {
     if (!pendingUploadTarget) return;
 
     const { target, refIndex } = pendingUploadTarget;
-    scanForensicDocument((scannedUri) => {
+    scanForensicDocument(async (scannedUri) => {
+      const persistedUri = await persistUploadUri(scannedUri, target === 'suspect' ? 'suspect-scan' : `reference-${(refIndex ?? 0) + 1}-scan`);
       if (target === 'reference' && refIndex !== undefined) {
-        setDraftUpload('reference', refIndex, scannedUri);
+        setDraftUpload('reference', refIndex, persistedUri);
       } else if (target === 'suspect') {
-        setDraftUpload('suspect', 0, scannedUri);
+        setDraftUpload('suspect', 0, persistedUri);
       }
     });
     setPendingUploadTarget(null);
@@ -86,15 +143,15 @@ export default function SignatureUploadsRoute() {
     handleCameraPress(target, refIndex);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canRun || isSubmitting) return;
-
     resetSubmissionState();
-    submitNewCase().catch((error) => {
-      console.warn('Unable to submit new case:', error);
-    });
-
     nav.replace('/analysis/signature/processing');
+    try {
+      await submitNewCase();
+    } catch (error) {
+      console.warn('Unable to submit new case:', error);
+    }
   };
 
   const openPreview = (uri: string, label: string) => {
@@ -247,7 +304,7 @@ export default function SignatureUploadsRoute() {
             if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
               const remainingSlots = 4 - currentReferenceIndex;
               const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsMultipleSelection: true,
                 allowsEditing: false,
                 selectionLimit: Math.max(1, remainingSlots),
@@ -272,7 +329,8 @@ export default function SignatureUploadsRoute() {
                   if (slotIndex > 3) break;
 
                   const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
-                  const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
+                  const persistedUri = await persistUploadUri(asset.uri, `reference-${slotIndex + 1}`);
+                  const finalUri = addFingerprint(persistedUri, identifier ?? undefined);
 
                   setDraftUpload('reference', slotIndex, finalUri);
                   addedCount++;
@@ -289,7 +347,7 @@ export default function SignatureUploadsRoute() {
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'],
               allowsEditing: false,
               quality: 0.9,
             });
@@ -303,7 +361,9 @@ export default function SignatureUploadsRoute() {
                 }
 
                 const identifier = asset.assetId || asset.fileName || String(asset.fileSize);
-                const finalUri = identifier ? `${asset.uri}?id=${encodeURIComponent(identifier)}` : asset.uri;
+                const targetLabel = currentUploadTarget === 'suspect' ? 'suspect' : 'reference';
+                const persistedUri = await persistUploadUri(asset.uri, targetLabel);
+                const finalUri = addFingerprint(persistedUri, identifier ?? undefined);
 
                 if (currentUploadTarget === 'reference' && currentReferenceIndex !== null) {
                   setDraftUpload('reference', currentReferenceIndex, finalUri);

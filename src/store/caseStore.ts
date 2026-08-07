@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system/legacy';
 import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
@@ -47,8 +48,8 @@ const caseLog = {
 };
 
 function stripFingerprintSuffix(uri: string): string {
-  const idx = uri.indexOf('?id=');
-  return idx !== -1 ? uri.slice(0, idx) : uri;
+  const idPattern = /([?&])id=[^&#]*/;
+  return uri.replace(idPattern, '').replace(/[?&]$/, '');
 }
 
 export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
@@ -459,7 +460,10 @@ export const useCaseStore = create<CaseStore>()(
           const currentDraft = get().draftSignatureCase;
 
           if (!currentDraft.subjectName.trim() || !currentDraft.examiner.trim()) {
-            throw createMockError('Subject name and examiner are required before submission.');
+            const message = 'Subject name and examiner are required before submission.';
+            caseLog.error('CaseStore:Error', message);
+            set({ submissionStatus: 'error', submissionError: message });
+            throw new Error(message);
           }
 
           if (currentDraft.uploads.references.some((uri) => !uri) || !currentDraft.uploads.suspect) {
@@ -564,11 +568,36 @@ export const useCaseStore = create<CaseStore>()(
             set({ submissionStep: 'Uploading reference signatures', submissionProgress: 10 });
 
             async function normalizeToPng(uri: string): Promise<string> {
-              const result = await ImageManipulator.manipulateAsync(
-                uri,
-                [],
-                { format: ImageManipulator.SaveFormat.PNG },
-              );
+              let fileInfo;
+
+              try {
+                fileInfo = await FileSystem.getInfoAsync(uri);
+              } catch (error) {
+                caseLog.warn('CaseStore:Upload', 'Unable to stat selected image URI before normalization', {
+                  uri,
+                  error,
+                });
+              }
+
+              if (fileInfo && !fileInfo.exists) {
+                throw new Error('One of the selected images is no longer available. Please reselect your uploads and try again.');
+              }
+
+              let result;
+              try {
+                result = await ImageManipulator.manipulateAsync(
+                  uri,
+                  [],
+                  { format: ImageManipulator.SaveFormat.PNG },
+                );
+              } catch (error) {
+                caseLog.error('CaseStore:Upload', 'Image normalization failed', {
+                  uri,
+                  error,
+                });
+                throw new Error('Failed to process one of the selected images. Please choose a different image and try again.');
+              }
+
               caseLog.info('CaseStore:Upload', 'Normalized image to PNG', {
                 from: uri,
                 to: result.uri,

@@ -7,14 +7,18 @@ import { getTypographyStyle } from '@/constants/typography';
 
 interface DraftSavedModalProps {
   visible: boolean;
-  onSaveDraft: () => void;
-  onDiscard: () => void;
-  onGoBack: () => void;
+  onSaveDraft?: () => void;
+  onDiscard?: () => void;
+  onGoBack?: () => void;
+  onContinue?: () => void;
+  onDismiss?: () => void;
   title?: string;
   message?: string;
   saveLabel?: string;
   discardLabel?: string;
   goBackLabel?: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
   isSaving?: boolean;
 }
 
@@ -23,42 +27,54 @@ export default function DraftSavedModal({
   onSaveDraft,
   onDiscard,
   onGoBack,
+  onContinue,
+  onDismiss,
   title = 'Save Draft',
   message = 'How would you like to proceed?',
   saveLabel = 'Save as Draft',
   discardLabel = 'Discard',
   goBackLabel = 'Go Back',
+  primaryLabel,
+  secondaryLabel,
   isSaving = false,
 }: DraftSavedModalProps) {
+  const primaryAction = onSaveDraft ?? onContinue ?? (() => {});
+  const secondaryAction = onDiscard ?? onDismiss ?? (() => {});
+  const primaryButtonLabel = primaryLabel ?? saveLabel;
+  const secondaryButtonLabel = secondaryLabel ?? discardLabel;
+  const showThirdButton = Boolean(onGoBack);
+
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onGoBack}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onGoBack ?? onDismiss ?? secondaryAction}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
           <PrimaryButton
-            label={saveLabel}
-            onPress={onSaveDraft}
+            label={primaryButtonLabel}
+            onPress={primaryAction}
             loading={isSaving}
             size="large"
             style={styles.button}
           />
 
           <SecondaryButton
-            label={discardLabel}
-            onPress={onDiscard}
+            label={secondaryButtonLabel}
+            onPress={secondaryAction}
             textColor={colors.danger}
             size="large"
             style={styles.button}
           />
 
-          <SecondaryButton
-            label={goBackLabel}
-            onPress={onGoBack}
-            size="large"
-            style={styles.button}
-          />
+          {showThirdButton ? (
+            <SecondaryButton
+              label={goBackLabel}
+              onPress={onGoBack}
+              size="large"
+              style={styles.button}
+            />
+          ) : null}
         </View>
       </View>
     </Modal>
