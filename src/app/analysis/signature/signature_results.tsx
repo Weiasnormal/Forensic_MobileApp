@@ -421,9 +421,8 @@ export function SignatureResultsScreen() {
             })}
           </View>
         </View>
+      </ScrollView>
 
-        {/* Key Findings modal (replaces inline modal) */}
-        {/* compute measured values per metric */}
         <KeyFindingsModal
           visible={selectedFinding !== null}
           onClose={closeFinding}
@@ -548,9 +547,8 @@ export function SignatureResultsScreen() {
           })()}
         />
 
-      </ScrollView>
-
       <Modal visible={previewSource !== null} transparent animationType="fade" onRequestClose={closePreview}>
+        
         <Pressable style={styles.previewBackdrop} onPress={closePreview}>
           <Pressable style={styles.previewSheet} onPress={() => {}}>
             <View style={styles.previewHeader}>
