@@ -96,10 +96,8 @@ export function useBottomSheetTransition({
 			duration: closeDuration,
 			easing: Easing.in(Easing.cubic),
 			useNativeDriver: true,
-		}).start(({ finished }) => {
-			if (finished) {
-				setIsMounted(false);
-			}
+		}).start(() => {
+			setIsMounted(false);
 		});
 	}, [visible, sheetY, openDuration, closeDuration]);
 
