@@ -16,28 +16,42 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/auth/login',
     register: '/auth/register',
-    verifySignupCode: '/auth/verify-email',
-    resendSignupCode: '/auth/refresh',
-    forgotPassword: '/auth/forgot-password',
-    verifyResetCode: '/auth/password/verify-code',
-    resetPassword: '/auth/reset-password',
     logout: '/auth/logout',
+    changePassword: '/auth/change-password',
+
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: '/auth/reset-password',
+
+    google: '/auth/google',
+    verifySignupCode: '/auth/verify-email',
+
+    //wala sa backend
+    joinInviteCode: '/auth/join-invite-code',
+    sendInviteCode: '/auth/send-invite-code',
+
+    //wala sa backend
+    resendSignupCode: '/auth/refresh',
+    verifyResetCode: '/auth/password/verify-code',
+    verifyEmail: '/auth/verify-email',
     refresh: '/auth/refresh',
     validateInviteCode: (code: string) => `/auth/validate-invite-code/${code}`,
     registerAdmin: '/auth/register-admin',
-    google: '/auth/google',
+    
   },
   cases: {
     list: '/cases',
     create: '/cases',
     get: (caseId: string) => `/cases/${caseId}`,
     update: (caseId: string) => `/cases/${caseId}`,
+
     updateStatus: (caseId: string) => `/cases/${caseId}/status`,
     delete: (caseId: string) => `/cases/${caseId}`,
     listDrafts: '/cases/drafts',
     createDraft: '/cases/drafts',
     updateDraft: (caseId: string) => `/cases/drafts/${caseId}`,
     deleteDraft: (caseId: string) => `/cases/drafts/${caseId}`,
+
+    // wala sa backend
     markResultViewed: (caseId: string) => `/cases/${caseId}/result-viewed`,
   },
   signatures: {
@@ -45,7 +59,9 @@ export const API_ENDPOINTS = {
     uploadSuspected: (caseId: string) => `/cases/${caseId}/signatures/suspected`,
     getReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
     getSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
-    getAll: (caseId: string) => `/cases/${caseId}/signatures`,
+
+    getAll: (caseId: string) => `/cases/${caseId}/signatures`, // wala sa backend
+
     deleteReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
     deleteSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
   },
