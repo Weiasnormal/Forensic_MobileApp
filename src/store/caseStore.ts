@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
+import { getAuthHeader } from './authStore';
 
 const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
 const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'BoundingBox', 'StrokeDiff'];
@@ -500,11 +501,11 @@ export const useCaseStore = create<CaseStore>()(
 
             const createRes = await fetch(buildApiUrl(API_ENDPOINTS.cases.create), {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-Api-Key': API_KEY || '',
-              },
+              headers: { 
+              Accept: 'application/json',
+              'X-Api-Key': API_KEY || '',
+              ...getAuthHeader(),
+            },
               body: JSON.stringify(createRequest),
             });
 
@@ -621,9 +622,10 @@ export const useCaseStore = create<CaseStore>()(
 
               const upRes = await fetch(uploadPath, {
                 method: 'POST',
-                headers: { 
+                headers: {
                   Accept: 'application/json',
                   'X-Api-Key': API_KEY || '',
+                  ...getAuthHeader(),
                 },
                 body: fd as any,
               });
@@ -650,9 +652,10 @@ export const useCaseStore = create<CaseStore>()(
               const upRes = await fetch(upPath, {
                 method: 'POST',
                 headers: { 
-                  Accept: 'application/json',
-                  'X-Api-Key': API_KEY || '',
-                },
+                Accept: 'application/json',
+                'X-Api-Key': API_KEY || '',
+                ...getAuthHeader(),
+              },
                 body: fd as any,
               });
 
@@ -668,9 +671,11 @@ export const useCaseStore = create<CaseStore>()(
             const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { 
               method: 'GET',
               headers: {
-                Accept: 'application/json',
-                'X-Api-Key': API_KEY || '',
-              },
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              'X-Api-Key': API_KEY || '',
+              ...getAuthHeader(),
+            },
             });
             const timeTakenMs = Date.now() - startTime;
 

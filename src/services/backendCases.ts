@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
+import { getAuthHeader } from '@/store/authStore';
 
 import type { AnalysisPriority, AnalysisType, CaseStatus, SavedCase } from '@/store/caseStore';
 
@@ -118,9 +119,10 @@ export async function fetchBackendCases() {
   const response = await fetch(buildApiUrl(API_ENDPOINTS.cases.list), {
     method: 'GET',
     headers: {
-      Accept: 'application/json',
-      'X-Api-Key': API_KEY || '',
-    },
+    Accept: 'application/json',
+    'X-Api-Key': API_KEY || '',
+    ...getAuthHeader(),
+  },
   });
 
   if (!response.ok) {

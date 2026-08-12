@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { API_KEY, buildApiUrl } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
 import { MOCK_TEAM_MEMBERS } from '@/constants/adminMockData';
+import { getAuthHeader } from './authStore';
 
 const adminLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -116,6 +117,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         headers: {
           Accept: 'application/json',
           'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
         },
       });
 
@@ -181,6 +183,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         method: 'POST',
         headers: {
           'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
         },
       });
       if (!response.ok) throw new Error(`Approve failed (${response.status})`);
@@ -202,6 +205,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         method: 'POST',
         headers: {
           'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
         },
       });
       if (!response.ok) throw new Error(`Reject failed (${response.status})`);
@@ -224,6 +228,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         method: 'POST',
         headers: {
           'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
         },
       });
       if (!response.ok) throw new Error(`Suspend failed (${response.status})`);
@@ -239,6 +244,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         method: 'POST',
         headers: {
           'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
         },
       });
 
