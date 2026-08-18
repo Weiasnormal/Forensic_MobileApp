@@ -21,6 +21,10 @@ export default function GetStartedPage() {
 	const handleSignIn = () => {
 		router.push('/_login/SignInPage');
 	};
+	
+	const handleDevScan = () => {
+		router.push('/_devscan');
+	};
 
 	useEffect(() => {
 		Animated.parallel([
@@ -77,6 +81,18 @@ export default function GetStartedPage() {
 						textColor="#F8FAFC"
 						textStyle={styles.secondaryButtonText}
 					/>
+
+					{__DEV__ && (
+						<SecondaryButton
+							label="Scan (Dev Only)"
+							onPress={handleDevScan}
+							size="large"
+							backgroundColor="transparent"
+							borderColor="rgba(255,255,255,0.45)"
+							textColor="rgba(255,255,255,0.9)"
+							textStyle={styles.secondaryButtonText}
+						/>
+					)}
 				</View>
 			</Animated.View>
 		</SafeAreaView>

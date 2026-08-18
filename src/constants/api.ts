@@ -26,10 +26,6 @@ export const API_ENDPOINTS = {
     verifySignupCode: '/auth/verify-email',
 
     //wala sa backend
-    joinInviteCode: '/auth/join-invite-code',
-    sendInviteCode: '/auth/send-invite-code',
-
-    //wala sa backend
     resendSignupCode: '/auth/refresh',
     verifyResetCode: '/auth/password/verify-code',
     verifyEmail: '/auth/verify-email',
