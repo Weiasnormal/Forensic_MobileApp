@@ -86,11 +86,11 @@ export default function GetStartedPage() {
 						<SecondaryButton
 							label="Scan (Dev Only)"
 							onPress={handleDevScan}
-							size="large"
-							backgroundColor="transparent"
-							borderColor="rgba(255,255,255,0.45)"
-							textColor="rgba(255,255,255,0.9)"
-							textStyle={styles.secondaryButtonText}
+							size="small"
+							backgroundColor="#1E6FD9"
+							borderColor="#F8FAFC"
+							textColor="#F8FAFC"
+							textStyle={{ ...styles.secondaryButtonText, fontSize: 14 }}
 						/>
 					)}
 				</View>

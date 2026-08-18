@@ -10,9 +10,6 @@ import { saveScanLocally } from '@/_components/devscan';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 
-// DEVELOPMENT ONLY — whole-page dataset scanner. Reuses the same ML Kit
-// document scanner (react-native-document-scanner-plugin) already wired
-// into media_source_picker.tsx. Local-only: never calls the Avera API.
 
 const DEFAULT_FILENAME = 'FS_MLkitDataset_000';
 
