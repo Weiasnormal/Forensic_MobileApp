@@ -1,14 +1,14 @@
-export type AppRole = 'analyst' | 'admin';
+export type AppRole = 'user' | 'admin';
 
-export const DEFAULT_ROLE: AppRole = 'analyst';
+export const DEFAULT_ROLE: AppRole = 'user';
 
 export const ROLE_LABEL: Record<AppRole, string> = {
-  analyst: 'Forensic Analyst',
+  user: 'Forensic Analyst',
   admin: 'Org Admin',
 };
 
 export const ROLE_SETTINGS = {
-  analyst: {
+  user: {
     signIn: {
       emailPlaceholder: 'user@institution.gov.ph',
       redirectTo: '/User/user_dashboard' as const,
