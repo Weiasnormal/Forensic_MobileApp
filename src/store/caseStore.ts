@@ -6,7 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
-import { getAuthHeader } from './authStore';
+import { getAuthHeader, handleUnauthorizedResponse  } from './authStore';
 
 const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
 const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'BoundingBox', 'StrokeDiff'];
@@ -262,7 +262,11 @@ function createMockError(message: string) {
   caseLog.error('CaseStore:Error', message);
   return new Error(message);
 }
-
+const BACKEND_STATUS_MAP: Record<CaseStatus, string> = {
+  Processing: 'Processing',
+  Genuine: 'Genuine',
+  Suspected: 'Suspected',
+};
 const PRIORITY_MAP: Record<AnalysisPriority, number> = {
   Low: 0, Medium: 1, High: 2, Urgent: 3,
 };
@@ -501,19 +505,21 @@ export const useCaseStore = create<CaseStore>()(
 
             const createRes = await fetch(buildApiUrl(API_ENDPOINTS.cases.create), {
               method: 'POST',
-              headers: { 
-              Accept: 'application/json',
-              'X-Api-Key': API_KEY || '',
-              ...getAuthHeader(),
-            },
+              headers: {
+                'Content-Type': 'application/json',   
+                Accept: 'application/json',
+                'X-Api-Key': API_KEY || '',
+                ...getAuthHeader(),
+              },
               body: JSON.stringify(createRequest),
             });
 
             if (!createRes.ok) {
+              if (await handleUnauthorizedResponse(createRes)) {
+                throw new Error('Session expired. Please sign in again.');
+              }
               throw new Error(`Create case failed (${createRes.status})`);
             }
-
-            
 
             let rawCaseId: string | null = null;
             let caseCode: string | null = null;
@@ -721,6 +727,24 @@ export const useCaseStore = create<CaseStore>()(
               } catch (error) {
                 caseLog.error('CaseStore:Submit', 'Failed to parse analysis response', error);
                 analysisResult = null;
+              }
+            }
+
+            if (finalStatus !== 'Processing') {
+              try {
+                await fetch(
+                  buildApiUrl(`${API_ENDPOINTS.cases.updateStatus(caseId)}?status=${BACKEND_STATUS_MAP[finalStatus]}`),
+                  {
+                    method: 'PATCH',
+                    headers: {
+                      Accept: 'application/json',
+                      'X-Api-Key': API_KEY || '',
+                      ...getAuthHeader(),
+                    },
+                  },
+                );
+              } catch (statusError) {
+                caseLog.warn('CaseStore:Submit', 'Unable to persist case status to backend', statusError);
               }
             }
 
