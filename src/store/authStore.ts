@@ -3,7 +3,6 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { jwtDecode } from 'jwt-decode';
 import * as authApi from '@/services/authApi';
-import type { AppRole } from '@/constants/roles';
 
 interface DecodedAveraToken {
   nameid?: string;                                   // ClaimTypes.NameIdentifier -> UserId
@@ -29,6 +28,7 @@ interface AuthState {
   user: AuthUser | null;
   isAuthenticating: boolean;
   authError: string | null;
+  hasHydrated: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   register: (
@@ -36,12 +36,13 @@ interface AuthState {
     lastName: string,
     email: string,
     password: string,
-    role: 'Analyst' | 'OrgAdmin',
+    role: 'User' | 'Admin',
   ) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   clearAuthError: () => void;
   isTokenExpired: () => boolean;
+  setHasHydrated: (value: boolean) => void;
 }
 
 function decodeToken(token: string): AuthUser {
@@ -77,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticating: false,
       authError: null,
+      hasHydrated: false,
 
       login: async (email, password) => {
         set({ isAuthenticating: true, authError: null });
@@ -137,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
         if (!expiresAt) return true;
         return new Date(expiresAt).getTime() <= Date.now();
       },
+     setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
       name: 'avera_auth_store',
@@ -146,6 +149,9 @@ export const useAuthStore = create<AuthState>()(
         expiresAt: state.expiresAt,
         user: state.user,
       }),
+      onRehydrateStorage: () => (state) => {   
+        state?.setHasHydrated(true);
+      },
     },
   ),
 );
