@@ -3,6 +3,10 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
+
+export type ScanSlotStatus = 'empty' | 'captured' | 'saving' | 'saved' | 'flagged';
 
 interface ScanPlaceholderProps {
   label: string;
@@ -10,6 +14,13 @@ interface ScanPlaceholderProps {
   uri: string | null;
   accentColor?: string;
   onPress: () => void;
+  /**
+   * Optional. Omit for the original tap-anywhere-to-scan / checkmark-pill behavior.
+   * Pass it to unlock the capture -> Save / Save Flagged -> saved/flagged flow.
+   */
+  status?: ScanSlotStatus;
+  onSave?: () => void;
+  onSaveFlagged?: () => void;
 }
 
 export default function ScanPlaceholder({
@@ -18,10 +29,20 @@ export default function ScanPlaceholder({
   uri,
   accentColor = colors.primary,
   onPress,
+  status,
+  onSave,
+  onSaveFlagged,
 }: ScanPlaceholderProps) {
+  const isExtended = status !== undefined;
+  const isBusy = status === 'saving';
+  // Tap-to-scan stays live for: legacy mode, an empty slot, or retaking a saved/flagged one.
+  // It's disabled mid-capture so the Save / Save Flagged buttons are the only way forward.
+  const tapToScanEnabled = !isExtended || status === 'empty' || status === 'saved' || status === 'flagged';
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={tapToScanEnabled ? onPress : undefined}
+      disabled={!tapToScanEnabled}
       style={[
         styles.container,
         { borderColor: uri ? accentColor : colors.uploadSlotBorder },
@@ -31,9 +52,16 @@ export default function ScanPlaceholder({
       {uri ? (
         <>
           <Image source={{ uri }} style={styles.image} />
-          <View style={[styles.checkPill, { backgroundColor: accentColor }]}>
-            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-          </View>
+          {(!isExtended || status === 'saved') && (
+            <View style={[styles.checkPill, { backgroundColor: accentColor }]}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            </View>
+          )}
+          {isExtended && status === 'flagged' && (
+            <View style={[styles.checkPill, { backgroundColor: colors.warningIcon }]}>
+              <Ionicons name="flag" size={12} color="#FFFFFF" />
+            </View>
+          )}
         </>
       ) : (
         <View style={styles.placeholderContent}>
@@ -47,6 +75,26 @@ export default function ScanPlaceholder({
       <Text style={styles.filename} numberOfLines={1}>
         {filename}
       </Text>
+
+      {isExtended && (status === 'captured' || status === 'saving') && (
+        <View style={styles.actionRow}>
+          <PrimaryButton
+            label="Save"
+            onPress={onSave!}
+            size="small"
+            loading={isBusy}
+            disabled={isBusy}
+            style={styles.actionButton}
+          />
+          <SecondaryButton
+            label="Save Flagged"
+            onPress={onSaveFlagged!}
+            size="small"
+            disabled={isBusy}
+            style={styles.actionButton}
+          />
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -73,5 +121,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
+  },
+  actionRow: {
+    marginTop: 6,
+    gap: 6,
+  },
+  actionButton: {
+    width: '100%',
   },
 });
