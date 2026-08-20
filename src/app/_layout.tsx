@@ -9,7 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const PUBLIC_SEGMENTS = ['_login', '_introPage'];
+const PUBLIC_SEGMENTS = ['_login', '_introPage', '_devscan'];
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
