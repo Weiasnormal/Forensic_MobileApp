@@ -19,6 +19,7 @@ import { findOverlayImage, REFERENCE_SLOTS, getSignatureAnalysisCaseStatus, getS
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '../../../constants/api';
 import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
+import { getAuthHeader } from '@/store/authStore';
 
 const getAuthImageSource = (uri?: string | null) => {
   if (!uri) return undefined;
@@ -31,6 +32,7 @@ const getAuthImageSource = (uri?: string | null) => {
     uri,
     headers: {
       'X-Api-Key': API_KEY || '',
+      ...getAuthHeader(),
     },
   };
 };
@@ -233,6 +235,7 @@ export function SignatureResultsScreen() {
         {
           headers: {
             'X-Api-Key': API_KEY || '',
+            ...getAuthHeader(),
           },
         },
       );

@@ -11,11 +11,15 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
 import PrimaryButton from '@/_components/common/PrimaryButton';
+import { useAuthStore } from '@/store/authStore';
 
 export default function LogInPage() {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState<AppRole>('analyst');
+  const [activeRole, setActiveRole] = useState<AppRole>('user');
   const [showPassword, setShowPassword] = useState(false);
+  const login = useAuthStore((state) => state.login);
+  const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
+  const [signInError, setSignInError] = useState<string | null>(null);
 
   const [tabsWidth, setTabsWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
@@ -46,7 +50,7 @@ export default function LogInPage() {
   const selectRole = (role: AppRole) => {
     setActiveRole(role);
     Animated.timing(slideAnim, {
-      toValue: role === 'analyst' ? 0 : 1,
+      toValue: role === 'user' ? 0 : 1,
       duration: 250,
       useNativeDriver: true,
     }).start();
@@ -58,8 +62,16 @@ export default function LogInPage() {
     outputRange: [0, pillWidth],
   });
 
-  const handleSignIn = (_values: SignInFormValues) => {
-    router.push(roleConfig.redirectTo);
+  const handleSignIn = async (values: SignInFormValues) => {
+    setSignInError(null);
+    try {
+      await login(values.email, values.password);
+      router.replace(roleConfig.redirectTo);
+    } catch (error) {
+      setSignInError(
+        error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.',
+      );
+    }
   };
 
   return (
@@ -101,13 +113,13 @@ export default function LogInPage() {
             <TouchableOpacity
               style={styles.roleTab}
               activeOpacity={0.85}
-              onPress={() => selectRole('analyst')}
+              onPress={() => selectRole('user')}
             >
               <Text
                 allowFontScaling={false}
-                style={[styles.roleTabText, activeRole === 'analyst' && styles.roleTabTextActive]}
+                style={[styles.roleTabText, activeRole === 'user' && styles.roleTabTextActive]}
               >
-                {ROLE_LABEL.analyst}
+                {ROLE_LABEL.user}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -181,9 +193,15 @@ export default function LogInPage() {
           </View>
 
           <View style={styles.bottomActions}>
+            {signInError ? (
+              <Text allowFontScaling={false} style={styles.footerPrompt }>
+                {signInError}
+              </Text>
+            ) : null}
             <PrimaryButton
               label="Sign In"
               onPress={handleSubmit(handleSignIn)}
+              loading={isAuthenticating}
               style={styles.primaryButton}
             />
 

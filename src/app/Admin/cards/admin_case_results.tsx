@@ -16,6 +16,7 @@ import {
 } from '@/services/signatureAnalysis';
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { useCaseStore } from '@/store/caseStore';
+import { getAuthHeader } from '@/store/authStore';
 
 export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: string }) {
   const router = useRouter() as any;
@@ -109,7 +110,14 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
               if (!uri) return <View key={`ph-${idx}`} style={[styles.thumbCardSmall, styles.thumbPlaceholder]} />;
               return (
                 <Pressable key={`r-${idx}`} style={styles.thumbCardSmall} onPress={() => {}}>
-                  <View style={styles.thumbImageWrap}><ExpoImage source={{ uri: uri.split('?')[0], headers: { 'X-Api-Key': API_KEY || '' } }} style={StyleSheet.absoluteFill} contentFit="cover" /></View>
+                  <View style={styles.thumbImageWrap}>
+                    <ExpoImage 
+                    source={{ uri: uri.split('?')[0], 
+                    headers: { 'X-Api-Key': API_KEY || '', 
+                    ...getAuthHeader() } }} 
+                    style={StyleSheet.absoluteFill} 
+                    contentFit="cover" />
+                    </View>
                   <Text style={styles.thumbLabel}>{`SIG ${String(idx+1).padStart(2,'0')}`}</Text>
                   <Text style={styles.thumbTag}>Reference</Text>
                 </Pressable>
@@ -119,7 +127,14 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
 
           <View style={styles.largeThumbWrap}>
             {caseItem?.uploads?.suspect || suspectOverlayUri ? (
-              <ExpoImage source={suspectOverlayUri ? { uri: suspectOverlayUri, headers: { 'X-Api-Key': API_KEY || '' } } : { uri: String(caseItem?.uploads?.suspect ?? '').split('?')[0] }} style={styles.largeThumbImage} contentFit="contain" />
+              <ExpoImage 
+              source={suspectOverlayUri ? { 
+                uri: suspectOverlayUri, 
+                headers: {'X-Api-Key': API_KEY || '', 
+                  ...getAuthHeader() } } : 
+                { uri: String(caseItem?.uploads?.suspect ?? '').split('?')[0] }} 
+                style={styles.largeThumbImage} 
+                contentFit="contain" />
             ) : (
               <View style={styles.largeThumbPlaceholder}><Ionicons name="scan-outline" size={28} color={colors.label} /><Text style={styles.largeThumbText}>No suspect image</Text></View>
             )}

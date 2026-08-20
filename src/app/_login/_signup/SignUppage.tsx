@@ -13,11 +13,16 @@ import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
+import { useAuthStore } from '@/store/authStore';
 
 export default function SignUpPage() {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState<AppRole>('analyst');
+  const [activeRole, setActiveRole] = useState<AppRole>('user');
   const isOrgAdmin = activeRole === 'admin';
+  const register = useAuthStore((state) => state.register);
+  const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -56,7 +61,7 @@ export default function SignUpPage() {
   const selectRole = (role: AppRole) => {
     setActiveRole(role);
     Animated.timing(slideAnim, {
-      toValue: role === 'analyst' ? 0 : 1,
+      toValue: role === 'user' ? 0 : 1,
       duration: 250,
       useNativeDriver: true,
     }).start();
@@ -68,11 +73,23 @@ export default function SignUpPage() {
     outputRange: [0, pillWidth],
   });
 
-  const handleContinue = (_values: SignUpFormValues) => {
-    router.push({
-      pathname: '/_login/_signup/User&AdminCodepage',
-      params: { role: activeRole },
-    });
+    const handleContinue = async (values: SignUpFormValues) => {
+    setRegisterError(null);
+    try {
+      await register(
+        values.firstName,
+        values.lastName,
+        values.email,
+        values.password,
+        activeRole === 'admin' ? 'Admin' : 'User',
+      );
+      router.push({
+        pathname: '/_login/_signup/User&AdminCodepage',
+        params: { role: activeRole },
+      });
+    } catch (error) {
+      setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
+    }
   };
 
   return (
@@ -117,13 +134,13 @@ export default function SignUpPage() {
             <TouchableOpacity
               style={styles.roleTab}
               activeOpacity={0.8}
-              onPress={() => selectRole('analyst')}
+              onPress={() => selectRole('user')}
             >
               <Text
                 allowFontScaling={false}
-                style={[styles.roleTabText, activeRole === 'analyst' && styles.roleTabTextActive]}
+                style={[styles.roleTabText, activeRole === 'user' && styles.roleTabTextActive]}
               >
-                {ROLE_LABEL.analyst}
+                {ROLE_LABEL.user}
               </Text>
             </TouchableOpacity>
 
@@ -277,10 +294,15 @@ export default function SignUpPage() {
             style={[styles.primaryButton, isOrgAdmin && styles.primaryButtonDisabled]}
             activeOpacity={0.85}
             onPress={handleSubmit(handleContinue)}
-            disabled={isOrgAdmin}
+            disabled={isOrgAdmin || isAuthenticating}
           >
-            <Text allowFontScaling={false} style={styles.primaryButtonText}>Continue</Text>
+            <Text allowFontScaling={false} style={styles.primaryButtonText}>
+              {isAuthenticating ? 'Creating account…' : 'Continue'}
+            </Text>
           </TouchableOpacity>
+          {registerError ? (
+            <Text allowFontScaling={false} style={styles.footerPrompt}>{registerError}</Text>
+          ) : null}
 
           <View style={styles.footerRow}>
             <Text allowFontScaling={false} style={styles.footerPrompt}>Already have an account? </Text>
