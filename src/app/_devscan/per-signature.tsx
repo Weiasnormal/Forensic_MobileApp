@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,12 @@ import {
   ScanPlaceholder,
   buildSequenceFilename,
   generateFilenameSequence,
-  saveScanLocally,
+  ensureCaseFolders,
+  writeImageToFolder,
+  getLastCaseFolder,
+  hasStoredRootDirectory,
+  type CaseFolders,
+  type ScanSlotStatus,
 } from '@/_components/devscan';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
@@ -20,29 +25,38 @@ type ScanCategoryKey = 'genuine' | 'forged';
 interface SlotState {
   uri: string | null;
   filename: string;
+  status: ScanSlotStatus;
 }
 
 const GENUINE_COUNT = 5;
 const FORGED_COUNT = 4;
-const DEFAULT_PREFIX = 'ML001';
+const DEFAULT_CASE_FOLDER = 'P001';
 
-function buildInitialSlots(category: 'G' | 'F', count: number): SlotState[] {
+function buildInitialSlots(prefix: string, category: 'G' | 'F', count: number): SlotState[] {
   const filenames = generateFilenameSequence(
-    buildSequenceFilename(DEFAULT_PREFIX, category, 1, 2),
+    buildSequenceFilename(prefix, category, 1, 2),
     count,
-    DEFAULT_PREFIX,
+    prefix,
     category,
   );
-  return filenames.map((filename) => ({ uri: null, filename }));
+  return filenames.map((filename) => ({ uri: null, filename, status: 'empty' as const }));
 }
 
 export default function PerSignatureScanScreen() {
   const router = useRouter();
   const nav = router as any;
 
+  const [caseFolderInput, setCaseFolderInput] = useState(DEFAULT_CASE_FOLDER);
+  const [activeCaseFolder, setActiveCaseFolder] = useState<string | null>(null);
+  const [caseFolderUri, setCaseFolderUri] = useState<string | null>(null);
+  const [flaggedFolderUri, setFlaggedFolderUri] = useState<string | null>(null);
+  const [displayPath, setDisplayPath] = useState<string | null>(null);
+  const [isResolvingFolder, setIsResolvingFolder] = useState(false);
+  const [folderError, setFolderError] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<ScanCategoryKey>('genuine');
-  const [genuineSlots, setGenuineSlots] = useState<SlotState[]>(() => buildInitialSlots('G', GENUINE_COUNT));
-  const [forgedSlots, setForgedSlots] = useState<SlotState[]>(() => buildInitialSlots('F', FORGED_COUNT));
+  const [genuineSlots, setGenuineSlots] = useState<SlotState[]>(() => buildInitialSlots(DEFAULT_CASE_FOLDER, 'G', GENUINE_COUNT));
+  const [forgedSlots, setForgedSlots] = useState<SlotState[]>(() => buildInitialSlots(DEFAULT_CASE_FOLDER, 'F', FORGED_COUNT));
   const [genuineStartInput, setGenuineStartInput] = useState(() => genuineSlots[0].filename.replace(/\.png$/i, ''));
   const [forgedStartInput, setForgedStartInput] = useState(() => forgedSlots[0].filename.replace(/\.png$/i, ''));
 
@@ -55,50 +69,142 @@ export default function PerSignatureScanScreen() {
   const count = isGenuine ? GENUINE_COUNT : FORGED_COUNT;
   const accentColor = isGenuine ? colors.statusGenuine : colors.danger;
 
+  // Auto-resolve on mount only if the user already granted folder access previously.
+  // Never auto-prompt — the system folder picker only opens via the explicit "Set Folder" button.
+  useEffect(() => {
+    (async () => {
+      const last = await getLastCaseFolder();
+      const nameToUse = last ?? DEFAULT_CASE_FOLDER;
+      if (last) setCaseFolderInput(last);
+
+      const hasRoot = await hasStoredRootDirectory();
+      if (!hasRoot) return;
+
+      try {
+        const folders = await ensureCaseFolders(nameToUse);
+        applyResolvedFolder(nameToUse, folders, false);
+      } catch (error) {
+        console.warn('[PerSignatureScan] auto-resolve folder failed', error);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyResolvedFolder = (name: string, folders: CaseFolders, resetSlots: boolean) => {
+    setActiveCaseFolder(name);
+    setCaseFolderUri(folders.caseFolderUri);
+    setFlaggedFolderUri(folders.flaggedFolderUri);
+    setDisplayPath(folders.displayPath);
+
+    if (resetSlots) {
+      const nextGenuine = buildInitialSlots(name, 'G', GENUINE_COUNT);
+      const nextForged = buildInitialSlots(name, 'F', FORGED_COUNT);
+      setGenuineSlots(nextGenuine);
+      setForgedSlots(nextForged);
+      setGenuineStartInput(nextGenuine[0].filename.replace(/\.png$/i, ''));
+      setForgedStartInput(nextForged[0].filename.replace(/\.png$/i, ''));
+    }
+  };
+
+  const handleSetFolder = async () => {
+    const name = caseFolderInput.trim();
+    if (!name) {
+      Alert.alert('Folder name required', 'Enter a case folder name, e.g. P001.');
+      return;
+    }
+
+    setIsResolvingFolder(true);
+    setFolderError(null);
+    try {
+      const folders = await ensureCaseFolders(name);
+      // Only reset in-progress captures if the folder actually changed —
+      // re-confirming the same folder shouldn't wipe unsaved scans.
+      applyResolvedFolder(name, folders, name !== activeCaseFolder);
+    } catch (error) {
+      console.warn('[PerSignatureScan] set folder failed', error);
+      setFolderError('Could not access or create that folder. Try again.');
+    } finally {
+      setIsResolvingFolder(false);
+    }
+  };
+
   const applyStartingFilename = (value: string) => {
     setStartInput(value);
-    const filenames = generateFilenameSequence(value, count, DEFAULT_PREFIX, categoryLetter);
+    const prefix = activeCaseFolder ?? caseFolderInput.trim() ?? DEFAULT_CASE_FOLDER;
+    const filenames = generateFilenameSequence(value, count, prefix, categoryLetter);
 
     setSlots((prev) =>
       filenames.map((filename, index) => ({
         uri: prev[index]?.uri ?? null,
         filename,
+        status: prev[index]?.status ?? 'empty',
       })),
     );
   };
 
   const handleScanSlot = async (index: number) => {
     await scanForensicDocument((uri) => {
-      setSlots((prev) => prev.map((slot, i) => (i === index ? { ...slot, uri } : slot)));
+      setSlots((prev) => prev.map((slot, i) => (i === index ? { ...slot, uri, status: 'captured' } : slot)));
     });
   };
 
-  const handleExport = async () => {
-    const filledSlots = slots.filter((slot) => slot.uri);
+  const handleSaveSlot = async (index: number, flagged: boolean) => {
+    const slot = slots[index];
+    if (!slot.uri) return;
 
-    if (filledSlots.length === 0) {
-      Alert.alert('Nothing to export', `Scan at least one ${isGenuine ? 'genuine' : 'forged'} signature first.`);
+    if (!caseFolderUri || !flaggedFolderUri) {
+      Alert.alert('Set a folder first', 'Tap "Set Folder" above and choose your Download folder before saving.');
       return;
     }
 
-    try {
-      let savedCount = 0;
-      for (const slot of filledSlots) {
-        if (!slot.uri) continue;
-        await saveScanLocally(slot.uri, slot.filename);
-        savedCount += 1;
-      }
+    setSlots((prev) => prev.map((s, i) => (i === index ? { ...s, status: 'saving' } : s)));
 
-      Alert.alert('Exported locally', `Saved ${savedCount} ${isGenuine ? 'genuine' : 'forged'} signature(s) to local storage.`);
+    try {
+      await writeImageToFolder(slot.uri, caseFolderUri, slot.filename);
+      if (flagged) {
+        await writeImageToFolder(slot.uri, flaggedFolderUri, slot.filename);
+      }
+      setSlots((prev) => prev.map((s, i) => (i === index ? { ...s, status: flagged ? 'flagged' : 'saved' } : s)));
     } catch (error) {
-      console.warn('[PerSignatureScan] export failed', error);
-      Alert.alert('Export failed', 'Unable to export one or more signature images.');
+      console.warn('[PerSignatureScan] save failed', error);
+      Alert.alert('Save failed', 'Unable to write this image to storage. Try again.');
+      setSlots((prev) => prev.map((s, i) => (i === index ? { ...s, status: 'captured' } : s)));
     }
   };
 
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar title="Per Signature Scan" onBackPress={() => nav.back()} />
+
+      <View style={styles.folderCard}>
+        <Text style={styles.fieldLabel}>Case folder</Text>
+        <View style={styles.folderRow}>
+          <View style={[styles.inputWrap, styles.folderInputWrap]}>
+            <TextInput
+              value={caseFolderInput}
+              onChangeText={setCaseFolderInput}
+              placeholder="P001"
+              placeholderTextColor={colors.textTertiary}
+              style={styles.input}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+          </View>
+          <PrimaryButton
+            label={isResolvingFolder ? 'Setting...' : 'Set Folder'}
+            onPress={handleSetFolder}
+            size="small"
+            loading={isResolvingFolder}
+            style={styles.setFolderButton}
+          />
+        </View>
+        {displayPath ? (
+          <Text style={styles.helperText} numberOfLines={2}>Saving to: {displayPath}</Text>
+        ) : (
+          <Text style={styles.helperText}>Tap &quot;Set Folder&quot; to choose your Download folder and create this case.</Text>
+        )}
+        {folderError ? <Text style={styles.errorText}>{folderError}</Text> : null}
+      </View>
 
       <View style={styles.tabsWrap}>
         <CapsuleTabs
@@ -118,7 +224,7 @@ export default function PerSignatureScanScreen() {
             <TextInput
               value={startInput}
               onChangeText={applyStartingFilename}
-              placeholder={`${DEFAULT_PREFIX}_${categoryLetter}_01`}
+              placeholder={`${activeCaseFolder ?? DEFAULT_CASE_FOLDER}_${categoryLetter}_01`}
               placeholderTextColor={colors.textTertiary}
               style={styles.input}
               autoCapitalize="characters"
@@ -140,15 +246,14 @@ export default function PerSignatureScanScreen() {
                 uri={slot.uri}
                 accentColor={accentColor}
                 onPress={() => handleScanSlot(index)}
+                status={slot.status}
+                onSave={() => handleSaveSlot(index, false)}
+                onSaveFlagged={() => handleSaveSlot(index, true)}
               />
             </View>
           ))}
         </View>
       </ScrollView>
-
-      <View style={styles.buttonContainer}>
-        <PrimaryButton label={`Export ${isGenuine ? 'Genuine' : 'Forged'} PNGs`} onPress={handleExport} size="medium" />
-      </View>
     </SafeAreaView>
   );
 }
@@ -176,8 +281,21 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   backButtonBox: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   topBarTitle: { flex: 1, ...getTypographyStyle('t3Title'), color: colors.textPrimary, textAlign: 'center' },
+  folderCard: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.cardBackground,
+    gap: 8,
+  },
+  folderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  folderInputWrap: { flex: 1 },
+  setFolderButton: { minWidth: 110 },
   tabsWrap: { paddingHorizontal: 16, paddingTop: 14 },
-  content: { padding: 16, paddingBottom: 120, gap: 16 },
+  content: { padding: 16, paddingBottom: 32, gap: 16 },
   field: { gap: 8 },
   fieldLabel: { ...getTypographyStyle('c1Caption'), color: colors.textSecondary },
   inputWrap: {
@@ -192,17 +310,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, ...getTypographyStyle('body'), color: colors.textPrimary, paddingVertical: 13 },
   extensionTag: { ...getTypographyStyle('c2Caption'), color: colors.textTertiary },
   helperText: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textTertiary },
+  errorText: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.danger },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   slotWrapper: { width: '47%' },
-  buttonContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.background2,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
 });
