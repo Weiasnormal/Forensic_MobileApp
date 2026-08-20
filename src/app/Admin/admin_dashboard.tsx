@@ -16,6 +16,7 @@ import AdminTeamScreen from './admin_team';
 import AdminStatsScreen from './admin_stats';
 import ProfileScreen from './ProfileScreen';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import { useAuthStore } from '@/store/authStore';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
@@ -134,7 +135,7 @@ export default function AdminDashboard() {
 					notificationsEnabled={notificationsEnabled}
 					autoExportEnabled={autoExportEnabled}
 					onEditProfilePress={() => router.push('/Admin/profileScreens/EditProfileScreen')}
-					onChangePasswordPress={() => router.push('/_login/forgot_password/enterEmail')}
+					onChangePasswordPress={() => router.push('/User/pages/ChangePasswordScreen')}
 					onOrganizationPress={() => router.push('/Admin/profileScreens/OrganizationScreen')}
 					onOrgInviteCodePress={() => router.push('/Admin/profileScreens/OrgInviteCodeScreen')}
 					onManageTeamPress={() => setActiveTab('team')}
@@ -142,7 +143,10 @@ export default function AdminDashboard() {
 					onToggleNotifications={setNotificationsEnabled}
 					onToggleAutoExport={setAutoExportEnabled}
 					onHelpSupportPress={() => router.push('/Admin/profileScreens/HelpSupportScreen')}
-					onSignOutPress={() => router.replace('/_login/SignInPage')}
+					onSignOutPress={async () => {
+						await useAuthStore.getState().logout();
+						router.replace('/_login/SignInPage');
+					}}
 				/>
 			)}
 

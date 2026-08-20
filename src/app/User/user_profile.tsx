@@ -20,12 +20,14 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import DangerRow from '@/_components/admin/DangerRow';
 import DeleteAccountModal from '@/_components/modals/delete_account';
+import { useAuthStore } from '@/store/authStore';
 
 
 export default function UserProfileScreen() {
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
 	const { user, load } = useUser();
+	const logout = useAuthStore((state) => state.logout);
 	const cases = useCaseStore((state) => state.cases);
 	const resetMockDatabase = useCaseStore((state) => state.resetMockDatabase);
 	const allowUploadSourceChoice = useCaseStore((state) => state.allowUploadSourceChoice);
@@ -50,10 +52,10 @@ export default function UserProfileScreen() {
 
 	const initials = getInitials(user.firstName, user.lastName);
 
-	const handleConfirmSignOut = () => {
-		setLogoutModalVisible(false);
-		router.replace('/_login/SignInPage');
-	};
+	const handleConfirmSignOut = async () => {
+	setLogoutModalVisible(false);
+	await logout();
+	router.replace('/_login/SignInPage');};
 
 	return (
 		<SafeAreaView edges = {['left', 'right']} style={styles.safeArea}>
@@ -84,7 +86,7 @@ export default function UserProfileScreen() {
 				<GroupedCard>
 					<SettingsRow icon={User} title="Edit Profile" onPress={() => router.push('/User/pages/setupAccount')} />
 					<Divider />
-					<SettingsRow icon={Lock} title="Change Password" onPress={() => router.push('/_login/forgot_password/enterEmail')} />
+					<SettingsRow icon={Lock} title="Change Password" onPress={() => router.push('/User/pages/ChangePasswordScreen')} />
 				</GroupedCard>
 
 				<SectionLabel label="Preferences" />
