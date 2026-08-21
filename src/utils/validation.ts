@@ -33,7 +33,14 @@ export const confirmPasswordSchema = z
   .min(1, 'Please confirm your password');
 
 export const inviteCodeSchema = z.object({
-  code: z.string().trim().regex(/^\d{7}$/, 'Invite code must be exactly 7 digits'),
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[A-Z]{3}[A-Z0-9]{4}$/,
+      'Invite code must be 3 letters followed by 4 letters/numbers (e.g. ABC-1X2Y)',
+    ),
 });
 
 export const verificationCodeSchema = z.object({
