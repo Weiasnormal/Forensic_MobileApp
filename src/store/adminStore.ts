@@ -38,6 +38,10 @@ interface AdminStore {
 
   isGeneratingInvite: boolean;
 
+  inviteCode: string | null;
+  isUsingMockInvite: boolean;
+  fetchOrGenerateInviteCode: () => Promise<string>;
+
   fetchTeamMembers: () => Promise<void>;
   approveTeamMember: (id: string) => Promise<void>;
   rejectTeamMember: (id: string) => Promise<void>;
@@ -78,7 +82,7 @@ function normalizeTeamMember(record: any): TeamMember | null {
   };
 }
 
-/** "3 days ago" / "2 months ago" style label from an ISO date string. */
+//"3 days ago" / "2 months ago" style label from an ISO date string. 
 export function formatRelativeTime(dateIso: string | null): string {
   if (!dateIso) return 'Recently';
 
@@ -99,6 +103,16 @@ export function formatRelativeTime(dateIso: string | null): string {
   return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
 }
 
+function generateMockInviteCode(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const alphanumeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let prefix = '';
+  let suffix = '';
+  for (let i = 0; i < 3; i++) prefix += letters[Math.floor(Math.random() * letters.length)];
+  for (let i = 0; i < 4; i++) suffix += alphanumeric[Math.floor(Math.random() * alphanumeric.length)];
+  return `${prefix}-${suffix}`;
+}
+
 export const useAdminStore = create<AdminStore>((set, get) => ({
   teamMembers: [],
   pendingApprovals: [],
@@ -106,6 +120,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   teamLoadError: null,
   isUsingMockTeam: false,
   isGeneratingInvite: false,
+  
+  inviteCode: null,
+  isUsingMockInvite: false,
 
   fetchTeamMembers: async () => {
     adminLog.info('AdminStore:Team', 'Fetching team members');
@@ -259,6 +276,38 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       return null;
     } finally {
       set({ isGeneratingInvite: false });
+    }
+  },
+
+  fetchOrGenerateInviteCode: async () => {
+    const existing = get().inviteCode;
+    if (existing) return existing;
+
+    set({ isGeneratingInvite: true });
+    try {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.invite), {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Invite generation failed (${response.status})`);
+      }
+
+      const json = await response.json();
+      const code = json?.code ?? json?.inviteCode ?? null;
+      if (!code) throw new Error('Backend returned no invite code');
+
+      set({ inviteCode: code, isUsingMockInvite: false, isGeneratingInvite: false });
+      return code;
+    } catch (error) {
+      adminLog.warn('AdminStore:Invite', 'Falling back to local mock invite code', error);
+      const mockCode = generateMockInviteCode();
+      set({ inviteCode: mockCode, isUsingMockInvite: true, isGeneratingInvite: false });
+      return mockCode;
     }
   },
 }));
