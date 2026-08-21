@@ -44,6 +44,12 @@ export default function UserAndAdminCodePage() {
 			value = value[value.length - 1];
 		}
 
+		const allowedPattern = index < 3 ? /[A-Za-z]/ : /[A-Za-z0-9]/;
+		if (value && !allowedPattern.test(value)) {
+			return;
+		}
+		value = value.toUpperCase();
+
 		const newValues = [...codeValues];
 		newValues[index] = value;
 		setCodeValues(newValues);
@@ -103,7 +109,8 @@ export default function UserAndAdminCodePage() {
 										inputRefs.current[index] = ref;
 									}}
 									style={[styles.codeInput, errors.code && styles.codeInputError]}
-									keyboardType="number-pad"
+									keyboardType="default"
+									autoCapitalize="characters"
 									maxLength={1}
 									value={value}
 									onChangeText={(text) => handleCodeChange(index, text)}

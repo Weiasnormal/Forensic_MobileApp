@@ -1,6 +1,5 @@
 import type * as zTypes from 'zod';
-
-const { z } = require('zod') as { z: typeof import('zod').z };
+import { z } from 'zod';
 
 function createNameSchema(fieldLabel: string) {
   return z
