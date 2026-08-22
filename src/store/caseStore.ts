@@ -637,6 +637,9 @@ export const useCaseStore = create<CaseStore>()(
               });
 
               if (!upRes.ok) {
+                if (await handleUnauthorizedResponse(upRes)) {
+                  throw new Error('Session expired. Please sign in again.');
+                }
                 throw new Error(`Reference upload failed (${upRes.status})`);
               }
 
@@ -666,6 +669,9 @@ export const useCaseStore = create<CaseStore>()(
               });
 
               if (!upRes.ok) {
+                if (await handleUnauthorizedResponse(upRes)) {
+                  throw new Error('Session expired. Please sign in again.');
+                }
                 throw new Error(`Suspect upload failed (${upRes.status})`);
               }
             }
@@ -683,6 +689,11 @@ export const useCaseStore = create<CaseStore>()(
               ...getAuthHeader(),
             },
             });
+
+            if (!analysisRes.ok) {
+              await handleUnauthorizedResponse(analysisRes);
+            }
+            
             const timeTakenMs = Date.now() - startTime;
 
             let analysisResult: any = null;
