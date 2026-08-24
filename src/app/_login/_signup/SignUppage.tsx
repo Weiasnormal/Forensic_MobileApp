@@ -14,6 +14,7 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
 import { useAuthStore } from '@/store/authStore';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -300,8 +301,8 @@ export default function SignUpPage() {
               {isAuthenticating ? 'Creating account…' : 'Continue'}
             </Text>
           </TouchableOpacity>
-          {registerError ? (
-            <Text allowFontScaling={false} style={styles.footerPrompt}>{registerError}</Text>
+          {ErrorBanner ? (
+            <ErrorBanner message={registerError} />
           ) : null}
 
           <View style={styles.footerRow}>

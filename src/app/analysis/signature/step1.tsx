@@ -11,6 +11,7 @@ import FormField from '@/_components/common/FormField';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 const documentOptions = ['Bank cheque', 'Property deed', 'Last will', 'Contract', 'Affidavit', 'Other'];
 const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
@@ -29,6 +30,8 @@ export default function SignatureStep1Route() {
   const day = caseIdParts[1];
   const year = caseIdParts[2];
   const caseNo = caseIdParts[3];
+
+  const submissionError = useCaseStore((state) => state.submissionError);
 
   const insets = useSafeAreaInsets();
 

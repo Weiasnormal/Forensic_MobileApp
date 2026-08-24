@@ -6,8 +6,9 @@ import { getTypographyStyle } from '@/constants/typography';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function ChangePasswordScreen() {
           placeholder="Repeat new password"
         />
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {ErrorBanner ? <ErrorBanner message={error} /> : null}
 
         <PrimaryButton
           label="Update Password"
