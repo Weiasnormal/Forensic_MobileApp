@@ -12,7 +12,14 @@ interface ErrorBannerProps {
   style?: ViewStyle;
 }
 
-
+/**
+ * Inline, non-blocking error surface. Use for form-level or screen-level
+ * errors (failed submit, failed fetch, validation summary) — anywhere an
+ * error needs to sit in the layout rather than interrupt the user.
+ *
+ * For errors that must stop the user (e.g. destructive action failed,
+ * session expired), use ErrorModal instead.
+ */
 export default function ErrorBanner({ message, title, style }: ErrorBannerProps) {
   if (!message) return null;
 
