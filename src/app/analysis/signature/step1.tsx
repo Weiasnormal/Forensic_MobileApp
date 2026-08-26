@@ -31,6 +31,8 @@ export default function SignatureStep1Route() {
   const year = caseIdParts[2];
   const caseNo = caseIdParts[3];
 
+  
+
   const submissionError = useCaseStore((state) => state.submissionError);
 
   const insets = useSafeAreaInsets();
