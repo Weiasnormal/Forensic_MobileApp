@@ -26,4 +26,9 @@ export const ADMIN_API_ENDPOINTS = {
     get: '/admin/organization',
     update: '/admin/organization',
   },
+  tenant: {
+    getMemberById: (id: string) => `/tenant/member/${id}`,
+    getAllMembers: '/tenant/member',
+    create: '/tenants',
+  },
 } as const;
