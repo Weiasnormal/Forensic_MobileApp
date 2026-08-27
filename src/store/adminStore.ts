@@ -29,6 +29,13 @@ export interface TeamMember {
   joinedAt: string | null;
 }
 
+export interface TenantMemberDetail {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 interface AdminStore {
   teamMembers: TeamMember[];
   pendingApprovals: TeamMember[];
@@ -47,6 +54,11 @@ interface AdminStore {
   rejectTeamMember: (id: string) => Promise<void>;
   suspendTeamMember: (id: string) => Promise<void>;
   generateInviteCode: () => Promise<string | null>;
+
+  memberDetail: TenantMemberDetail | null;
+  isLoadingMemberDetail: boolean;
+  memberDetailError: string | null;
+  fetchMemberById: (userId: string) => Promise<TenantMemberDetail | null>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -79,6 +91,17 @@ function normalizeTeamMember(record: any): TeamMember | null {
     status: normalizeStatus(record.status),
     casesHandled: Number(record.casesHandled ?? 0),
     joinedAt: record.joinedAt ?? record.createdAt ?? null,
+  };
+}
+
+function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
+  const id = record?.id?.toString().trim();
+  if (!id) return null;
+  return {
+    id,
+    firstName: record.firstName?.trim() || '',
+    lastName: record.lastName?.trim() || '',
+    email: record.email?.trim() || '',
   };
 }
 
@@ -123,6 +146,47 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   
   inviteCode: null,
   isUsingMockInvite: false,
+
+  memberDetail: null,
+  isLoadingMemberDetail: false,
+  memberDetailError: null,
+
+  fetchMemberById: async (userId: string) => {
+    adminLog.info('AdminStore:MemberDetail', `Fetching member ${userId}`);
+    set({ isLoadingMemberDetail: true, memberDetailError: null });
+
+    try {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.tenant.getMemberById(userId)), {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Unable to load member (${response.status})`);
+      }
+
+      const json = await response.json();
+      const detail = normalizeTenantMemberDetail(json);
+
+      if (!detail) {
+        throw new Error('Backend returned malformed member data');
+      }
+
+      set({ memberDetail: detail, isLoadingMemberDetail: false });
+      return detail;
+    } catch (error) {
+      adminLog.warn('AdminStore:MemberDetail', 'Unable to fetch member by id', error);
+      set({
+        isLoadingMemberDetail: false,
+        memberDetailError: error instanceof Error ? error.message : 'Unable to load member',
+      });
+      return null;
+    }
+  },
 
   fetchTeamMembers: async () => {
     adminLog.info('AdminStore:Team', 'Fetching team members');
