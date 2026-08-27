@@ -6,6 +6,7 @@ import { MemberRequestCard, TeamOverviewCard, type MemberRequestData, type TeamO
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
+import { router } from 'expo-router';
 
 const sortOptions = ['Alphabetical (A-Z)', 'Most Cases', 'Least Cases'] as const;
 type SortOption = (typeof sortOptions)[number];
@@ -128,7 +129,12 @@ export default function AdminTeamScreen() {
 				) : roster.length > 0 ? (
 					<View style={styles.rosterCard}>
 						{roster.map((member, index) => (
-							<TeamOverviewCard key={member.id} member={member} showDivider={index < roster.length - 1} />
+							<TeamOverviewCard 
+							key={member.id}
+							member={member}
+							showDivider={index < roster.length - 1}
+							onPress={() => router.push({ pathname: '/Admin/profileScreens/MemberDetailsScreen', params: { memberId: member.id } })}
+							/>
 						))}
 					</View>
 				) : (
