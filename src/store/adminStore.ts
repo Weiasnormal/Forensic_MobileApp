@@ -59,6 +59,10 @@ interface AdminStore {
   isLoadingMemberDetail: boolean;
   memberDetailError: string | null;
   fetchMemberById: (userId: string) => Promise<TenantMemberDetail | null>;
+
+  isCreatingTenant: boolean;
+  createTenantError: string | null;
+  createTenant: (name: string) => Promise<string | null>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -150,6 +154,45 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   memberDetail: null,
   isLoadingMemberDetail: false,
   memberDetailError: null,
+
+  isCreatingTenant: false,
+  createTenantError: null,
+
+  createTenant: async (name: string) => {
+    adminLog.info('AdminStore:Tenant', `Creating tenant "${name}"`);
+    set({ isCreatingTenant: true, createTenantError: null });
+
+    try {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.tenant.create), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ Name: name }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Create tenant failed (${response.status})`);
+      }
+
+      const json = await response.json();
+      const tenantId: string | null = typeof json === 'string' ? json : json?.id ?? null;
+
+      set({ isCreatingTenant: false });
+      adminLog.info('AdminStore:Tenant', `✓ Tenant created: ${tenantId}`);
+      return tenantId;
+    } catch (error) {
+      adminLog.warn('AdminStore:Tenant', 'Unable to create tenant', error);
+      set({
+        isCreatingTenant: false,
+        createTenantError: error instanceof Error ? error.message : 'Unable to create organization',
+      });
+      return null;
+    }
+  },
 
   fetchMemberById: async (userId: string) => {
     adminLog.info('AdminStore:MemberDetail', `Fetching member ${userId}`);
