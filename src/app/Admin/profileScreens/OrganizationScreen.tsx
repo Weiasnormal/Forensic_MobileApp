@@ -9,6 +9,7 @@ import Toast from '@/_components/toast';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useUser } from '@/store/userStore';
+import {useAdminStore} from '@/store/adminStore';
 
 interface OrganizationScreenProps {
   organizationName?: string;
@@ -65,16 +66,25 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     setIsEditingOrganizationName(false);
   }, [resolvedOrganizationName]);
 
+  const createTenant = useAdminStore((state) => state.createTenant);
+
   const handleSaveOrganizationName = useCallback(async () => {
     if (!canSaveOrganizationName) {
       setIsEditingOrganizationName(false);
       return;
     }
 
-    await setUser({ organization: trimmedOrganizationName });
-    setIsEditingOrganizationName(false);
-    showToast('Organization name saved');
-  }, [canSaveOrganizationName, setUser, showToast, trimmedOrganizationName]);
+    const tenantId = await createTenant(trimmedOrganizationName);
+
+    if (!tenantId) {
+      showToast('Unable to create organization on the server');
+      return;
+    }
+
+      await setUser({ organization: trimmedOrganizationName });
+      setIsEditingOrganizationName(false);
+      showToast('Organization created');
+    }, [canSaveOrganizationName, createTenant, setUser, showToast, trimmedOrganizationName]);
 
   const handleCopyCode = useCallback(async () => {
     try {

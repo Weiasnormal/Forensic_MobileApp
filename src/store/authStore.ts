@@ -43,6 +43,8 @@ interface AuthState {
   clearAuthError: () => void;
   isTokenExpired: () => boolean;
   setHasHydrated: (value: boolean) => void;
+
+  joinInviteCode: (inviteCode: string) => Promise<void>;
 }
 
 function decodeToken(token: string): AuthUser {
@@ -130,6 +132,12 @@ export const useAuthStore = create<AuthState>()(
         const token = get().accessToken;
         if (!token) throw new Error('Not authenticated.');
         await authApi.changePassword(token, { currentPassword, newPassword });
+      },
+
+      joinInviteCode: async (inviteCode: string) => {
+        const token = get().accessToken;
+        if (!token) throw new Error('You must be signed in to join an organization.');
+        await authApi.joinInviteCode(token, inviteCode);
       },
 
       clearAuthError: () => set({ authError: null }),

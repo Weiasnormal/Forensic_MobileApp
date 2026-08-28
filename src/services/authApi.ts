@@ -114,6 +114,20 @@ export async function changePassword(token: string, request: ChangePasswordReque
   }
 }
 
+export async function joinInviteCode(token: string, inviteCode: string): Promise<void> {
+  const url = buildApiUrl(
+    `${API_ENDPOINTS.auth.joinInviteCode}?InviteCode=${encodeURIComponent(inviteCode)}`,
+  );
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+
+  if (!res.ok && res.status !== 201) {
+    throw new ApiError(res.status, 'Join invite code failed', await parseProblem(res));
+  }
+}
 /**
  * NOT READY: backend ForgotPasswordCommandHandler.ForgotPasswordAsync
  * throws NotImplementedException unconditionally. Calling this will always

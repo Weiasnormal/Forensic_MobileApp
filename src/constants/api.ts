@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
     refresh: '/auth/refresh',
     validateInviteCode: (code: string) => `/auth/validate-invite-code/${code}`,
     registerAdmin: '/auth/register-admin',
+    joinInviteCode: '/auth/join-invite-code',
     
   },
   cases: {
