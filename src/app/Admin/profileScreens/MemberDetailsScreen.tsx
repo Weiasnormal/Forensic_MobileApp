@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { Folder, MinusCircle, UserX } from 'lucide-react-native';
 import ScreenHeader from '@/_components/common/ScreenHeader';
 import Avatar from '@/_components/common/Avatar';
@@ -12,6 +13,7 @@ import Stepper from '@/_components/common/Stepper';
 import ToggleRow from '@/_components/common/ToggleRow';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import { useAdminStore } from '@/store/adminStore';
 
 interface MemberDetailsScreenProps {
   memberInitials: string;
@@ -44,6 +46,15 @@ const MemberDetailsScreen: React.FC<MemberDetailsScreenProps> = ({
   onSuspendAnalystPress,
   onRemoveFromOrgPress,
 }) => {
+  const { memberId } = useLocalSearchParams<{ memberId?: string }>();
+  const fetchMemberById = useAdminStore((state) => state.fetchMemberById);
+
+  useEffect(() => {
+    if (memberId) {
+      void fetchMemberById(memberId);
+    }
+  }, [fetchMemberById, memberId]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader title="Member Details" onBackPress={onBackPress} />
