@@ -12,6 +12,7 @@ import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { useAuthStore } from '@/store/authStore';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 export default function LogInPage() {
   const router = useRouter();
@@ -193,11 +194,9 @@ export default function LogInPage() {
           </View>
 
           <View style={styles.bottomActions}>
-            {signInError ? (
-              <Text allowFontScaling={false} style={styles.footerPrompt }>
-                {signInError}
-              </Text>
-            ) : null}
+            
+            <ErrorBanner message={signInError} />
+
             <PrimaryButton
               label="Sign In"
               onPress={handleSubmit(handleSignIn)}

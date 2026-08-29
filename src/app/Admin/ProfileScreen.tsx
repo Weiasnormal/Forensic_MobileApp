@@ -16,6 +16,7 @@ import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import DangerRow from '@/_components/admin/DangerRow';
 import DeleteAccountModal from '@/_components/modals/delete_account';
 import { router } from 'expo-router';
+import ErrorModal from '@/_components/modals/error_modal';
 
 interface ProfileScreenProps {
   initials: string;
@@ -61,6 +62,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
+
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
         <ScreenStatusBar variant="onBrand" />
@@ -158,17 +161,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             isDeleting={isDeletingAccount}
             onCancel={() => setShowDeleteAccountModal(false)}
             onConfirm={async () => {
-              setIsDeletingAccount(true);
-              try {
-                // call your delete-account endpoint here once it exists
-                setShowDeleteAccountModal(false);
-                router.replace('/_login/SignInPage');
-              } catch (e) {
-                Alert.alert('Error', 'Unable to delete account. Please try again.');
-              } finally {
-                setIsDeletingAccount(false);
-              }
+            setIsDeletingAccount(true);
+            try {
+              setShowDeleteAccountModal(false);
+              router.replace('/_login/SignInPage');
+            } catch (e) {
+              setDeleteError(true);
+            } finally {
+              setIsDeletingAccount(false);
+            }
             }}/>
+          <ErrorModal
+            visible={deleteError}
+            title="Error"
+            message="Unable to delete account. Please try again."
+            onPrimaryPress={() => setDeleteError(false)}
+          />
       </ScrollView>    
     </SafeAreaView>
   );

@@ -21,7 +21,7 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import DangerRow from '@/_components/admin/DangerRow';
 import DeleteAccountModal from '@/_components/modals/delete_account';
 import { useAuthStore } from '@/store/authStore';
-
+import ErrorModal from '@/_components/modals/error_modal';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
@@ -51,6 +51,8 @@ export default function UserProfileScreen() {
 	const restoreSavedCases = useCaseStore((s) => s.restoreSavedCases);
 
 	const initials = getInitials(user.firstName, user.lastName);
+
+	const [deleteError, setDeleteError] = useState(false);
 
 	const handleConfirmSignOut = async () => {
 	setLogoutModalVisible(false);
@@ -183,17 +185,22 @@ export default function UserProfileScreen() {
 				isDeleting={isDeletingAccount}
 				onCancel={() => setShowDeleteAccountModal(false)}
 				onConfirm={async () => {
-					setIsDeletingAccount(true);
-					try {
-					// call your delete-account endpoint here once it exists
+				setIsDeletingAccount(true);
+				try {
 					setShowDeleteAccountModal(false);
 					router.replace('/_login/SignInPage');
-					} catch (e) {
-					Alert.alert('Error', 'Unable to delete account. Please try again.');
-					} finally {
+				} catch (e) {
+					setDeleteError(true);
+				} finally {
 					setIsDeletingAccount(false);
-					}
+				}
 				}}/>
+			<ErrorModal
+				visible={deleteError}
+				title="Error"
+				message="Unable to delete account. Please try again."
+				onPrimaryPress={() => setDeleteError(false)}
+				/>
 			</ScrollView>
 		</SafeAreaView>
 	);

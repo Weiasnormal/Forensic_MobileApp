@@ -3,7 +3,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import PrimaryButton from '@/_components/common/PrimaryButton';
@@ -20,6 +20,7 @@ import { API_ENDPOINTS, buildApiUrl, API_KEY } from '../../../constants/api';
 import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
 import { getAuthHeader } from '@/store/authStore';
+import ErrorModal from '@/_components/modals/error_modal';
 
 const getAuthImageSource = (uri?: string | null) => {
   if (!uri) return undefined;
@@ -88,6 +89,7 @@ export function SignatureResultsScreen() {
 
   const params = useLocalSearchParams<{ caseId?: string }>();
   const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.caseId) {
@@ -220,12 +222,11 @@ export function SignatureResultsScreen() {
   };
 
   const handleExportPdf = async () => {
-    if (!currentCaseId) {
-      Alert.alert('Error', 'Case ID is missing.');
-      return;
-    }
-
-    try {
+  if (!currentCaseId) {
+    setExportError('Case ID is missing.');
+    return;
+  }
+  try {
       const reportPdfUrl = buildApiUrl(`/cases/${currentCaseId}/results`);
       const localUri = FileSystem.documentDirectory + `AVERA_Forensic_Report_${currentCaseId}.pdf`;
 
@@ -247,11 +248,11 @@ export function SignatureResultsScreen() {
           UTI: 'com.adobe.pdf',
         });
       } else {
-        Alert.alert('Download Complete', `File saved to: ${uri}`);
+        setExportError(`File saved to: ${uri}`);
       }
     } catch (error) {
       console.warn('Failed to download PDF:', error);
-      Alert.alert('Export Failed', 'The PDF report is either still generating or unavailable.');
+      setExportError('The PDF report is either still generating or unavailable.');
     }
   };
 
@@ -568,6 +569,13 @@ export function SignatureResultsScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ErrorModal
+        visible={!!exportError}
+        title="Export Failed"
+        message={exportError ?? ''}
+        onPrimaryPress={() => setExportError(null)}
+      />
 
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
         <PrimaryButton label="Export as PDF" onPress={handleExportPdf} size="medium" />

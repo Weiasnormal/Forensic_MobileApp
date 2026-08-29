@@ -60,6 +60,7 @@ export default function SignatureStep1Route() {
         <View style={[styles.progressFill, { width: '50%' }]} />
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 96) }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ErrorBanner message={submissionError} title="Upload issue" />
         <View style={styles.headerSection}>
           <Text style={styles.sectionHeading}>Case Details</Text>
           <Text style={styles.sectionSubheading}>Basic information for this forensic case</Text>

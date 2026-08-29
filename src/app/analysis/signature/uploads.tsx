@@ -7,12 +7,14 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import CameraDisclosureModal from '@/_components/modals/camera_disclosure';
+import ErrorBanner from '@/_components/common/ErrorBanner';
+import ErrorModal from '@/_components/modals/error_modal';
 
 const UPLOAD_DIRECTORY = `${FileSystem.documentDirectory ?? ''}case-uploads/`;
 
@@ -91,11 +93,17 @@ export default function SignatureUploadsRoute() {
     refIndex?: number;
   } | null>(null);
 
+  const submissionError = useCaseStore((state) => state.submissionError);
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<{ target: 'reference' | 'suspect'; index?: number } | null>(null);
+
   const handleCameraPress = (target: 'reference' | 'suspect', refIndex?: number) => {
     if (target === 'suspect') {
       const allRefsFilled = uploads.references.every(Boolean);
       if (!allRefsFilled) {
-        Alert.alert('Complete references first', '...');
+        setErrorModal({ 
+          title: 'Complete references first', 
+          message: 'Fill in all four reference signatures before adding the suspected signature.' });
         return;
       }
     }
@@ -170,6 +178,9 @@ export default function SignatureUploadsRoute() {
       <TopBar title="Upload Signatures" step="2 / 2" onBackPress={() => nav.back()} />
       <View style={[styles.progressBar, styles.progressBarFull]} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 96) }]} showsVerticalScrollIndicator={false}>
+        
+        <ErrorBanner message={submissionError} title="Upload issue" />
+       
         <View style={styles.headerSection}>
           <Text style={styles.sectionHeading}>Reference Signatures</Text>
           <Text style={styles.sectionSubheading}>Upload 4 reference signatures</Text>
@@ -208,10 +219,7 @@ export default function SignatureUploadsRoute() {
                         style={styles.clearImageButton}
                         onPress={(event) => {
                           event.stopPropagation();
-                          Alert.alert('Remove image', 'Remove this reference signature?', [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Remove', style: 'destructive', onPress: () => setDraftUpload('reference', index, null) },
-                          ]);
+                          setPendingRemoval({ target: 'reference', index });
                         }}
                       >
                         <Ionicons name="trash" size={14} color={colors.textPrimary} />
@@ -256,10 +264,7 @@ export default function SignatureUploadsRoute() {
                 style={styles.clearImageButtonLarge}
                 onPress={(event) => {
                   event.stopPropagation();
-                  Alert.alert('Remove image', 'Remove the suspected signature?', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => setDraftUpload('suspect', 0, null) },
-                  ]);
+                  setPendingRemoval({ target: 'suspect' });
                 }}
               >
                 <Ionicons name="trash" size={16} color={colors.textPrimary} />
@@ -337,10 +342,9 @@ export default function SignatureUploadsRoute() {
                 }
 
                 if (duplicateCount > 0) {
-                  Alert.alert(
-                    'Duplicate Detected',
-                    `${duplicateCount} image(s) were skipped because they are already selected in this case.`
-                  );
+                  setErrorModal({ 
+                    title: 'Duplicate Detected', 
+                    message: `${duplicateCount} image(s) were skipped because they are already selected in this case.` });
                 }
               }
               return;
@@ -356,7 +360,9 @@ export default function SignatureUploadsRoute() {
               const asset = result.assets?.[0];
               if (asset && asset.uri) {
                 if (isDuplicate(asset)) {
-                  Alert.alert('Already Selected', 'This image is already being used as a reference signature.');
+                  setErrorModal({ 
+                    title: 'Already Selected', 
+                    message: 'This image is already being used as a reference signature.' });
                   return;
                 }
 
@@ -374,7 +380,7 @@ export default function SignatureUploadsRoute() {
             }
           } catch (e) {
             console.warn('Gallery pick failed', e);
-            Alert.alert('Error', 'Unable to pick image from gallery.');
+            setErrorModal({ title: 'Error', message: 'Unable to pick image from gallery.' });
           }
         }}
       />
@@ -386,6 +392,32 @@ export default function SignatureUploadsRoute() {
           setShowCameraDisclosure(false);
           setPendingUploadTarget(null);
         }}
+      />
+
+      <ErrorModal
+        visible={!!errorModal}
+        title={errorModal?.title}
+        message={errorModal?.message ?? ''}
+        onPrimaryPress={() => setErrorModal(null)}
+      />
+
+      <ErrorModal
+        visible={!!pendingRemoval}
+        title="Remove image"
+        message={pendingRemoval?.target === 'reference'
+          ? 'Remove this reference signature?'
+          : 'Remove the suspected signature?'}
+        primaryLabel="Remove"
+        onPrimaryPress={() => {
+          if (pendingRemoval?.target === 'reference' && pendingRemoval.index !== undefined) {
+            setDraftUpload('reference', pendingRemoval.index, null);
+          } else if (pendingRemoval?.target === 'suspect') {
+            setDraftUpload('suspect', 0, null);
+          }
+          setPendingRemoval(null);
+        }}
+        secondaryLabel="Cancel"
+        onSecondaryPress={() => setPendingRemoval(null)}
       />
 
       <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={closePreview}>

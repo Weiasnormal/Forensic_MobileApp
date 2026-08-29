@@ -306,9 +306,8 @@ export default function SignUpPage() {
               {isAuthenticating ? 'Creating account…' : 'Continue'}
             </Text>
           </TouchableOpacity>
-          {ErrorBanner ? (
-            <ErrorBanner message={registerError} />
-          ) : null}
+          
+          <ErrorBanner message={registerError} />
 
           <View style={styles.footerRow}>
             <Text allowFontScaling={false} style={styles.footerPrompt}>Already have an account? </Text>

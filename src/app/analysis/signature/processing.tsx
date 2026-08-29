@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Check, Info } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import {StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -9,6 +9,7 @@ import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { type CaseStatus, useCaseStore } from '@/store/caseStore';
+import ErrorModal from '@/_components/modals/error_modal';
 
 interface ProcessingStepInfo {
   id: string;
@@ -90,6 +91,7 @@ export default function SignatureProcessingRoute() {
 
   const [displayProgress, setDisplayProgress] = useState(targetProgress);
   const [isCompleteFired, setIsCompleteFired] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const targetRef = useRef(targetProgress);
   const creepAccumulatorRef = useRef(0);
 
@@ -150,17 +152,10 @@ export default function SignatureProcessingRoute() {
   };
 
   useEffect(() => {
-    if (submissionStatus !== 'error') return;
-    Alert.alert('Submission failed', submissionError || 'An unexpected error occurred.', [
-      {
-        text: 'Back to uploads',
-        onPress: () => {
-          resetSubmissionState();
-          nav.replace('/analysis/signature/uploads');
-        },
-      },
-    ]);
-  }, [nav, resetSubmissionState, submissionError, submissionStatus]);
+  if (submissionStatus === 'error') {
+    setShowErrorModal(true);
+  }
+}, [submissionStatus]);
 
   useEffect(() => {
     if (progress < 100 || isCompleteFired) return;
@@ -262,6 +257,18 @@ export default function SignatureProcessingRoute() {
         </View>
         <PrimaryButton label="Back to Home" onPress={handleBackToHome} size="medium" />
       </View>
+
+      <ErrorModal
+        visible={showErrorModal}
+        title="Submission failed"
+        message={submissionError || 'An unexpected error occurred.'}
+        primaryLabel="Back to uploads"
+        onPrimaryPress={() => {
+          setShowErrorModal(false);
+          resetSubmissionState();
+          nav.replace('/analysis/signature/uploads');
+        }}
+      />
     </SafeAreaView>
   );
 }
