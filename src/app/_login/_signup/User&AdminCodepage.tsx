@@ -1,22 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import {useAuthStore} from '@/store/authStore';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
-
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type InviteCodeFormValues, inviteCodeSchema } from '../../../utils/validation';
 
@@ -25,6 +16,10 @@ export default function UserAndAdminCodePage() {
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].signUpCode;
+
+	const joinInviteCode = useAuthStore((state) => state.joinInviteCode);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [submitError, setSubmitError] = useState<string | null>(null);
 
 	const [codeValues, setCodeValues] = useState(Array(7).fill(''));
 	const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -66,12 +61,25 @@ export default function UserAndAdminCodePage() {
 		}
 	};
 
-	const handleVerify = (_values: InviteCodeFormValues) => {
-		if (codeValues.join('').length === 7) {
+	const handleVerify = async (values: InviteCodeFormValues) => {
+		setSubmitError(null);
+
+		const raw = values.code.toUpperCase();
+		const formattedCode = `${raw.slice(0, 3)}-${raw.slice(3, 7)}`;
+
+		setIsSubmitting(true);
+		try {
+			await joinInviteCode(formattedCode);
 			router.push({
-				pathname: '/_login/_signup/PendingUser&Admin',
-				params: { role: activeRole },
+			pathname: '/_login/_signup/PendingUser&Admin',
+			params: { role: activeRole },
 			});
+		} catch (error) {
+			setSubmitError(
+			error instanceof Error ? error.message : 'Invalid invite code. Please check and try again.',
+			);
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -122,19 +130,21 @@ export default function UserAndAdminCodePage() {
 						))}
 					</View>
 
-					{errors.code?.message ? (
-						<Text allowFontScaling={false} style={styles.errorText}>{errors.code.message}</Text>
-					) : null}
+					{submitError ? (
+						<Text allowFontScaling={false} style={styles.errorText}>{submitError}</Text>
+						) : null}
 
 					<Text allowFontScaling={false} style={styles.helperText}>{roleConfig.noCodeText}</Text>
 
 					<TouchableOpacity
-						style={[styles.primaryButton, codeValues.join('').length !== 7 && styles.primaryButtonDisabled]}
+						style={[styles.primaryButton, (codeValues.join('').length !== 7 || isSubmitting) && styles.primaryButtonDisabled]}
 						activeOpacity={0.85}
 						onPress={handleSubmit(handleVerify)}
-						disabled={codeValues.join('').length !== 7}
-					>
-						<Text allowFontScaling={false} style={styles.primaryButtonText}>Verify & continue</Text>
+						disabled={codeValues.join('').length !== 7 || isSubmitting}
+						>
+						<Text allowFontScaling={false} style={styles.primaryButtonText}>
+							{isSubmitting ? 'Verifying…' : 'Verify & continue'}
+						</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>

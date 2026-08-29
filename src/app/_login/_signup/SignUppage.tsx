@@ -32,6 +32,8 @@ export default function SignUpPage() {
   const [tabsWidth, setTabsWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
 
+  const login = useAuthStore((state) => state.login);
+
   const roleConfig = ROLE_SETTINGS[activeRole].signUp;
   const {
     control,
@@ -74,24 +76,27 @@ export default function SignUpPage() {
     outputRange: [0, pillWidth],
   });
 
-    const handleContinue = async (values: SignUpFormValues) => {
-    setRegisterError(null);
-    try {
-      await register(
-        values.firstName,
-        values.lastName,
-        values.email,
-        values.password,
-        activeRole === 'admin' ? 'Admin' : 'User',
-      );
-      router.push({
-        pathname: '/_login/_signup/User&AdminCodepage',
-        params: { role: activeRole },
-      });
-    } catch (error) {
-      setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
-    }
-  };
+  const handleContinue = async (values: SignUpFormValues) => {
+  setRegisterError(null);
+  try {
+    await register(
+      values.firstName,
+      values.lastName,
+      values.email,
+      values.password,
+      activeRole === 'admin' ? 'Admin' : 'User',
+    );
+
+    await login(values.email, values.password);
+
+    router.push({
+      pathname: '/_login/_signup/User&AdminCodepage',
+      params: { role: activeRole },
+    });
+  } catch (error) {
+    setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
+  }
+};
 
   return (
     <View style={styles.container}>
