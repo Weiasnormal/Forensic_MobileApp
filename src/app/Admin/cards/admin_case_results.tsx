@@ -9,14 +9,12 @@ import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import KeyFindingsModal from '@/_components/modals/key_findingsmodal';
-import {
-  findOverlayImage,
-  REFERENCE_SLOTS,
-  resolveCaseVerdict,
-} from '@/services/signatureAnalysis';
+import { findOverlayImage, REFERENCE_SLOTS, resolveCaseVerdict } from '@/services/signatureAnalysis';
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { useCaseStore } from '@/store/caseStore';
 import { getAuthHeader } from '@/store/authStore';
+import ErrorModal from '@/_components/modals/error_modal';
+
 
 export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: string }) {
   const router = useRouter() as any;
@@ -35,6 +33,8 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
   const resolved = useMemo(() => resolveCaseVerdict(caseItem ?? null, analysisResult), [caseItem, analysisResult]);
   const verdictLabel = resolved.verdictLabel;
   const confidenceValue = resolved.confidence;
+
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const referenceOverlayUris = useMemo(() => {
     const variant = activeView === 'Heatmap' ? 'Overlay' : activeView === 'Bounding Box' ? 'BoundingBox' : 'StrokeDiff';
@@ -64,6 +64,17 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
 
   const openFinding = (item: { metric: string; value: string; detail?: string }) => setSelectedFinding(item);
   const closeFinding = () => setSelectedFinding(null);
+
+  const handleSaveReview = () => {
+    // TODO: wire to POST /admin/cases/{id}/review once the backend endpoint exists.
+    setReviewError('Supervisor review submission is not yet available. This will be enabled in a future update.');
+  };
+
+  const handleExportPdf = () => {
+    // TODO: wire to GET /cases/{id}/results (endpoint exists — see GetResults.cs);
+    // this card just hasn't been connected to it yet.
+    setReviewError('PDF export from this screen is not yet connected. Use the analyst results screen to export.');
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -178,13 +189,20 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
           <Text style={styles.sectionLabel}>Review Note (Optional)</Text>
           <View style={styles.noteBox}><Text style={styles.notePlaceholder}>Add observations, evidence references, or rationale for this review decision...</Text></View>
 
-          <PrimaryButton label="Save Review" onPress={() => {}} size="large" />
-          <SecondaryButton label="Export PDF Report" onPress={() => {}} style={{ marginTop: 12 }} />
+          <PrimaryButton label="Save Review" onPress={handleSaveReview} size="large" />
+          <SecondaryButton label="Export PDF Report" onPress={handleExportPdf} style={{ marginTop: 12 }} />
         </View>
 
       </ScrollView>
 
       <KeyFindingsModal visible={selectedFinding !== null} onClose={closeFinding} title={selectedFinding?.metric ?? ''} badgeLabel={selectedFinding?.value ?? ''} observation={selectedFinding?.detail} isSuspected={resolved.isSuspected} measuredStandard={undefined} measuredQuestioned={undefined} />
+
+      <ErrorModal
+        visible={!!reviewError}
+        title="Not Available Yet"
+        message={reviewError ?? ''}
+        onPrimaryPress={() => setReviewError(null)}
+      />
 
     </SafeAreaView>
   );

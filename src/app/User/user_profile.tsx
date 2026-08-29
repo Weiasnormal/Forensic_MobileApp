@@ -189,7 +189,7 @@ export default function UserProfileScreen() {
 				try {
 					setShowDeleteAccountModal(false);
 					router.replace('/_login/SignInPage');
-				} catch (e) {
+				} catch {
 					setDeleteError(true);
 				} finally {
 					setIsDeletingAccount(false);

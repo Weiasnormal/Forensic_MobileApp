@@ -117,14 +117,18 @@ export default function SignatureUploadsRoute() {
     if (!pendingUploadTarget) return;
 
     const { target, refIndex } = pendingUploadTarget;
-    scanForensicDocument(async (scannedUri) => {
-      const persistedUri = await persistUploadUri(scannedUri, target === 'suspect' ? 'suspect-scan' : `reference-${(refIndex ?? 0) + 1}-scan`);
-      if (target === 'reference' && refIndex !== undefined) {
-        setDraftUpload('reference', refIndex, persistedUri);
-      } else if (target === 'suspect') {
-        setDraftUpload('suspect', 0, persistedUri);
-      }
-    });
+    scanForensicDocument(
+      async (scannedUri) => {
+        const persistedUri = await persistUploadUri( scannedUri,
+          target === 'suspect' ? 'suspect-scan' : `reference-${(refIndex ?? 0) + 1}-scan`);
+        if (target === 'reference' && refIndex !== undefined) {
+          setDraftUpload('reference', refIndex, persistedUri);
+        } else if (target === 'suspect') {
+          setDraftUpload('suspect', 0, persistedUri);
+        }
+      },
+      (title, message) => setErrorModal({ title, message }),
+    );
     setPendingUploadTarget(null);
   };
 

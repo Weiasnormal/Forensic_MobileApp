@@ -14,6 +14,7 @@ interface Props {
 
 export const scanForensicDocument = async (
   onImageScanned: (uri: string) => void,
+  onError?: (title: string, message: string) => void,
 ): Promise<boolean> => {
   try {
     const { scannedImages, status } = await DocumentScanner.scanDocument({
@@ -24,10 +25,13 @@ export const scanForensicDocument = async (
     console.log('[scanForensicDocument] status:', status, 'count:', scannedImages?.length ?? 0);
 
     if (status === ScanDocumentResponseStatus.Cancel || !scannedImages?.length) {
-      Alert.alert(
-        'Scan not completed',
-        'The scan didn’t finish. If you used the clean-up tool in the scanner, try again without it — some devices fail to apply it. Otherwise just retry the scan.',
-      );
+      const message =
+        'The scan didn\u2019t finish. If you used the clean-up tool in the scanner, try again without it \u2014 some devices fail to apply it. Otherwise just retry the scan.';
+      if (onError) {
+        onError('Scan not completed', message);
+      } else {
+        Alert.alert('Scan not completed', message);
+      }
       return false;
     }
 
@@ -35,7 +39,12 @@ export const scanForensicDocument = async (
     return true;
   } catch (error) {
     console.error('[scanForensicDocument] threw:', error);
-    Alert.alert('Scanner Error', 'Failed to initialize the document scanner.');
+    const message = 'Failed to initialize the document scanner.';
+    if (onError) {
+      onError('Scanner Error', message);
+    } else {
+      Alert.alert('Scanner Error', message);
+    }
     return false;
   }
 };
