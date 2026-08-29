@@ -6,12 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-let ImagePicker: any;
-try {
-  ImagePicker = require('expo-image-picker');
-} catch (e) {
-  ImagePicker = null;
-}
+import * as ImagePicker from 'expo-image-picker'; 
+import ErrorModal from '@/_components/modals/error_modal';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 export default function SetupAccount() {
   const router = useRouter();
@@ -19,16 +16,21 @@ export default function SetupAccount() {
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
   const [email, setEmail] = useState(user.email);
-  const [role, setRole] = useState(user.role || '');
-  const [organization, setOrganization] = useState(user.organization || '');
+  const [role] = useState(user.role || '');
+  const [organization] = useState(user.organization || '');
   const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri || null);
   const [showSaveProfileModal, setShowSaveProfileModal] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
 
   const pickImage = async () => {
     try {
-      if (!ImagePicker) return;
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.status !== 'granted') return;
+      if (permissionResult.status !== 'granted')  {
+      setAvatarError('Photo library access was denied. Enable it in your device settings to change your avatar.');
+      return;
+    }
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -37,30 +39,33 @@ export default function SetupAccount() {
         aspect: [1, 1],
       });
 
-      const canceled = result.canceled ?? result.cancelled;
-      if (!canceled) {
-        const uri = result.assets?.[0]?.uri ?? result.uri;
+      if (!result.canceled) {
+        const uri = result.assets?.[0]?.uri;
         if (!uri) {
           return;
         }
-        // Store the URI directly - Expo's image picker provides persistent cache URIs in most cases
         setAvatarUri(uri);
+        setAvatarError(null);
       }
-    } catch (e) {
-    }
+    } catch {
+    setAvatarError('Unable to open your photo library. Please try again.');
+  }
   };
 
   const handleSave = async () => {
-    await setUser({
-      firstName,
-      lastName,
-      email,
-      role,
-      organization,
-      avatarUri: avatarUri || undefined,
-    });
-
-    router.back();
+    try {
+      await setUser({
+        firstName,
+        lastName,
+        email,
+        role,
+        organization,
+        avatarUri: avatarUri || undefined,
+      });
+      router.back();
+    } catch {
+      setSaveError('Unable to save your profile changes. Please try again.');
+    }
   };
 
   const handleConfirmSave = () => {
@@ -91,6 +96,8 @@ export default function SetupAccount() {
             <Ionicons name="pencil" size={14} color="#FFFFFF" />
           </View>
         </Pressable>
+
+        <ErrorBanner message={avatarError} />
 
         <View style={styles.field}>
           <FieldLabel label="First name" />
@@ -152,6 +159,13 @@ export default function SetupAccount() {
         }}
         onDiscard={() => setShowSaveProfileModal(false)}
         onGoBack={() => setShowSaveProfileModal(false)}
+      />
+
+      <ErrorModal
+        visible={!!saveError}
+        title="Save Failed"
+        message={saveError ?? ''}
+        onPrimaryPress={() => setSaveError(null)}
       />
     </SafeAreaView>
   );

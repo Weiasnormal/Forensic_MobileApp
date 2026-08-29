@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, Lock, Briefcase, Copy, Users, BarChart3, Bell, Upload, Info, FileText, UserX } from 'lucide-react-native';
 import SectionLabel from '@/_components/common/SectionLabel';

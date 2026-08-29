@@ -8,15 +8,11 @@ import { useUser } from '@/store/userStore';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-
-let ImagePicker: any;
-try {
-  ImagePicker = require('expo-image-picker');
-} catch (e) {
-  ImagePicker = null;
-}
+import * as ImagePicker from 'expo-image-picker';
+import ErrorModal from '@/_components/modals/error_modal';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -42,11 +38,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const canContinue = firstName.trim().length > 1 && lastName.trim().length > 1 && email.trim().length > 3;
 
-  const pickImage = async () => {
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+ const pickImage = async () => {
     try {
-      if (!ImagePicker) return;
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.status !== 'granted') return;
+      if (permissionResult.status !== 'granted') {
+        setAvatarError('Photo library access was denied. Enable it in your device settings to change your avatar.');
+        return;
+      }
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -55,32 +56,36 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         aspect: [1, 1],
       });
 
-      const canceled = result.canceled ?? result.cancelled;
-      if (!canceled) {
-        const uri = result.assets?.[0]?.uri ?? result.uri;
+      if (!result.canceled) {
+        const uri = result.assets?.[0]?.uri;
         if (!uri) return;
         setAvatarUri(uri);
+        setAvatarError(null);
       }
-    } catch (e) {
+    } catch {
+      setAvatarError('Unable to open your photo library. Please try again.');
     }
   };
-
   const handleSave = async () => {
-    await setUser({
-      firstName,
-      lastName,
-      email,
-      role,
-      organization,
-      avatarUri: avatarUri || undefined,
-    });
+    try {
+      await setUser({
+        firstName,
+        lastName,
+        email,
+        role,
+        organization,
+        avatarUri: avatarUri || undefined,
+      });
 
-    if (onSavePress) {
-      onSavePress();
-      return;
+      if (onSavePress) {
+        onSavePress();
+        return;
+      }
+
+      router.back();
+    } catch {
+      setSaveError('Unable to save your profile changes. Please try again.');
     }
-
-    router.back();
   };
 
   return (
@@ -106,6 +111,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             <Ionicons name="pencil" size={14} color={colors.primaryText} />
           </View>
         </Pressable>
+
+        <ErrorBanner message={avatarError} />
 
         <View style={styles.field}>
           <FormField
@@ -176,6 +183,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         }}
         onDiscard={() => setShowSaveProfileModal(false)}
         onGoBack={() => setShowSaveProfileModal(false)}
+      />
+
+      <ErrorModal
+        visible={!!saveError}
+        title="Save Failed"
+        message={saveError ?? ''}
+        onPrimaryPress={() => setSaveError(null)}
       />
     </SafeAreaView>
   );
