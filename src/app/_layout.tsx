@@ -1,11 +1,11 @@
 import React from 'react';
-
 import { UserProvider } from '@/store/userStore';
 import { useAuthStore } from '@/store/authStore';
 import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold, useFonts } from '@expo-google-fonts/sora';
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import GlobalToast from '@/_components/common/GlobalToast';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -58,6 +58,7 @@ export default function RootLayout() {
         <AuthGate>
           <Stack screenOptions={{ headerShown: false }} />
         </AuthGate>
+        <GlobalToast />
       </UserProvider>
     </SafeAreaProvider>
   );

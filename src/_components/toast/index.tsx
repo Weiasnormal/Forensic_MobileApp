@@ -1,7 +1,10 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+
+export type ToastVariant = 'neutral' | 'success';
 
 interface ToastProps {
   visible: boolean;
@@ -9,9 +12,36 @@ interface ToastProps {
   duration?: number;
   onDismiss?: () => void;
   style?: ViewStyle;
+  variant?: ToastVariant;
 }
 
-const Toast: React.FC<ToastProps> = ({ visible, message, duration = 2000, onDismiss, style }) => {
+const Toast: React.FC<ToastProps> = ({
+  visible,
+  message,
+  duration = 2000,
+  onDismiss,
+  style,
+  variant = 'neutral',
+}) => {
+  const [isMounted, setIsMounted] = useState(visible);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setIsMounted(true);
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: 180, useNativeDriver: true }),
+      ]).start();
+      return;
+    }
+
+    Animated.timing(opacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
+      setIsMounted(false);
+    });
+  }, [visible, opacity, translateY]);
+
   useEffect(() => {
     if (!visible || !onDismiss) {
       return;
@@ -21,15 +51,18 @@ const Toast: React.FC<ToastProps> = ({ visible, message, duration = 2000, onDism
     return () => clearTimeout(timeout);
   }, [duration, onDismiss, visible]);
 
-  if (!visible) {
+  if (!isMounted) {
     return null;
   }
 
   return (
     <View pointerEvents="none" style={[styles.wrap, style]}>
-      <View style={styles.toast}>
+      <Animated.View style={[styles.toast, { opacity, transform: [{ translateY }] }]}>
+        {variant === 'success' ? (
+          <Ionicons name="checkmark-circle" size={16} color={colors.statusGenuine} style={styles.icon} />
+        ) : null}
         <Text style={styles.text}>{message}</Text>
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -43,6 +76,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toast: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 999,
@@ -53,10 +88,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
+  icon: {
+    marginRight: 6,
+  },
   text: {
     ...getTypographyStyle('c2Caption'),
     color: colors.primaryText,
   },
 });
 
+
 export default Toast;
+
