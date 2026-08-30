@@ -3,6 +3,7 @@ import { API_KEY, buildApiUrl } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
 import { MOCK_TEAM_MEMBERS } from '@/constants/adminMockData';
 import { getAuthHeader } from './authStore';
+import { useFeedbackStore } from './feedbackStore';
 
 const adminLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -300,6 +301,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
     }));
 
+     useFeedbackStore.getState().showToast('Member request approved', 'success');
+
     if (get().isUsingMockTeam) return;
 
     try {
@@ -321,6 +324,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       teamMembers: state.teamMembers.filter((member) => member.id !== id),
       pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
     }));
+    
+    useFeedbackStore.getState().showToast('Member request declined', 'success');
 
     if (get().isUsingMockTeam) return;
 

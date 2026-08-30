@@ -7,6 +7,7 @@ import { fetchBackendCases } from '@/services/backendCases';
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
 import { getAuthHeader, handleUnauthorizedResponse  } from './authStore';
+import { useFeedbackStore } from './feedbackStore';
 
 const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
 const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'BoundingBox', 'StrokeDiff'];
@@ -569,7 +570,8 @@ export const useCaseStore = create<CaseStore>()(
                 activeSignatureCaseId: caseId,
               };
             });
-            
+
+            useFeedbackStore.getState().showToast('Case created — running analysis', 'success');
 
             caseLog.info('CaseStore:Submit', 'Uploading images for case', { caseId });
             set({ submissionStep: 'Uploading reference signatures', submissionProgress: 10 });
@@ -797,6 +799,11 @@ export const useCaseStore = create<CaseStore>()(
               submissionProgress: hasVerdict ? 100 : state.submissionProgress,
               submissionError: hasVerdict ? null : 'Analysis did not return a valid verdict.',
             }));
+
+            if (hasVerdict) {
+              useFeedbackStore.getState().showToast('Analysis complete', 'success');
+            }
+
             caseLog.info('CaseStore:Submit', '✓ Case submitted successfully', { caseId, analysisResult });
 
             const finalCase = get().cases.find((c) => c.caseId === caseId)!;
