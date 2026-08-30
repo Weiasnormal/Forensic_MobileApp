@@ -7,6 +7,7 @@ import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { router } from 'expo-router';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 const sortOptions = ['Alphabetical (A-Z)', 'Most Cases', 'Least Cases'] as const;
 type SortOption = (typeof sortOptions)[number];
@@ -21,10 +22,12 @@ export default function AdminTeamScreen() {
 	const fetchTeamMembers = useAdminStore((state) => state.fetchTeamMembers);
 	const approveTeamMember = useAdminStore((state) => state.approveTeamMember);
 	const rejectTeamMember = useAdminStore((state) => state.rejectTeamMember);
+	const teamLoadError = useAdminStore((state) => state.teamLoadError);
+	const isUsingMockTeam = useAdminStore((state) => state.isUsingMockTeam);
 
 	useEffect(() => {
 		fetchTeamMembers();
-	}, []);
+	}, );
 
 	const memberRequests: MemberRequestData[] = useMemo(
 		() =>
@@ -67,6 +70,13 @@ export default function AdminTeamScreen() {
 
 			<View style={styles.header}>
 				<Text style={styles.pageTitle}>Team Management</Text>
+
+				{isUsingMockTeam ? (
+					<ErrorBanner
+						title="Showing demo data"
+						message="Live team data isn't available yet — approvals and edits here won't be saved."
+					/>
+					) : null}
 
 				<View style={styles.searchBox}>
 					<Ionicons name="search" size={18} color={colors.label} />
