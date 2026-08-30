@@ -87,7 +87,6 @@ export default function PerSignatureScanScreen() {
         console.warn('[PerSignatureScan] auto-resolve folder failed', error);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const applyResolvedFolder = (name: string, folders: CaseFolders, resetSlots: boolean) => {
@@ -146,6 +145,10 @@ export default function PerSignatureScanScreen() {
     await scanForensicDocument((uri) => {
       setSlots((prev) => prev.map((slot, i) => (i === index ? { ...slot, uri, status: 'captured' } : slot)));
     });
+  };
+
+  const handleDeleteSlot = (index: number) => {
+    setSlots((prev) => prev.map((slot, i) => (i === index ? { ...slot, uri: null, status: 'empty' } : slot)));
   };
 
   const handleSaveSlot = async (index: number, flagged: boolean) => {
@@ -249,6 +252,8 @@ export default function PerSignatureScanScreen() {
                 status={slot.status}
                 onSave={() => handleSaveSlot(index, false)}
                 onSaveFlagged={() => handleSaveSlot(index, true)}
+                onReplace={() => handleScanSlot(index)}
+                onDelete={() => handleDeleteSlot(index)}
               />
             </View>
           ))}
