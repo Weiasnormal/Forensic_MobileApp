@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker';
 import ErrorModal from '@/_components/modals/error_modal';
 import ErrorBanner from '@/_components/common/ErrorBanner';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -76,6 +77,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         organization,
         avatarUri: avatarUri || undefined,
       });
+
+      useFeedbackStore.getState().showToast('Profile updated successfully', 'success');
 
       if (onSavePress) {
         onSavePress();

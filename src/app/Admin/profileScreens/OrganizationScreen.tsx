@@ -174,7 +174,7 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
         <InfoRow label="Created" value={resolvedCreatedDate} />
       </ScrollView>
 
-      <Toast visible={toastVisible} message={toastMessage} onDismiss={() => setToastVisible(false)} />
+      <Toast visible={toastVisible} message={toastMessage} variant="success" onDismiss={() => setToastVisible(false)} />
     </SafeAreaView>
   );
 };

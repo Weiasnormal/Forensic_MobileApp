@@ -17,6 +17,7 @@ import DangerRow from '@/_components/admin/DangerRow';
 import DeleteAccountModal from '@/_components/modals/delete_account';
 import { router } from 'expo-router';
 import ErrorModal from '@/_components/modals/error_modal';
+import SuccessModal from '@/_components/modals/success_modal';
 
 interface ProfileScreenProps {
   initials: string;
@@ -63,6 +64,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
@@ -164,8 +166,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             setIsDeletingAccount(true);
             try {
               setShowDeleteAccountModal(false);
+              setDeleteSuccess(true);
               router.replace('/_login/SignInPage');
-            } catch (e) {
+            } catch {
               setDeleteError(true);
             } finally {
               setIsDeletingAccount(false);
@@ -176,6 +179,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             title="Error"
             message="Unable to delete account. Please try again."
             onPrimaryPress={() => setDeleteError(false)}
+          />
+          <SuccessModal
+            visible={deleteSuccess}
+            title="Account Deleted"
+            message="Your login access has been removed. Any case records you submitted are retained for chain-of-custody purposes."
+            primaryLabel="Done"
+            onPrimaryPress={() => {
+              setDeleteSuccess(false);
+              router.replace('/_login/SignInPage');
+            }}
           />
       </ScrollView>    
     </SafeAreaView>
