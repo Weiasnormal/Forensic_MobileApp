@@ -22,6 +22,7 @@ import DangerRow from '@/_components/admin/DangerRow';
 import DeleteAccountModal from '@/_components/modals/delete_account';
 import { useAuthStore } from '@/store/authStore';
 import ErrorModal from '@/_components/modals/error_modal';
+import SuccessModal from '@/_components/modals/success_modal';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
@@ -41,6 +42,7 @@ export default function UserProfileScreen() {
 	);
 	const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 	const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+	const [deleteSuccess, setDeleteSuccess] = useState(false);
 
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
@@ -175,32 +177,43 @@ export default function UserProfileScreen() {
 			/>
 			<Divider />
 				<DangerRow
-				icon={UserX}
-				title="Delete Account"
-				subtitle="Permanently remove your login access"
-				onPress={() => setShowDeleteAccountModal(true)}
-				/>
+					icon={UserX}
+					title="Delete Account"
+					subtitle="Permanently remove your login access"
+					onPress={() => setShowDeleteAccountModal(true)}
+					/>
 				<DeleteAccountModal
-				visible={showDeleteAccountModal}
-				isDeleting={isDeletingAccount}
-				onCancel={() => setShowDeleteAccountModal(false)}
-				onConfirm={async () => {
-				setIsDeletingAccount(true);
-				try {
-					setShowDeleteAccountModal(false);
-					router.replace('/_login/SignInPage');
-				} catch {
-					setDeleteError(true);
-				} finally {
-					setIsDeletingAccount(false);
-				}
-				}}/>
-			<ErrorModal
-				visible={deleteError}
-				title="Error"
-				message="Unable to delete account. Please try again."
-				onPrimaryPress={() => setDeleteError(false)}
-				/>
+					visible={showDeleteAccountModal}
+					isDeleting={isDeletingAccount}
+					onCancel={() => setShowDeleteAccountModal(false)}
+					onConfirm={async () => {
+					setIsDeletingAccount(true);
+					try {
+						setShowDeleteAccountModal(false);
+						setDeleteSuccess(true);
+						router.replace('/_login/SignInPage');
+					} catch {
+						setDeleteError(true);
+					} finally {
+						setIsDeletingAccount(false);
+					}
+					}}/>
+				<ErrorModal
+					visible={deleteError}
+					title="Error"
+					message="Unable to delete account. Please try again."
+					onPrimaryPress={() => setDeleteError(false)}
+					/>
+				<SuccessModal
+					visible={deleteSuccess}
+					title="Account Deleted"
+					message="Your login access has been removed. Any case records you submitted are retained for chain-of-custody purposes."
+					primaryLabel="Done"
+					onPrimaryPress={() => {
+						setDeleteSuccess(false);
+						router.replace('/_login/SignInPage');
+					}}
+					/>
 			</ScrollView>
 		</SafeAreaView>
 	);

@@ -15,6 +15,7 @@ import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
 import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function SignUpPage() {
     outputRange: [0, pillWidth],
   });
 
-  const handleContinue = async (values: SignUpFormValues) => {
+ const handleContinue = async (values: SignUpFormValues) => {
   setRegisterError(null);
   try {
     await register(
@@ -87,7 +88,7 @@ export default function SignUpPage() {
       activeRole === 'admin' ? 'Admin' : 'User',
     );
 
-    await login(values.email, values.password);
+    useFeedbackStore.getState().showToast('Account created successfully', 'success');
 
     router.push({
       pathname: '/_login/_signup/User&AdminCodepage',

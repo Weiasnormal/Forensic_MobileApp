@@ -13,6 +13,8 @@ import FormField from '@/_components/common/FormField';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
+import SuccessModal from '@/_components/modals/success_modal';
+import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
 
 export default function LogInPage() {
   const router = useRouter();
@@ -21,6 +23,7 @@ export default function LogInPage() {
   const login = useAuthStore((state) => state.login);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [welcomeInfo, setWelcomeInfo] = useState<{ isFirstTime: boolean } | null>(null);
 
   const [tabsWidth, setTabsWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
@@ -67,12 +70,25 @@ export default function LogInPage() {
     setSignInError(null);
     try {
       await login(values.email, values.password);
-      router.replace(roleConfig.redirectTo);
+
+       const user = useAuthStore.getState().user;
+       const isFirstTime = user ? await isFirstLoginForUser(user.userId) : false;
+
+      setWelcomeInfo({ isFirstTime });
     } catch (error) {
       setSignInError(
         error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.',
       );
     }
+  };
+
+  const handleDismissWelcome = async () => {
+    const user = useAuthStore.getState().user;
+    if (user) {
+      await markUserAsSeen(user.userId);
+    }
+    setWelcomeInfo(null);
+    router.replace(roleConfig.redirectTo);
   };
 
   return (
@@ -213,6 +229,18 @@ export default function LogInPage() {
           </View>
         </View>
       </ScrollView>
+
+      <SuccessModal
+        visible={!!welcomeInfo}
+        title={welcomeInfo?.isFirstTime ? 'Welcome aboard!' : 'Welcome back!'}
+        message={
+          welcomeInfo?.isFirstTime
+            ? "Your analyst account is ready. Let's set up your first case."
+            : 'Signed in successfully. Your dashboard and case queue are ready.'
+        }
+        primaryLabel="Continue"
+        onPrimaryPress={handleDismissWelcome}
+      />
     </KeyboardAvoidingView>
   );
 }

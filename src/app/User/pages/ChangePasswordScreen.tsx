@@ -6,9 +6,10 @@ import { getTypographyStyle } from '@/constants/typography';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ErrorBanner from '@/_components/common/ErrorBanner';
+import SuccessModal from '@/_components/modals/success_modal';
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const canSubmit =
     currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
@@ -29,9 +31,7 @@ export default function ChangePasswordScreen() {
     setIsSubmitting(true);
     try {
       await changePassword(currentPassword, newPassword);
-      Alert.alert('Success', 'Your password has been changed.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      setShowSuccess(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to change password.');
     } finally {
@@ -66,7 +66,7 @@ export default function ChangePasswordScreen() {
           placeholder="Repeat new password"
         />
 
-        {ErrorBanner ? <ErrorBanner message={error} /> : null}
+        <ErrorBanner message={error} />
 
         <PrimaryButton
           label="Update Password"
@@ -77,6 +77,17 @@ export default function ChangePasswordScreen() {
           style={styles.button}
         />
       </ScrollView>
+
+      <SuccessModal
+        visible={showSuccess}
+        title="Password Changed"
+        message="Your password has been updated successfully."
+        primaryLabel="Done"
+        onPrimaryPress={() => {
+          setShowSuccess(false);
+          router.back();
+        }}
+      />
     </SafeAreaView>
   );
 }

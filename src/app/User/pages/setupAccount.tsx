@@ -9,6 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'; 
 import ErrorModal from '@/_components/modals/error_modal';
 import ErrorBanner from '@/_components/common/ErrorBanner';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function SetupAccount() {
   const router = useRouter();
@@ -62,6 +63,8 @@ export default function SetupAccount() {
         organization,
         avatarUri: avatarUri || undefined,
       });
+      
+      useFeedbackStore.getState().showToast('Profile updated successfully', 'success');
       router.back();
     } catch {
       setSaveError('Unable to save your profile changes. Please try again.');

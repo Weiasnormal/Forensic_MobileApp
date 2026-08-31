@@ -10,6 +10,7 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type InviteCodeFormValues, inviteCodeSchema } from '../../../utils/validation';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function UserAndAdminCodePage() {
 	const router = useRouter();
@@ -70,6 +71,7 @@ export default function UserAndAdminCodePage() {
 		setIsSubmitting(true);
 		try {
 			await joinInviteCode(formattedCode);
+			useFeedbackStore.getState().showToast('Invite code submitted', 'success');
 			router.push({
 			pathname: '/_login/_signup/PendingUser&Admin',
 			params: { role: activeRole },
