@@ -8,6 +8,7 @@ import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { OverlayImageRef, OverlaySlot, OverlayVariant, getSignatureAnalysisCaseStatus, type SignatureAnalysisResult } from '@/services/signatureAnalysis';
 import { getAuthHeader, handleUnauthorizedResponse  } from './authStore';
 import { useFeedbackStore } from './feedbackStore';
+import { notifyProcessingComplete, notifyProcessingFailed } from '@/services/processingNotifications';
 
 const VALID_SLOTS: OverlaySlot[] = ['Reference1', 'Reference2', 'Reference3', 'Reference4', 'Suspected'];
 const VALID_VARIANTS: OverlayVariant[] = ['Original', 'Heatmap', 'Overlay', 'BoundingBox', 'StrokeDiff'];
@@ -60,6 +61,18 @@ export type CaseStatus = 'Processing' | 'Genuine' | 'Suspected';
 export type DraftUploadType = 'reference' | 'suspect';
 export type PendingCardStatus = 'draft' | 'processing' | 'result-ready';
 
+export type ProcessingJobStatus = 'submitting' | 'success' | 'error' | 'interrupted';
+
+export interface ProcessingJob {
+  caseId: string;
+  status: ProcessingJobStatus;
+  step: string;
+  progress: number;
+  error: string | null;
+  startedAt: number;
+  updatedAt: number;
+}
+
 const DEFAULT_ANALYSIS_TYPE: AnalysisType = 'SIG';
 
 export interface DraftUploads {
@@ -102,6 +115,10 @@ interface CaseStore {
   hiddenSavedCases: SavedCase[] | null;
   allowUploadSourceChoice: boolean;
   signatureAnalysisResults: Record<string, SignatureAnalysisResult>;
+  processingJobs: Record<string, ProcessingJob>;
+  getProcessingJob: (caseId: string) => ProcessingJob | undefined;
+  clearProcessingJob: (caseId: string) => void;
+  retryAnalysis: (caseId: string) => Promise<void>;
   markCaseResultViewed: (caseId: string) => void;
   updateCaseStatus: (caseId: string, status: CaseStatus) => void;
   setSignatureAnalysisResult: (caseId: string, result: SignatureAnalysisResult) => void;
@@ -281,6 +298,27 @@ export const useCaseStore = create<CaseStore>()(
     (set, get) => {
       caseLog.info('CaseStore', '🚀 Store initializing');
 
+      function upsertProcessingJob(caseId: string, patch: Partial<Omit<ProcessingJob, 'caseId'>>) {
+        set((state) => {
+          const existing = state.processingJobs[caseId];
+          const now = Date.now();
+          return {
+            processingJobs: {
+              ...state.processingJobs,
+              [caseId]: {
+                caseId,
+                status: patch.status ?? existing?.status ?? 'submitting',
+                step: patch.step ?? existing?.step ?? '',
+                progress: patch.progress ?? existing?.progress ?? 0,
+                error: patch.error !== undefined ? patch.error : existing?.error ?? null,
+                startedAt: existing?.startedAt ?? now,
+                updatedAt: now,
+              },
+            },
+          };
+        });
+      }
+
       return {
         cases: INITIAL_CASES,
         draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
@@ -291,7 +329,7 @@ export const useCaseStore = create<CaseStore>()(
         hiddenSavedCases: null,
         allowUploadSourceChoice: false,
         signatureAnalysisResults: {},
-
+        processingJobs: {},
         submissionStatus: 'idle',
         submissionStep: '',
         submissionProgress: 0,
@@ -464,8 +502,10 @@ export const useCaseStore = create<CaseStore>()(
 
           const startTime = Date.now();
           const currentDraft = get().draftSignatureCase;
+           let caseId = '';
 
           if (!currentDraft.subjectName.trim() || !currentDraft.examiner.trim()) {
+
             const message = 'Subject name and examiner are required before submission.';
             caseLog.error('CaseStore:Error', message);
             set({ submissionStatus: 'error', submissionError: message });
@@ -542,10 +582,17 @@ export const useCaseStore = create<CaseStore>()(
               }
             }
 
-            if (!rawCaseId) {
+             if (!rawCaseId) {
               throw new Error('Unable to determine created case id from response');
             }
-            const caseId: string = rawCaseId;
+            caseId = rawCaseId;
+
+            upsertProcessingJob(caseId, {
+              status: 'submitting',
+              step: 'Uploading reference signatures',
+              progress: 10,
+              error: null,
+            });
             
             set((state) => {
               const placeholderCase: SavedCase = {
@@ -649,9 +696,14 @@ export const useCaseStore = create<CaseStore>()(
                 submissionStep: `Uploading reference ${i + 1} of ${totalRefs}`,
                 submissionProgress: 10 + Math.round(((i + 1) / totalRefs) * 40),
               });
+              upsertProcessingJob(caseId, {
+                step: `Uploading reference ${i + 1} of ${totalRefs}`,
+                progress: 10 + Math.round(((i + 1) / totalRefs) * 40),
+              });
             }
 
             set({ submissionStep: 'Uploading suspected signature', submissionProgress: 55 });
+            upsertProcessingJob(caseId, { step: 'Uploading suspected signature', progress: 55 });
 
             if (currentDraft.uploads.suspect) {
               const cleanSuspect = stripFingerprintSuffix(currentDraft.uploads.suspect);
@@ -680,7 +732,9 @@ export const useCaseStore = create<CaseStore>()(
 
             caseLog.info('CaseStore:Submit', 'Triggering analysis', { caseId });
             set({ submissionStep: 'Running AI forensic comparison', submissionProgress: 65 });
+            upsertProcessingJob(caseId, { step: 'Running AI forensic comparison', progress: 65 });
             set({ submissionStep: 'Analyzing forensic features', submissionProgress: 72 });
+            upsertProcessingJob(caseId, { step: 'Analyzing forensic features', progress: 72 });
 
             const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), { 
               method: 'GET',
@@ -762,6 +816,7 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             set({ submissionStep: 'Finalizing report', submissionProgress: 90 });
+            upsertProcessingJob(caseId, { step: 'Finalizing report', progress: 90 });
 
             const savedCase: SavedCase = {
               ...currentDraft,
@@ -800,24 +855,150 @@ export const useCaseStore = create<CaseStore>()(
               submissionError: hasVerdict ? null : 'Analysis did not return a valid verdict.',
             }));
 
+            upsertProcessingJob(caseId, {
+              status: hasVerdict ? 'success' : 'error',
+              step: hasVerdict ? 'Complete' : 'Analysis did not return a valid verdict.',
+              progress: hasVerdict ? 100 : 90,
+              error: hasVerdict ? null : 'Analysis did not return a valid verdict.',
+            });
+
             if (hasVerdict) {
-              useFeedbackStore.getState().showToast('Analysis complete', 'success');
+              notifyProcessingComplete(caseCode ?? caseId, finalStatus === 'Suspected');
+            } else {
+              notifyProcessingFailed(caseCode ?? caseId);
             }
 
             caseLog.info('CaseStore:Submit', '✓ Case submitted successfully', { caseId, analysisResult });
 
             const finalCase = get().cases.find((c) => c.caseId === caseId)!;
             return finalCase;
-          } catch (e) {
+
+            } catch (e) {
             const error = e as Error;
             caseLog.error('CaseStore:Submit', 'Submission failed', error);
             set({
               submissionStatus: 'error',
               submissionError: error.message || 'Something went wrong while submitting the case.',
             });
+            if (caseId) {
+              upsertProcessingJob(caseId, {
+                status: 'error',
+                error: error.message || 'Something went wrong while submitting the case.',
+              });
+            }
             throw e;
           } finally {
             set({ isSubmitting: false });
+          }
+        },
+
+        getProcessingJob: (caseId) => get().processingJobs[caseId],
+
+        clearProcessingJob: (caseId) => {
+          set((state) => {
+            const nextJobs = { ...state.processingJobs };
+            delete nextJobs[caseId];
+            return { processingJobs: nextJobs };
+          });
+        },
+
+        retryAnalysis: async (caseId) => {
+          const targetCase = get().cases.find((item) => item.caseId === caseId);
+          const caseCodeForNotification = targetCase?.caseCode ?? caseId;
+
+          upsertProcessingJob(caseId, {
+            status: 'submitting',
+            step: 'Re-running AI forensic comparison',
+            progress: 65,
+            error: null,
+          });
+
+          try {
+            const analysisRes = await fetch(buildApiUrl(API_ENDPOINTS.analysis.start(caseId)), {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-Api-Key': API_KEY || '',
+                ...getAuthHeader(),
+              },
+            });
+
+            if (!analysisRes.ok) {
+              if (await handleUnauthorizedResponse(analysisRes)) {
+                throw new Error('Session expired. Please sign in again.');
+              }
+              throw new Error(`Analysis retry failed (${analysisRes.status})`);
+            }
+
+            upsertProcessingJob(caseId, { step: 'Analyzing forensic features', progress: 85 });
+
+            const processResponse = await analysisRes.json();
+            const verdict = processResponse?.Verdict ?? processResponse?.verdict;
+            const confidenceForged = processResponse?.ConfidenceForged ?? processResponse?.confidence_forged ?? 0;
+            const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
+            const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
+            const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
+            const rawOverlayImages =
+              processResponse?.GradcamImages ??
+              processResponse?.gradcam_images ??
+              processResponse?.OverlayImages ??
+              processResponse?.overlay_images ??
+              [];
+            const overlayImages = parseOverlayImages(rawOverlayImages);
+
+            if (!verdict) {
+              throw new Error('Analysis did not return a valid verdict.');
+            }
+
+            const finalStatus: CaseStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+
+            const analysisResult: SignatureAnalysisResult = {
+              case_name: processResponse?.CaseName ?? processResponse?.case_name ?? caseId,
+              confidence_forged: confidenceForged,
+              confidence_genuine: confidenceGenuine,
+              distance,
+              overlay_images: overlayImages,
+              threshold,
+              verdict: verdict as any,
+              Verdict: verdict as any,
+            };
+
+            try {
+              await fetch(
+                buildApiUrl(`${API_ENDPOINTS.cases.updateStatus(caseId)}?status=${BACKEND_STATUS_MAP[finalStatus]}`),
+                {
+                  method: 'PATCH',
+                  headers: {
+                    Accept: 'application/json',
+                    'X-Api-Key': API_KEY || '',
+                    ...getAuthHeader(),
+                  },
+                },
+              );
+            } catch (statusError) {
+              caseLog.warn('CaseStore:Retry', 'Unable to persist case status to backend', statusError);
+            }
+
+            set((state) => ({
+              cases: state.cases.map((item) => (item.caseId === caseId ? { ...item, status: finalStatus } : item)),
+              signatureAnalysisResults: {
+                ...state.signatureAnalysisResults,
+                [caseId]: analysisResult,
+              },
+            }));
+
+            upsertProcessingJob(caseId, { status: 'success', step: 'Complete', progress: 100, error: null });
+            notifyProcessingComplete(caseCodeForNotification, finalStatus === 'Suspected');
+          } catch (e) {
+            const error = e as Error;
+            caseLog.error('CaseStore:Retry', 'Retry analysis failed', error);
+            upsertProcessingJob(caseId, {
+              status: 'error',
+              error: error.message || 'Unable to re-run analysis for this case.',
+            });
+            notifyProcessingFailed(caseCodeForNotification);
+            throw e;
           }
         },
 
@@ -830,6 +1011,7 @@ export const useCaseStore = create<CaseStore>()(
             nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
             activeSignatureCaseId: null,
             signatureAnalysisResults: {},
+            processingJobs: {},
             submissionStatus: 'idle',
             submissionStep: '',
             submissionProgress: 0,
@@ -855,6 +1037,7 @@ export const useCaseStore = create<CaseStore>()(
         hiddenSavedCases: state.hiddenSavedCases,
         allowUploadSourceChoice: state.allowUploadSourceChoice,
         signatureAnalysisResults: state.signatureAnalysisResults,
+        processingJobs: state.processingJobs,
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<CaseStore> | undefined;
@@ -873,14 +1056,35 @@ export const useCaseStore = create<CaseStore>()(
           ...persisted,
           cases: mergedCases,
           signatureAnalysisResults: persisted.signatureAnalysisResults ?? currentState.signatureAnalysisResults,
+          processingJobs: persisted.processingJobs ?? currentState.processingJobs,
         };
       },
+
       onRehydrateStorage: () => (state, error) => {
         if (error) {
           caseLog.error('CaseStore:Rehydrate', 'Failed to rehydrate from storage', error);
-        } else {
-          caseLog.info('CaseStore:Rehydrate', '✓ Successfully rehydrated store from storage', { casesCount: state?.cases.length });
+          return;
         }
+
+        caseLog.info('CaseStore:Rehydrate', '✓ Successfully rehydrated store from storage', { casesCount: state?.cases.length });
+
+        const jobs = state?.processingJobs;
+        if (!jobs) return;
+
+        const staleJobs = Object.values(jobs).filter((job) => job.status === 'submitting');
+        if (staleJobs.length === 0) return;
+
+        useCaseStore.setState((current) => {
+          const nextJobs = { ...current.processingJobs };
+          staleJobs.forEach((job) => {
+            nextJobs[job.caseId] = {
+              ...job,
+              status: 'interrupted',
+              error: 'Processing was interrupted because the app was closed. You can retry without re-uploading images.',
+            };
+          });
+          return { processingJobs: nextJobs };
+        });
       },
     },
   ),
