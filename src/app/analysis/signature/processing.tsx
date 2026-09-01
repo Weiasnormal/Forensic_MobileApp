@@ -1,14 +1,15 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, Info } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import PrimaryButton from '@/_components/common/PrimaryButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
-import { type CaseStatus, useCaseStore } from '@/store/caseStore';
+import { useCaseStore } from '@/store/caseStore';
 import ErrorModal from '@/_components/modals/error_modal';
 
 interface ProcessingStepInfo {
@@ -79,14 +80,33 @@ function getHeroContent(progress: number) {
 export default function SignatureProcessingRoute() {
   const router = useRouter();
   const nav = router as any;
-  const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
-  const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
-  const submissionStatus = useCaseStore((state) => state.submissionStatus);
-  const submissionProgress = useCaseStore((state) => state.submissionProgress);
-  const submissionError = useCaseStore((state) => state.submissionError);
+  const params = useLocalSearchParams<{ caseId?: string }>();
+
+  const storeActiveCaseId = useCaseStore((state) => state.activeSignatureCaseId);
+  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
+  const retryAnalysis = useCaseStore((state) => state.retryAnalysis);
   const resetSubmissionState = useCaseStore((state) => state.resetSubmissionState);
 
-  const targetProgress = Math.min(100, Math.max(0, submissionProgress ?? 0));
+  const routeCaseId = typeof params.caseId === 'string' ? params.caseId : undefined;
+  const currentCaseId = routeCaseId ?? storeActiveCaseId ?? null;
+
+  useEffect(() => {
+    if (routeCaseId && routeCaseId !== storeActiveCaseId) {
+      setActiveSignatureCaseId(routeCaseId);
+    }
+  }, [routeCaseId, storeActiveCaseId, setActiveSignatureCaseId]);
+
+  const job = useCaseStore((state) => (currentCaseId ? state.processingJobs[currentCaseId] : undefined));
+  const legacyStatus = useCaseStore((state) => state.submissionStatus);
+  const legacyStep = useCaseStore((state) => state.submissionStep);
+  const legacyProgress = useCaseStore((state) => state.submissionProgress);
+  const legacyError = useCaseStore((state) => state.submissionError);
+
+  const effectiveStatus = job?.status ?? legacyStatus;
+  const effectiveStep = job?.step ?? legacyStep;
+  const effectiveError = job?.error ?? legacyError;
+  const targetProgress = Math.min(100, Math.max(0, job?.progress ?? legacyProgress ?? 0));
+  const isFailedState = effectiveStatus === 'error' || effectiveStatus === 'interrupted';
 
 
   const [displayProgress, setDisplayProgress] = useState(targetProgress);
@@ -115,7 +135,7 @@ export default function SignatureProcessingRoute() {
           return Math.min(target, current + step);
         }
 
-        if (target < 100 && current < 97) {
+        if (!isFailedState && target < 100 && current < 97) {
           creepAccumulatorRef.current += dt;
           if (creepAccumulatorRef.current >= 650) {
             creepAccumulatorRef.current = 0;
@@ -130,7 +150,7 @@ export default function SignatureProcessingRoute() {
     }, 45);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [isFailedState]);
 
   const progress = displayProgress;
   const stepWidth = 100 / PROCESSING_STEPS.length;
@@ -141,32 +161,58 @@ export default function SignatureProcessingRoute() {
     [progress],
   );
 
-  const setSignatureStatus = (status: CaseStatus) => {
-    if (!currentCaseId) return;
-    updateCaseStatus(currentCaseId, status);
-  };
-
   const handleBackToHome = () => {
-    setSignatureStatus('Processing');
     nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
   };
 
   useEffect(() => {
-  if (submissionStatus === 'error') {
-    setShowErrorModal(true);
-  }
-}, [submissionStatus]);
+    if (isFailedState) {
+      setShowErrorModal(true);
+    }
+  }, [isFailedState]);
 
   useEffect(() => {
-    if (progress < 100 || isCompleteFired) return;
+    if (isFailedState || progress < 100 || isCompleteFired) return;
     const doneTimer = setTimeout(() => {
       setIsCompleteFired(true);
-      if (submissionStatus === 'success' && currentCaseId) {
-        nav.replace(`/analysis/signature/signature_results`);
+      if (effectiveStatus === 'success' && currentCaseId) {
+        nav.replace({ pathname: '/analysis/signature/signature_results', params: { caseId: currentCaseId } });
       }
     }, 200);
     return () => clearTimeout(doneTimer);
-  }, [isCompleteFired, progress, submissionStatus, currentCaseId, nav]);
+  }, [isCompleteFired, progress, effectiveStatus, currentCaseId, nav, isFailedState]);
+
+  const handleRetry = async () => {
+    if (!currentCaseId) return;
+    setShowErrorModal(false);
+    setIsCompleteFired(false);
+    try {
+      await retryAnalysis(currentCaseId);
+    } catch (error) {
+      console.warn('Retry analysis failed:', error);
+    }
+  };
+
+  const handleDiscardAndReupload = () => {
+    setShowErrorModal(false);
+    resetSubmissionState();
+    nav.replace('/analysis/signature/uploads');
+  };
+
+  if (!currentCaseId) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.emptyState}>
+          <Info size={32} color={colors.label} />
+          <Text style={styles.emptyStateTitle}>No case selected</Text>
+          <Text style={styles.emptyStateSubtitle}>
+            Open this screen from a case marked &quot;Processing&quot; on your dashboard.
+          </Text>
+          <PrimaryButton label="Back to Home" onPress={handleBackToHome} size="medium" style={styles.emptyStateButton} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -175,7 +221,7 @@ export default function SignatureProcessingRoute() {
           <View style={styles.ringWrap}>
             <Svg width={RING_SIZE} height={RING_SIZE}>
               <Circle
-                stroke={colors.statsBackground} 
+                stroke={colors.statsBackground}
                 fill="none"
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
@@ -183,7 +229,7 @@ export default function SignatureProcessingRoute() {
                 strokeWidth={RING_STROKE}
               />
               <Circle
-                stroke={colors.primary}
+                stroke={isFailedState ? colors.danger : colors.primary}
                 fill="none"
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
@@ -198,20 +244,22 @@ export default function SignatureProcessingRoute() {
 
             <View style={styles.ringCenter} pointerEvents="none">
               <Text style={styles.progressText}>{Math.round(progress)}%</Text>
-              <Text style={styles.progressLabel}>COMPLETE</Text>
+              <Text style={styles.progressLabel}>{isFailedState ? 'INTERRUPTED' : 'COMPLETE'}</Text>
             </View>
           </View>
 
-          <Text style={styles.title}>{hero.title}</Text>
-          <Text style={styles.subtitle}>{hero.subtitle}</Text>
+          <Text style={styles.title}>{isFailedState ? 'Processing interrupted' : hero.title}</Text>
+          <Text style={styles.subtitle}>
+            {isFailedState ? (effectiveError ?? 'Something went wrong.') : hero.subtitle}
+          </Text>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.checklistSection}>
           {PROCESSING_STEPS.map((step, index) => {
-            const isActive = index === activeStepIndex && progress < 100;
-            const isDone = index < activeStepIndex || progress === 100;
+            const isActive = index === activeStepIndex && progress < 100 && !isFailedState;
+            const isDone = (index < activeStepIndex || progress === 100) && !isFailedState;
             const isPending = !isActive && !isDone;
 
             return (
@@ -252,22 +300,29 @@ export default function SignatureProcessingRoute() {
         <View style={styles.backgroundHint}>
           <Info size={14} color={colors.label} />
           <Text style={styles.backgroundHintText}>
-            You may continue using the app while processing runs in the background. We`&apos;`ll notify you once it`&apos;s complete.
+            {isFailedState
+              ? 'This case is safely saved. You can retry the analysis without re-uploading your images.'
+              : "You may continue using the app while processing runs in the background. We'll notify you once it's complete."}
           </Text>
         </View>
-        <PrimaryButton label="Back to Home" onPress={handleBackToHome} size="medium" />
+        {isFailedState ? (
+          <>
+            <PrimaryButton label="Retry Analysis" onPress={handleRetry} size="medium" />
+            <SecondaryButton label="Back to Home" onPress={handleBackToHome} size="medium" style={styles.secondaryButtonSpacing} />
+          </>
+        ) : (
+          <PrimaryButton label="Back to Home" onPress={handleBackToHome} size="medium" />
+        )}
       </View>
 
       <ErrorModal
         visible={showErrorModal}
-        title="Submission failed"
-        message={submissionError || 'An unexpected error occurred.'}
-        primaryLabel="Back to uploads"
-        onPrimaryPress={() => {
-          setShowErrorModal(false);
-          resetSubmissionState();
-          nav.replace('/analysis/signature/uploads');
-        }}
+        title="Processing interrupted"
+        message={effectiveError || 'This case could not finish processing.'}
+        primaryLabel="Retry Analysis"
+        onPrimaryPress={handleRetry}
+        secondaryLabel="Start over with new uploads"
+        onSecondaryPress={handleDiscardAndReupload}
       />
     </SafeAreaView>
   );
@@ -300,7 +355,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...getTypographyStyle('largeTitle'),
-    color: colors.textPrimary, 
+    color: colors.textPrimary,
     letterSpacing: -1,
     marginBottom: -2,
   },
@@ -351,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconDone: {
-    backgroundColor: colors.statusGenuine, 
+    backgroundColor: colors.statusGenuine,
   },
   iconActive: {
     backgroundColor: colors.cardBackground,
@@ -365,7 +420,7 @@ const styles = StyleSheet.create({
   iconPending: {
     backgroundColor: colors.cardBackground,
     borderWidth: 2,
-    borderColor: colors.disabledBorder, 
+    borderColor: colors.disabledBorder,
   },
   stepTextWrap: {
     flex: 1,
@@ -391,7 +446,7 @@ const styles = StyleSheet.create({
   },
   statusTextDone: {
     ...getTypographyStyle('c1Caption', 'bold'),
-    color: colors.statusGenuine, 
+    color: colors.statusGenuine,
   },
   statusTextRunning: {
     ...getTypographyStyle('c1Caption', 'bold'),
@@ -419,5 +474,29 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 14,
     paddingBottom: 10,
+  },
+  secondaryButtonSpacing: {
+    marginTop: 10,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 10,
+  },
+  emptyStateTitle: {
+    ...getTypographyStyle('t3Title'),
+    color: colors.textPrimary,
+    marginTop: 4,
+  },
+  emptyStateSubtitle: {
+    ...getTypographyStyle('c1Caption', 'regular'),
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  emptyStateButton: {
+    marginTop: 12,
+    alignSelf: 'stretch',
   },
 });
