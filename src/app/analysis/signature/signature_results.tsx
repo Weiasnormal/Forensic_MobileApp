@@ -160,9 +160,9 @@ export function SignatureResultsScreen() {
 
   useEffect(() => {
     if (currentCase?.status === 'Processing') {
-      nav.replace('/analysis/signature/processing');
+      nav.replace({ pathname: '/analysis/signature/processing', params: { caseId: currentCaseId ?? undefined } });
     }
-  }, [currentCase?.status, nav]);
+  }, [currentCase?.status, currentCaseId, nav]);
 
   if (currentCase?.status === 'Processing') return null;
 

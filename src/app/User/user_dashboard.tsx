@@ -139,7 +139,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 				return;
 			}
 
-			nav.push('/analysis/signature/processing');
+			nav.push({ pathname: '/analysis/signature/processing', params: { caseId: item.caseId } });
 			return;
 		}
 

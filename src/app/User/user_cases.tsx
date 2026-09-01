@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
 	FlatList,
 	SectionList,
-	StatusBar,
 	StyleSheet,
 	Text,
 	TextInput,
@@ -216,7 +215,7 @@ export default function UserCasesScreen() {
                     return;
                   }
 
-                  nav.push('/analysis/signature/processing');
+                  nav.push({ pathname: '/analysis/signature/processing', params: { caseId: item.caseId } });
                   return;
                 }
 
