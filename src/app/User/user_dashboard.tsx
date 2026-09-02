@@ -1,6 +1,5 @@
 import CasesScreen from '@/app/User/user_cases';
 import StatsScreen from '@/app/User/user_stats';
-import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@/store/userStore';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
