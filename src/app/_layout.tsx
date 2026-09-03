@@ -6,6 +6,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import GlobalToast from '@/_components/common/GlobalToast';
+import { configureProcessingNotifications } from '@/services/processingNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -45,6 +46,7 @@ export default function RootLayout() {
   React.useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync().catch(() => {});
+      void configureProcessingNotifications();
     }
   }, [fontsLoaded]);
 
