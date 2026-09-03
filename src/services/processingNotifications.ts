@@ -1,26 +1,62 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import type * as ExpoNotifications from 'expo-notifications';
+const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+let notificationsModule: typeof ExpoNotifications | null = null;
+let loadAttempted = false;
+let isConfigured = false;
 
-if (Platform.OS === 'android') {
-  Notifications.setNotificationChannelAsync('default', {
-    name: 'default',
-    importance: Notifications.AndroidImportance.DEFAULT,
-  }).catch(() => {});
+async function getNotifications(): Promise<typeof ExpoNotifications | null> {
+  if (IS_EXPO_GO) return null;
+  if (notificationsModule) return notificationsModule;
+  if (loadAttempted) return null;
+
+  loadAttempted = true;
+  try {
+    notificationsModule = await import('expo-notifications');
+    return notificationsModule;
+  } catch (error) {
+    console.warn('[processingNotifications] expo-notifications native module unavailable', error);
+    return null;
+  }
+}
+
+export async function configureProcessingNotifications() {
+  if (isConfigured) return;
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      }).catch(() => {});
+    }
+
+    isConfigured = true;
+  } catch (error) {
+    console.warn('[processingNotifications] Setup failed', error);
+  }
 }
 
 let permissionRequested = false;
 
 async function ensurePermission(): Promise<boolean> {
+  const Notifications = await getNotifications();
+  if (!Notifications) return false;
+
   try {
     const current = await Notifications.getPermissionsAsync();
     if (current.granted) return true;
@@ -35,6 +71,9 @@ async function ensurePermission(): Promise<boolean> {
 }
 
 export async function notifyProcessingComplete(caseCode: string, isSuspected: boolean): Promise<void> {
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+
   const granted = await ensurePermission();
   if (!granted) return;
 
@@ -54,6 +93,9 @@ export async function notifyProcessingComplete(caseCode: string, isSuspected: bo
 }
 
 export async function notifyProcessingFailed(caseCode: string): Promise<void> {
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+
   const granted = await ensurePermission();
   if (!granted) return;
 
