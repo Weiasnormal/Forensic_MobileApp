@@ -10,13 +10,15 @@ import * as ImagePicker from 'expo-image-picker';
 import ErrorModal from '@/_components/modals/error_modal';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
+import { useAuthStore } from '@/store/authStore';
 
 export default function SetupAccount() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
-  const [email, setEmail] = useState(user.email);
+  const authEmail = useAuthStore((state) => state.user?.email);
+  const email = authEmail || user.email; 
   const [role] = useState(user.role || '');
   const [organization] = useState(user.organization || '');
   const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri || null);
@@ -109,12 +111,24 @@ export default function SetupAccount() {
 
         <View style={styles.field}>
           <FieldLabel label="Last name" />
-          <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Last name" placeholderTextColor="#CBD5E1" />
+          <TextInput 
+          style={styles.input} 
+          value={lastName} 
+          onChangeText={setLastName} 
+          placeholder="Last name" 
+          placeholderTextColor="#CBD5E1" />
         </View>
 
         <View style={styles.field}>
           <FieldLabel label="Email" />
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" placeholderTextColor="#CBD5E1" />
+          <TextInput
+            style={[styles.input, styles.inputDisabled]}
+            value={email}
+            editable={false}
+            selectTextOnFocus={false}
+            placeholder="user@institution.gov.ph"
+            placeholderTextColor="#94A3B8"
+          />
         </View>
 
         <View style={styles.field}>

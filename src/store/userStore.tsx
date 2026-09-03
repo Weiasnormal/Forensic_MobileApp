@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
+import { useAuthStore } from './authStore';
 
 type UserProfile = {
   firstName: string;
@@ -51,6 +51,7 @@ function shallowEqualProfile(a: UserProfile, b: UserProfile) {
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<UserProfile>(DEFAULT_USER);
+  const authEmail = useAuthStore((state) => state.user?.email);
 
   const load = useCallback(async () => {
     const startTime = performance.now();
@@ -114,6 +115,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       log.error('UserStore', 'Failed to persist user profile', error);
     }
   }, []);
+
+  useEffect(() => {
+    if (!authEmail) return;
+
+    setUserState((prev) => {
+      if (prev.email === authEmail) return prev;
+      const next = { ...prev, email: authEmail };
+      persist(next);
+      return next;
+    });
+  }, [authEmail, persist]);
 
  const copyImageToDocuments = useCallback(async (uri: string): Promise<string> => {
     const startTime = performance.now();

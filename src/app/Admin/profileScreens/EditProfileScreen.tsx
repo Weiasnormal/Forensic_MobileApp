@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import ErrorModal from '@/_components/modals/error_modal';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
+import { useAuthStore } from '@/store/authStore';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -31,7 +32,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const insets = useSafeAreaInsets();
   const [firstName, setFirstName] = useState(user.firstName ?? '');
   const [lastName, setLastName] = useState(user.lastName ?? '');
-  const [email, setEmail] = useState(user.email ?? '');
+  const authEmail = useAuthStore((state) => state.user?.email);
+  const email = authEmail || user.email || '';
   const [role] = useState(user.role ?? '');
   const [organization] = useState(user.organization ?? '');
   const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri ?? null);
@@ -137,11 +139,11 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
         <View style={styles.field}>
           <FormField
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.formField}
-          />
+          label="Email"
+          value={email}
+          style={styles.formField}
+          disabled
+        />
         </View>
 
         <View style={styles.field}>
