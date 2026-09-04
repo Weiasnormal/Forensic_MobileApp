@@ -4,7 +4,7 @@ import { Animated, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 
-export type ToastVariant = 'neutral' | 'success';
+export type ToastVariant = 'neutral' | 'success' | 'successLight' | 'infoLight';
 
 interface ToastProps {
   visible: boolean;
@@ -15,10 +15,44 @@ interface ToastProps {
   variant?: ToastVariant;
 }
 
+interface ToastVariantConfig {
+  backgroundColor: string;
+  textColor: string;
+  icon: keyof typeof Ionicons.glyphMap | null;
+  iconColor: string;
+}
+
+const VARIANT_CONFIG: Record<ToastVariant, ToastVariantConfig> = {
+  neutral: {
+    backgroundColor: '#0F172A',
+    textColor: colors.primaryText,
+    icon: null,
+    iconColor: colors.primaryText,
+  },
+  success: {
+    backgroundColor: '#0F172A',
+    textColor: colors.primaryText,
+    icon: 'checkmark-circle',
+    iconColor: colors.statusGenuine,
+  },
+  successLight: {
+    backgroundColor: colors.statusGenuineBg,
+    textColor: colors.statusGenuine,
+    icon: 'checkmark-circle',
+    iconColor: colors.statusGenuine,
+  },
+  infoLight: {
+    backgroundColor: colors.primaryLight,
+    textColor: colors.primary,
+    icon: 'information-circle',
+    iconColor: colors.primary,
+  },
+};
+
 const Toast: React.FC<ToastProps> = ({
   visible,
   message,
-  duration = 2000,
+  duration = 2400,
   onDismiss,
   style,
   variant = 'neutral',
@@ -55,13 +89,22 @@ const Toast: React.FC<ToastProps> = ({
     return null;
   }
 
+  const config: ToastVariantConfig = VARIANT_CONFIG[variant];
+  const isLight = variant === 'successLight' || variant === 'infoLight';
+
   return (
     <View pointerEvents="none" style={[styles.wrap, style]}>
-      <Animated.View style={[styles.toast, { opacity, transform: [{ translateY }] }]}>
-        {variant === 'success' ? (
-          <Ionicons name="checkmark-circle" size={16} color={colors.statusGenuine} style={styles.icon} />
+      <Animated.View
+        style={[
+          styles.toast,
+          { backgroundColor: config.backgroundColor, opacity, transform: [{ translateY }] },
+          isLight ? styles.toastLight : null,
+        ]}
+      >
+        {config.icon !== null ? (
+          <Ionicons name={config.icon} size={16} color={config.iconColor} style={styles.icon} />
         ) : null}
-        <Text style={styles.text}>{message}</Text>
+        <Text style={[styles.text, { color: config.textColor }]}>{message}</Text>
       </Animated.View>
     </View>
   );
@@ -81,22 +124,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: '#0F172A',
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
+  toastLight: {
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
   icon: {
     marginRight: 6,
   },
   text: {
-    ...getTypographyStyle('c2Caption'),
-    color: colors.primaryText,
+    ...getTypographyStyle('c2Caption', 'bold'),
   },
 });
 
-
 export default Toast;
-
