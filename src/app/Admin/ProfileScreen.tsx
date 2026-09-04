@@ -19,6 +19,7 @@ import { router } from 'expo-router';
 import ErrorModal from '@/_components/modals/error_modal';
 import SuccessModal from '@/_components/modals/success_modal';
 
+
 interface ProfileScreenProps {
   initials: string;
   name: string;
@@ -61,10 +62,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const insets = useSafeAreaInsets();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   
+  
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+
+  
 
   return (
       <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>

@@ -17,6 +17,7 @@ import AdminStatsScreen from './admin_stats';
 import ProfileScreen from './ProfileScreen';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { useAuthStore } from '@/store/authStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
 		load();
 		refreshCasesFromBackend();
 		fetchTeamMembers();
-	}, []);
+	},);
 
 	useEffect(() => {
 		if (Platform.OS !== 'android') return;
@@ -80,6 +81,21 @@ export default function AdminDashboard() {
 		[pendingApprovals],
 	);
 
+	const handleToggleNotifications = (value: boolean) => {
+	setNotificationsEnabled(value);
+	useFeedbackStore.getState().showToast(
+		value ? 'Notifications enabled' : 'Notifications disabled',
+		'successLight',
+	);
+	};
+
+	const handleToggleAutoExport = (value: boolean) => {
+	setAutoExportEnabled(value);
+	useFeedbackStore.getState().showToast(
+		value ? 'Auto-export reports enabled' : 'Auto-export reports disabled',
+		'successLight',
+	);
+	};
 	return (
 		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
 			<ScreenStatusBar variant="onLight" />
@@ -140,8 +156,8 @@ export default function AdminDashboard() {
 					onOrgInviteCodePress={() => router.push('/Admin/profileScreens/OrgInviteCodeScreen')}
 					onManageTeamPress={() => setActiveTab('team')}
 					onOrganizationStatsPress={() => setActiveTab('stats')}
-					onToggleNotifications={setNotificationsEnabled}
-					onToggleAutoExport={setAutoExportEnabled}
+					onToggleNotifications={handleToggleNotifications}
+					onToggleAutoExport={handleToggleAutoExport}
 					onHelpSupportPress={() => router.push('/Admin/profileScreens/HelpSupportScreen')}
 					onSignOutPress={async () => {
 						await useAuthStore.getState().logout();

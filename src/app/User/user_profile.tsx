@@ -23,6 +23,7 @@ import DeleteAccountModal from '@/_components/modals/delete_account';
 import { useAuthStore } from '@/store/authStore';
 import ErrorModal from '@/_components/modals/error_modal';
 import SuccessModal from '@/_components/modals/success_modal';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
@@ -55,6 +56,22 @@ export default function UserProfileScreen() {
 	const initials = getInitials(user.firstName, user.lastName);
 
 	const [deleteError, setDeleteError] = useState(false);
+
+	const handleToggleNotifications = (value: boolean) => {
+	setNotificationsEnabled(value);
+	useFeedbackStore.getState().showToast(
+		value ? 'Notifications enabled' : 'Notifications disabled',
+		'successLight',
+	);
+	};
+
+	const handleToggleAutoExport = (value: boolean) => {
+	setAutoExportEnabled(value);
+	useFeedbackStore.getState().showToast(
+		value ? 'Auto-export reports enabled' : 'Auto-export reports disabled',
+		'successLight',
+	);
+	};
 
 	const handleConfirmSignOut = async () => {
 	setLogoutModalVisible(false);
@@ -99,7 +116,7 @@ export default function UserProfileScreen() {
 						icon={Bell}
 						title="Notifications"
 						value={notificationsEnabled}
-						onValueChange={setNotificationsEnabled}
+						onValueChange={handleToggleNotifications}
 					/>
 					<Divider />
 					<SettingsRow icon={Grid} title="Default Result View" rightText="Heatmap" />
@@ -108,7 +125,7 @@ export default function UserProfileScreen() {
 						icon={Upload}
 						title="Auto-Export Reports"
 						value={autoExportEnabled}
-						onValueChange={setAutoExportEnabled}
+						onValueChange={handleToggleAutoExport}
 					/>
 				</GroupedCard>
 

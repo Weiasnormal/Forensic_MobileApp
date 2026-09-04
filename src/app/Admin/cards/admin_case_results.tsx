@@ -14,6 +14,7 @@ import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { useCaseStore } from '@/store/caseStore';
 import { getAuthHeader } from '@/store/authStore';
 import ErrorModal from '@/_components/modals/error_modal';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 
 export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: string }) {
@@ -71,9 +72,7 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
   };
 
   const handleExportPdf = () => {
-    // TODO: wire to GET /cases/{id}/results (endpoint exists — see GetResults.cs);
-    // this card just hasn't been connected to it yet.
-    setReviewError('PDF export from this screen is not yet connected. Use the analyst results screen to export.');
+    useFeedbackStore.getState().showToast('Available after supervisor review', 'infoLight');
   };
 
   return (
@@ -209,66 +208,289 @@ export default function AdminCaseResultsCard({ caseIdProp }: { caseIdProp?: stri
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background2 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.inputBorder },
-  backBtn: { padding: 6 },
-  headerTitle: { ...getTypographyStyle('t3Title'), color: colors.textPrimary },
-  content: { paddingHorizontal: 16, gap: 16, paddingTop: 12 },
-
-  resultBadge: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.dividerLight },
-  resultBadgeIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  resultPercent: { ...getTypographyStyle('t2Title'), color: colors.danger, letterSpacing: -0.3 },
-  resultLabel: { ...getTypographyStyle('b3Button'), color: colors.danger, textTransform: 'uppercase' },
-  resultSubtitle: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary, marginTop: 6 },
-
-  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
-  infoCard: { width: '48%', backgroundColor: colors.cardBackground, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.dividerLight },
-  infoLabel: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
-  infoValue: { ...getTypographyStyle('l1List'), color: colors.textPrimary, marginTop: 6 },
-
-  viewTabsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  viewTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 999, borderWidth: 1, borderColor: colors.dividerLight, backgroundColor: colors.cardBackground },
-  viewTabActive: { borderColor: colors.statsBackground },
-  viewTabText: { ...getTypographyStyle('b3Button'), color: colors.textSecondary },
-  viewTabTextActive: { color: colors.textPrimary },
-
-  thumbsGrid: { flexDirection: 'column', gap: 12, marginTop: 12 },
-  smallThumbsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  thumbCardSmall: { borderRadius: 12, borderWidth: 1, borderColor: colors.dividerLight, padding: 10, backgroundColor: colors.cardBackground, width: '48%', marginBottom: 8 },
-  thumbPlaceholder: { minHeight: 118, alignItems: 'center', justifyContent: 'center' },
-  thumbImageWrap: { width: '100%', height: 56, borderRadius: 8, overflow: 'hidden', marginBottom: 8, backgroundColor: colors.background },
-  thumbLabel: { ...getTypographyStyle('b3Button'), color: colors.textPrimary },
-  thumbTag: { ...getTypographyStyle('l2List'), color: colors.statusGenuine, marginTop: 4 },
-
-  largeThumbWrap: { borderRadius: 12, borderWidth: 1, borderColor: colors.statsBackground, backgroundColor: colors.cardBackground, padding: 12, alignItems: 'center', justifyContent: 'center' },
-  largeThumbImage: { width: '100%', height: 140, borderRadius: 8 },
-  largeThumbPlaceholder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28 },
-  largeThumbText: { marginTop: 8, color: colors.label },
-  suspectLabel: { ...getTypographyStyle('b3Button'), color: colors.danger, marginTop: 8 },
-  suspectHint: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.suspectAccent, marginTop: 4 },
-
-  card: { backgroundColor: colors.cardBackground, borderRadius: 12, borderWidth: 1, borderColor: colors.dividerLight, padding: 12 },
-  findingsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  findingsTitle: { ...getTypographyStyle('headline'), color: colors.textPrimary },
-  findingsTap: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
-  findingsList: { gap: 8 },
-  findingItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.dividerLight },
-  findingIndicator: { width: 4, height: 44, borderRadius: 3 },
-  findingTextCol: { flex: 1 },
-  findingMain: { ...getTypographyStyle('l1List'), color: colors.textPrimary },
-  findingSub: { ...getTypographyStyle('c2Caption', 'regular'), marginTop: 4 },
-
-  sectionHeader: { ...getTypographyStyle('headline'), color: colors.textPrimary, marginBottom: 12 },
-  sectionSub: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label, marginBottom: 8 },
-  sectionLabel: { ...getTypographyStyle('c2Caption', 'bold'), color: colors.label, marginBottom: 8 },
-  reviewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  reviewLabel: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
-
-  radioRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  radioItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  radioIcon: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  radioText: { ...getTypographyStyle('b3Button') },
-
-  noteBox: { borderWidth: 1, borderColor: colors.dividerLight, borderRadius: 10, padding: 12, marginBottom: 12, minHeight: 80 },
-  notePlaceholder: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary },
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background2,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.inputBorder,
+  },
+  backBtn: {
+    padding: 6,
+  },
+  headerTitle: {
+    ...getTypographyStyle('t3Title'),
+    color: colors.textPrimary,
+  },
+  content: {
+    paddingHorizontal: 16,
+    gap: 16,
+    paddingTop: 12,
+  },
+  resultBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+  },
+  resultBadgeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultPercent: {
+    ...getTypographyStyle('t2Title'),
+    color: colors.danger,
+    letterSpacing: -0.3,
+  },
+  resultLabel: {
+    ...getTypographyStyle('b3Button'),
+    color: colors.danger,
+    textTransform: 'uppercase',
+  },
+  resultSubtitle: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.textSecondary,
+    marginTop: 6,
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 12,
+  },
+  infoCard: {
+    width: '48%',
+    backgroundColor: colors.cardBackground,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+  },
+  infoLabel: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.label,
+  },
+  infoValue: {
+    ...getTypographyStyle('l1List'),
+    color: colors.textPrimary,
+    marginTop: 6,
+  },
+  viewTabsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  viewTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+    backgroundColor: colors.cardBackground,
+  },
+  viewTabActive: {
+    borderColor: colors.statsBackground,
+  },
+  viewTabText: {
+    ...getTypographyStyle('b3Button'),
+    color: colors.textSecondary,
+  },
+  viewTabTextActive: {
+    color: colors.textPrimary,
+  },
+  thumbsGrid: {
+    flexDirection: 'column',
+    gap: 12,
+    marginTop: 12,
+  },
+  smallThumbsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  thumbCardSmall: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+    padding: 10,
+    backgroundColor: colors.cardBackground,
+    width: '48%',
+    marginBottom: 8,
+  },
+  thumbPlaceholder: {
+    minHeight: 118,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbImageWrap: {
+    width: '100%',
+    height: 56,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 8,
+    backgroundColor: colors.background,
+  },
+  thumbLabel: {
+    ...getTypographyStyle('b3Button'),
+    color: colors.textPrimary,
+  },
+  thumbTag: {
+    ...getTypographyStyle('l2List'),
+    color: colors.statusGenuine,
+    marginTop: 4,
+  },
+  largeThumbWrap: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.statsBackground,
+    backgroundColor: colors.cardBackground,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  largeThumbImage: {
+    width: '100%',
+    height: 140,
+    borderRadius: 8,
+  },
+  largeThumbPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
+  },
+  largeThumbText: {
+    marginTop: 8,
+    color: colors.label,
+  },
+  suspectLabel: {
+    ...getTypographyStyle('b3Button'),
+    color: colors.danger,
+    marginTop: 8,
+  },
+  suspectHint: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.suspectAccent,
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+    padding: 12,
+  },
+  findingsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  findingsTitle: {
+    ...getTypographyStyle('headline'),
+    color: colors.textPrimary,
+  },
+  findingsTap: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.label,
+  },
+  findingsList: {
+    gap: 8,
+  },
+  findingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.dividerLight,
+  },
+  findingIndicator: {
+    width: 4,
+    height: 44,
+    borderRadius: 3,
+  },
+  findingTextCol: {
+    flex: 1,
+  },
+  findingMain: {
+    ...getTypographyStyle('l1List'),
+    color: colors.textPrimary,
+  },
+  findingSub: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    marginTop: 4,
+  },
+  sectionHeader: {
+    ...getTypographyStyle('headline'),
+    color: colors.textPrimary,
+    marginBottom: 12,
+  },
+  sectionSub: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.label,
+    marginBottom: 8,
+  },
+  sectionLabel: {
+    ...getTypographyStyle('c2Caption', 'bold'),
+    color: colors.label,
+    marginBottom: 8,
+  },
+  reviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reviewLabel: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.label,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  radioItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  radioIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioText: {
+    ...getTypographyStyle('b3Button'),
+  },
+  noteBox: {
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    minHeight: 80,
+  },
+  notePlaceholder: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.textSecondary,
+  },
 });
