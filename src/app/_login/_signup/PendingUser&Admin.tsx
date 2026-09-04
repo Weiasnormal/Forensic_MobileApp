@@ -1,8 +1,7 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';

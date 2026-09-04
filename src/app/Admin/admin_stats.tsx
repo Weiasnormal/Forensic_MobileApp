@@ -110,7 +110,7 @@ export default function AdminStatsScreen() {
 	useEffect(() => {
 		refreshCasesFromBackend();
 		fetchTeamMembers();
-	}, []);
+	}, );
 
 	const filteredCases = useMemo(() => filterCasesByRange(cases, timeRange), [cases, timeRange]);
 
@@ -435,9 +435,22 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: colors.border,
 	},
-	headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-	content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
-	title: { color: '#1E293B', fontSize: 22, fontWeight: '900', letterSpacing: -0.6 },
+	headerRow: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		justifyContent: 'space-between' 
+	},
+	content: { 
+		paddingHorizontal: 16, 
+		paddingTop: 14, 
+		paddingBottom: 10 
+	},
+	title: { 
+		color: '#1E293B', 
+		fontSize: 22, 
+		fontWeight: '900', 
+		letterSpacing: -0.6 
+	},
 	pill: {
 		flexDirection: 'row',
 		alignItems: 'center',

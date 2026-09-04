@@ -11,7 +11,6 @@ import {
   writeImageToFolder,
   getLastCaseFolder,
   hasStoredRootDirectory,
-  type CaseFolders,
 } from '@/_components/devscan';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
@@ -26,7 +25,7 @@ export default function WholePageScanScreen() {
   const nav = router as any;
 
   const [caseFolderInput, setCaseFolderInput] = useState(DEFAULT_CASE_FOLDER);
-  const [activeCaseFolder, setActiveCaseFolder] = useState<string | null>(null);
+  const [, setActiveCaseFolder] = useState<string | null>(null);
   const [caseFolderUri, setCaseFolderUri] = useState<string | null>(null);
   const [flaggedFolderUri, setFlaggedFolderUri] = useState<string | null>(null);
   const [displayPath, setDisplayPath] = useState<string | null>(null);

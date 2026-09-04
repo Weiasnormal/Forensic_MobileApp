@@ -22,7 +22,6 @@ export default function AdminTeamScreen() {
 	const fetchTeamMembers = useAdminStore((state) => state.fetchTeamMembers);
 	const approveTeamMember = useAdminStore((state) => state.approveTeamMember);
 	const rejectTeamMember = useAdminStore((state) => state.rejectTeamMember);
-	const teamLoadError = useAdminStore((state) => state.teamLoadError);
 	const isUsingMockTeam = useAdminStore((state) => state.isUsingMockTeam);
 
 	useEffect(() => {

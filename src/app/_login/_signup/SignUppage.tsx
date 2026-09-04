@@ -33,7 +33,7 @@ export default function SignUpPage() {
   const [tabsWidth, setTabsWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
 
-  const login = useAuthStore((state) => state.login);
+  //const login = useAuthStore((state) => state.login);
 
   const roleConfig = ROLE_SETTINGS[activeRole].signUp;
   const {

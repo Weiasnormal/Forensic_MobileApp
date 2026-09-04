@@ -11,14 +11,14 @@ interface NewAnalysisModalProps {
 	onClose: () => void;
 }
 
-const options: Array<{
+const options: {
 	key: string;
 	title: string;
 	subtitle: string;
 	icon: keyof typeof Ionicons.glyphMap;
 	iconBackground: string;
 	borderColor: string;
-}> = [
+}[] = [
 	{
 		key: 'signature',
 		title: 'Signature Analysis',

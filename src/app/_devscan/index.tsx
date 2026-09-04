@@ -62,13 +62,44 @@ export default function DevScanSelectionPage() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background2 },
-  topBarWrapper: { backgroundColor: colors.background2, borderBottomWidth: 1, borderBottomColor: colors.border },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12 },
-  backButton: { padding: 4 },
-  backButtonBox: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  topBarTitle: { flex: 1, ...getTypographyStyle('t3Title'), color: colors.textPrimary, textAlign: 'center' },
-  content: { padding: 16, gap: 14 },
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background2,
+  },
+  topBarWrapper: {
+    backgroundColor: colors.background2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  backButtonBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topBarTitle: {
+    flex: 1,
+    ...getTypographyStyle('t3Title'),
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  content: {
+    padding: 16,
+    gap: 14,
+  },
   devBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -80,8 +111,17 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 4,
   },
-  devBannerText: { flex: 1, ...getTypographyStyle('c2Caption', 'regular'), color: '#92400E', lineHeight: 16 },
-  sectionHeading: { ...getTypographyStyle('t3Title'), color: colors.textPrimary, marginTop: 4 },
+  devBannerText: {
+    flex: 1,
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: '#92400E',
+    lineHeight: 16,
+  },
+  sectionHeading: {
+    ...getTypographyStyle('t3Title'),
+    color: colors.textPrimary,
+    marginTop: 4,
+  },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -92,8 +132,23 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 14,
   },
-  optionIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  optionTextWrap: { flex: 1 },
-  optionTitle: { ...getTypographyStyle('headline'), color: colors.textPrimary },
-  optionSubtitle: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary, marginTop: 2 },
+  optionIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionTextWrap: {
+    flex: 1,
+  },
+  optionTitle: {
+    ...getTypographyStyle('headline'),
+    color: colors.textPrimary,
+  },
+  optionSubtitle: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
 });
