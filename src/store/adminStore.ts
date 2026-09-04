@@ -353,13 +353,16 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     if (get().isUsingMockTeam) return;
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.suspend(id)), {
+        const response = await fetch(
+          buildApiUrl(`${ADMIN_API_ENDPOINTS.tenant.suspendUser}?UserId=${id}`),
+          {
         method: 'POST',
         headers: {
           'X-Api-Key': API_KEY || '',
           ...getAuthHeader(),
         },
-      });
+          },
+        );
       if (!response.ok) throw new Error(`Suspend failed (${response.status})`);
     } catch (error) {
       adminLog.warn('AdminStore:Team', `Unable to suspend member ${id} on the backend`, error);

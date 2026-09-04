@@ -148,4 +148,15 @@ export async function forgotPassword(email: string): Promise<{ implemented: bool
   }
 }
 
+export async function deleteAccount(token: string): Promise<void> {
+  const res = await fetch(buildApiUrl('/auth/delete'), {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+
+  if (!res.ok && res.status !== 204) {
+    throw new ApiError(res.status, 'Delete account failed', await parseProblem(res));
+  }
+}
+
 export { ApiError };

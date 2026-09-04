@@ -40,6 +40,7 @@ interface AuthState {
   ) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   clearAuthError: () => void;
   isTokenExpired: () => boolean;
   setHasHydrated: (value: boolean) => void;
@@ -138,6 +139,13 @@ export const useAuthStore = create<AuthState>()(
         const token = get().accessToken;
         if (!token) throw new Error('You must be signed in to join an organization.');
         await authApi.joinInviteCode(token, inviteCode);
+      },
+
+      deleteAccount: async () => {
+      const token = get().accessToken;
+      if (!token) throw new Error('Not authenticated.');
+      await authApi.deleteAccount(token);
+      set({ accessToken: null, expiresAt: null, user: null });
       },
 
       clearAuthError: () => set({ authError: null }),

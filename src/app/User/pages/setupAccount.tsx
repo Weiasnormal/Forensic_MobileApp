@@ -168,7 +168,6 @@ export default function SetupAccount() {
         title="Save profile?"
         message="Do you want to save these profile changes?"
         saveLabel="Save profile"
-        discardLabel="No"
         goBackLabel="Cancel"
         onSaveDraft={() => {
           setShowSaveProfileModal(false);

@@ -6,7 +6,7 @@
 // fail gracefully (empty state) until the corresponding IEndpoint handlers are
 // added server-side. Suggested shape for the backend team:
 //
-//   GET    /admin/team                 -> list of { id, firstName, lastName, email, role, status, casesHandled, createdAt }
+//   GET    /tenant/members             -> list of { id, firstName, lastName, email, role, status, casesHandled, createdAt }
 //   POST   /admin/team/{id}/approve    -> approve a pending analyst signup
 //   POST   /admin/team/{id}/reject     -> deny a pending analyst signup
 //   POST   /admin/team/{id}/suspend    -> suspend/deactivate a team member
@@ -16,19 +16,21 @@
 
 export const ADMIN_API_ENDPOINTS = {
   team: {
-    list: '/admin/team',
-    approve: (id: string) => `/admin/team/${id}/approve`,
-    reject: (id: string) => `/admin/team/${id}/reject`,
-    suspend: (id: string) => `/admin/team/${id}/suspend`,
-    invite: '/admin/team/invite',
+    list: '/tenant/members',
+    getById: (id: string) => `/tenant/members/${id}`,
+    remove: (id: string) => `/tenant/members/${id}`,
+    approve: (id: string) => `/tenant/members/${id}/approve`,
+    reject: (id: string) => `/tenant/members/${id}/reject`,
+    invite: '/tenant/invite',
   },
   organization: {
     get: '/admin/organization',
     update: '/admin/organization',
   },
   tenant: {
-    getMemberById: (id: string) => `/tenant/member/${id}`,
-    getAllMembers: '/tenant/member',
+    getMemberById: (id: string) => `/tenant/members/${id}`,
+    getAllMembers: '/tenant/members',
     create: '/tenants',
+    suspendUser: '/admin/suspend-user',
   },
 } as const;

@@ -206,10 +206,12 @@ export default function UserProfileScreen() {
 					onConfirm={async () => {
 					setIsDeletingAccount(true);
 					try {
+						await useAuthStore.getState().deleteAccount();
 						setShowDeleteAccountModal(false);
 						setDeleteSuccess(true);
 						router.replace('/_login/SignInPage');
 					} catch {
+						setShowDeleteAccountModal(false);
 						setDeleteError(true);
 					} finally {
 						setIsDeletingAccount(false);

@@ -20,7 +20,6 @@ import { useFeedbackStore } from '@/store/feedbackStore';
 export default function SignUpPage() {
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<AppRole>('user');
-  const isOrgAdmin = activeRole === 'admin';
   const register = useAuthStore((state) => state.register);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [registerError, setRegisterError] = useState<string | null>(null);
@@ -298,10 +297,10 @@ export default function SignUpPage() {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, isOrgAdmin && styles.primaryButtonDisabled]}
+            style={styles.primaryButton}
             activeOpacity={0.85}
             onPress={handleSubmit(handleContinue)}
-            disabled={isOrgAdmin || isAuthenticating}
+            disabled={isAuthenticating}
           >
             <Text allowFontScaling={false} style={styles.primaryButtonText}>
               {isAuthenticating ? 'Creating account…' : 'Continue'}
@@ -426,9 +425,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 10,
     marginBottom: 12,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: colors.primaryDisabled,
   },
   primaryButtonText: {
     ...getTypographyStyle('b1Button'),

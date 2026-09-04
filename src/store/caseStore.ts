@@ -280,6 +280,16 @@ function createMockError(message: string) {
   caseLog.error('CaseStore:Error', message);
   return new Error(message);
 }
+
+async function parseBackendError(response: Response, fallback: string): Promise<string> {
+  try {
+    const problem = await response.json();
+    return problem?.detail || problem?.title || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const BACKEND_STATUS_MAP: Record<CaseStatus, string> = {
   Processing: 'Processing',
   Genuine: 'Genuine',
@@ -524,20 +534,10 @@ export const useCaseStore = create<CaseStore>()(
             submissionError: null,
           });
 
-          function generateGuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-              const r = (Math.random() * 16) | 0;
-              const v = c === 'x' ? r : (r & 0x3) | 0x8;
-              return v.toString(16);
-            });
-          }
-
           try {
-            const examinerGuid = generateGuid();
-
             const createRequest = {
               SubjectName: currentDraft.subjectName,
-              Examiner: examinerGuid,
+              Examiner: currentDraft.examiner,
               Priority: PRIORITY_MAP[currentDraft.priority],
               AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
             };
@@ -559,7 +559,8 @@ export const useCaseStore = create<CaseStore>()(
               if (await handleUnauthorizedResponse(createRes)) {
                 throw new Error('Session expired. Please sign in again.');
               }
-              throw new Error(`Create case failed (${createRes.status})`);
+              const message = await parseBackendError(createRes, `Create case failed (${createRes.status})`);
+              throw new Error(message);
             }
 
             let rawCaseId: string | null = null;
@@ -689,7 +690,8 @@ export const useCaseStore = create<CaseStore>()(
                 if (await handleUnauthorizedResponse(upRes)) {
                   throw new Error('Session expired. Please sign in again.');
                 }
-                throw new Error(`Reference upload failed (${upRes.status})`);
+                const message = await parseBackendError(upRes, `Reference upload failed (${upRes.status})`);
+                throw new Error(message);
               }
 
               set({
@@ -726,7 +728,8 @@ export const useCaseStore = create<CaseStore>()(
                 if (await handleUnauthorizedResponse(upRes)) {
                   throw new Error('Session expired. Please sign in again.');
                 }
-                throw new Error(`Suspect upload failed (${upRes.status})`);
+                const message = await parseBackendError(upRes, `Suspect upload failed (${upRes.status})`);
+                throw new Error(message);
               }
             }
 
@@ -928,7 +931,8 @@ export const useCaseStore = create<CaseStore>()(
               if (await handleUnauthorizedResponse(analysisRes)) {
                 throw new Error('Session expired. Please sign in again.');
               }
-              throw new Error(`Analysis retry failed (${analysisRes.status})`);
+              const message = await parseBackendError(analysisRes, `Analysis retry failed (${analysisRes.status})`);
+              throw new Error(message);
             }
 
             upsertProcessingJob(caseId, { step: 'Analyzing forensic features', progress: 85 });
