@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from './authStore';
+import type { SignatureAnalysisViewMode } from '@/services/signatureAnalysis';
 
 type UserProfile = {
   firstName: string;
@@ -10,6 +11,7 @@ type UserProfile = {
   role?: string;
   organization?: string;
   avatarUri?: string | null;
+  defaultResultView?: SignatureAnalysisViewMode;
 };
 
 type UserStore = {

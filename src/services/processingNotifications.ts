@@ -1,7 +1,11 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type * as ExpoNotifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
 const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const NOTIFICATIONS_ENABLED_KEY = 'avera_notifications_enabled';
 
 let notificationsModule: typeof ExpoNotifications | null = null;
 let loadAttempted = false;
@@ -20,6 +24,30 @@ async function getNotifications(): Promise<typeof ExpoNotifications | null> {
     console.warn('[processingNotifications] expo-notifications native module unavailable', error);
     return null;
   }
+}
+
+export async function getNotificationsEnabledPreference(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
+    if (raw === null) return true; // default ON
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export async function setNotificationsEnabledPreference(value: boolean): Promise<boolean> {
+  try {
+    await AsyncStorage.setItem(NOTIFICATIONS_ENABLED_KEY, value ? 'true' : 'false');
+  } catch (error) {
+    console.warn('[processingNotifications] Unable to persist notification preference', error);
+  }
+
+  if (value) {
+    return ensurePermission();
+  }
+
+  return true;
 }
 
 export async function configureProcessingNotifications() {
@@ -71,6 +99,9 @@ async function ensurePermission(): Promise<boolean> {
 }
 
 export async function notifyProcessingComplete(caseCode: string, isSuspected: boolean): Promise<void> {
+  const enabled = await getNotificationsEnabledPreference();
+  if (!enabled) return;
+
   const Notifications = await getNotifications();
   if (!Notifications) return;
 
@@ -93,6 +124,9 @@ export async function notifyProcessingComplete(caseCode: string, isSuspected: bo
 }
 
 export async function notifyProcessingFailed(caseCode: string): Promise<void> {
+  const enabled = await getNotificationsEnabledPreference();
+  if (!enabled) return;
+
   const Notifications = await getNotifications();
   if (!Notifications) return;
 
