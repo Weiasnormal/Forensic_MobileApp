@@ -5,6 +5,7 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,9 @@ export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -48,22 +52,46 @@ export default function ChangePasswordScreen() {
           label="Current password"
           value={currentPassword}
           onChangeText={setCurrentPassword}
-          secureTextEntry
+          secureTextEntry={!showCurrentPassword}
           placeholder="Enter current password"
+          rightIcon={
+            <Ionicons
+              name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textTertiary}
+            />
+          }
+          onRightIconPress={() => setShowCurrentPassword((visible) => !visible)}
         />
         <FormField
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
-          secureTextEntry
+          secureTextEntry={!showNewPassword}
           placeholder="Enter new password"
+          rightIcon={
+            <Ionicons
+              name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textTertiary}
+            />
+          }
+          onRightIconPress={() => setShowNewPassword((visible) => !visible)}
         />
         <FormField
           label="Confirm new password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          secureTextEntry
+          secureTextEntry={!showConfirmPassword}
           placeholder="Repeat new password"
+          rightIcon={
+            <Ionicons
+              name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textTertiary}
+            />
+          }
+          onRightIconPress={() => setShowConfirmPassword((visible) => !visible)}
         />
 
         <ErrorBanner message={error} />

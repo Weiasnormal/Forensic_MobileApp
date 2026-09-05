@@ -98,12 +98,10 @@ export default function SignatureProcessingRoute() {
 
   const job = useCaseStore((state) => (currentCaseId ? state.processingJobs[currentCaseId] : undefined));
   const legacyStatus = useCaseStore((state) => state.submissionStatus);
-  const legacyStep = useCaseStore((state) => state.submissionStep);
   const legacyProgress = useCaseStore((state) => state.submissionProgress);
   const legacyError = useCaseStore((state) => state.submissionError);
 
   const effectiveStatus = job?.status ?? legacyStatus;
-  const effectiveStep = job?.step ?? legacyStep;
   const effectiveError = job?.error ?? legacyError;
   const targetProgress = Math.min(100, Math.max(0, job?.progress ?? legacyProgress ?? 0));
   const isFailedState = effectiveStatus === 'error' || effectiveStatus === 'interrupted';

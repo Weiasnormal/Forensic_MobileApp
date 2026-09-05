@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Animated, KeyboardAvoidingView, LayoutChangeEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
-import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../constants/roles';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
+import { type AppRole, ROLE_SETTINGS } from '../../constants/roles';
 import { type SignInFormValues, signInSchema } from '../../utils/validation';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
@@ -18,17 +18,18 @@ import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
 
 export default function LogInPage() {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState<AppRole>('user');
   const [showPassword, setShowPassword] = useState(false);
   const login = useAuthStore((state) => state.login);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [signInError, setSignInError] = useState<string | null>(null);
   const [welcomeInfo, setWelcomeInfo] = useState<{ isFirstTime: boolean } | null>(null);
+  const [resolvedRole, setResolvedRole] = useState<AppRole>('user');
 
-  const [tabsWidth, setTabsWidth] = useState(0);
-  const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
+  function resolveRoleFromClaims(roles: string[] | undefined): AppRole {
+    return (roles ?? []).some((r) => r.toLowerCase().includes('admin')) ? 'admin' : 'user';
+  }
 
-  const roleConfig = ROLE_SETTINGS[activeRole].signIn;
+  
   const {
     control,
     handleSubmit,
@@ -41,55 +42,38 @@ export default function LogInPage() {
     },
   });
 
-  const emailPlaceholder = roleConfig.emailPlaceholder;
+  const emailPlaceholder = 'avera@institution.gov.ph';
   const forgotPasswordRoute = {
     pathname: '/_login/forgot_password/enterEmail' as const,
-    params: { role: activeRole },
+    params: {},
   };
-
-  const handleTabsLayout = (e: LayoutChangeEvent) => {
-    setTabsWidth(e.nativeEvent.layout.width);
-  };
-
-  const selectRole = (role: AppRole) => {
-    setActiveRole(role);
-    Animated.timing(slideAnim, {
-      toValue: role === 'user' ? 0 : 1,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const pillWidth = tabsWidth > 0 ? (tabsWidth - 8) / 2 : 0;
-  const pillTranslateX = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, pillWidth],
-  });
 
   const handleSignIn = async (values: SignInFormValues) => {
-    setSignInError(null);
-    try {
-      await login(values.email, values.password);
+  setSignInError(null);
+  try {
+    await login(values.email, values.password);
 
-       const user = useAuthStore.getState().user;
-       const isFirstTime = user ? await isFirstLoginForUser(user.userId) : false;
+    const authUser = useAuthStore.getState().user;
+    const role = resolveRoleFromClaims(authUser?.roles);
+    setResolvedRole(role);
 
-      setWelcomeInfo({ isFirstTime });
-    } catch (error) {
-      setSignInError(
-        error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.',
-      );
-    }
-  };
+    const isFirstTime = authUser ? await isFirstLoginForUser(authUser.userId) : false;
+    setWelcomeInfo({ isFirstTime });
+  } catch (error) {
+    setSignInError(
+      error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.',
+    );
+  }
+};
 
   const handleDismissWelcome = async () => {
-    const user = useAuthStore.getState().user;
-    if (user) {
-      await markUserAsSeen(user.userId);
-    }
-    setWelcomeInfo(null);
-    router.replace(roleConfig.redirectTo);
-  };
+  const user = useAuthStore.getState().user;
+  if (user) {
+    await markUserAsSeen(user.userId);
+  }
+  setWelcomeInfo(null);
+  router.replace(ROLE_SETTINGS[resolvedRole].signIn.redirectTo);
+};
 
   return (
     <KeyboardAvoidingView
@@ -114,44 +98,6 @@ export default function LogInPage() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <View style={styles.roleTabs} onLayout={handleTabsLayout}>
-            {tabsWidth > 0 && (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.rolePill,
-                  {
-                    width: pillWidth,
-                    transform: [{ translateX: pillTranslateX }],
-                  },
-                ]}
-              />
-            )}
-            <TouchableOpacity
-              style={styles.roleTab}
-              activeOpacity={0.85}
-              onPress={() => selectRole('user')}
-            >
-              <Text
-                allowFontScaling={false}
-                style={[styles.roleTabText, activeRole === 'user' && styles.roleTabTextActive]}
-              >
-                {ROLE_LABEL.user}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.roleTab}
-              activeOpacity={0.85}
-              onPress={() => selectRole('admin')}
-            >
-              <Text
-                allowFontScaling={false}
-                style={[styles.roleTabText, activeRole === 'admin' && styles.roleTabTextActive]}
-              >
-                {ROLE_LABEL.admin}
-              </Text>
-            </TouchableOpacity>
-          </View>
 
           <View style={styles.formFields}>
             <Controller
