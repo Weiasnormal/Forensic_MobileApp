@@ -1,4 +1,3 @@
-import DraftSavedModal from '@/_components/modals/draft_saved';
 import FormField from '@/_components/common/FormField';
 import ScreenHeader from '@/_components/common/ScreenHeader';
 import { colors } from '@/constants/colors';
@@ -15,6 +14,7 @@ import ErrorModal from '@/_components/modals/error_modal';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { useAuthStore } from '@/store/authStore';
+import ProfileSaveModal from '@/_components/modals/profile_save';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -175,19 +175,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         </Pressable>
       </View>
 
-      <DraftSavedModal
+      <ProfileSaveModal
         visible={showSaveProfileModal}
-        title="Save profile?"
-        message="Do you want to save these profile changes?"
-        saveLabel="Save profile"
-        discardLabel="No"
-        goBackLabel="Cancel"
-        onSaveDraft={() => {
+        onSave={() => {
           setShowSaveProfileModal(false);
           void handleSave();
         }}
-        onDiscard={() => setShowSaveProfileModal(false)}
-        onGoBack={() => setShowSaveProfileModal(false)}
+        onCancel={() => setShowSaveProfileModal(false)}
       />
 
       <ErrorModal

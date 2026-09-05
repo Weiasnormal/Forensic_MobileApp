@@ -14,10 +14,12 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import DangerRow from '@/_components/admin/DangerRow';
-import DeleteAccountModal from '@/_components/modals/delete_account';
 import { router } from 'expo-router';
 import ErrorModal from '@/_components/modals/error_modal';
-import SuccessModal from '@/_components/modals/success_modal';
+import { useFeedbackStore } from '@/store/feedbackStore';
+import {useAuthStore} from '@/store/authStore';
+import TypeToConfirmModal from '@/_components/modals/type_to_confirm';
+
 
 
 interface ProfileScreenProps {
@@ -66,7 +68,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
-  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   
 
@@ -162,37 +163,34 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             subtitle="Permanently remove your login access"
             onPress={() => setShowDeleteAccountModal(true)}
           />
-          <DeleteAccountModal
+          <TypeToConfirmModal
             visible={showDeleteAccountModal}
-            isDeleting={isDeletingAccount}
+            title="Delete Account"
+            message="This will permanently delete your login credentials and personal profile information. Forensic case records you submitted are retained for chain-of-custody purposes. Type DELETE to confirm."
+            confirmWord="DELETE"
+            confirmLabel={isDeletingAccount ? 'Deleting...' : 'Delete My Account'}
+            isLoading={isDeletingAccount}
             onCancel={() => setShowDeleteAccountModal(false)}
             onConfirm={async () => {
-            setIsDeletingAccount(true);
-            try {
-              setShowDeleteAccountModal(false);
-              setDeleteSuccess(true);
-              router.replace('/_login/SignInPage');
-            } catch {
-              setDeleteError(true);
-            } finally {
-              setIsDeletingAccount(false);
-            }
-            }}/>
+              setIsDeletingAccount(true);
+              try {
+                await useAuthStore.getState().deleteAccount();
+                setShowDeleteAccountModal(false);
+                useFeedbackStore.getState().showToast('Account deleted successfully', 'success');
+                router.replace('/_login/SignInPage');
+              } catch {
+                setShowDeleteAccountModal(false);
+                setDeleteError(true);
+              } finally {
+                setIsDeletingAccount(false);
+              }
+            }}
+          />
           <ErrorModal
             visible={deleteError}
             title="Error"
             message="Unable to delete account. Please try again."
             onPrimaryPress={() => setDeleteError(false)}
-          />
-          <SuccessModal
-            visible={deleteSuccess}
-            title="Account Deleted"
-            message="Your login access has been removed. Any case records you submitted are retained for chain-of-custody purposes."
-            primaryLabel="Done"
-            onPrimaryPress={() => {
-              setDeleteSuccess(false);
-              router.replace('/_login/SignInPage');
-            }}
           />
       </ScrollView>    
     </SafeAreaView>

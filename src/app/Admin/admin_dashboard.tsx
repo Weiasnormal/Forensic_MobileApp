@@ -18,6 +18,7 @@ import ProfileScreen from './ProfileScreen';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { useAuthStore } from '@/store/authStore';
 import { useFeedbackStore } from '@/store/feedbackStore';
+import { getNotificationsEnabledPreference, setNotificationsEnabledPreference } from '@/services/processingNotifications';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
@@ -81,8 +82,22 @@ export default function AdminDashboard() {
 		[pendingApprovals],
 	);
 
-	const handleToggleNotifications = (value: boolean) => {
+	useEffect(() => {
+	getNotificationsEnabledPreference().then(setNotificationsEnabled);
+	}, []);
+
+	const handleToggleNotifications = async (value: boolean) => {
 	setNotificationsEnabled(value);
+	const granted = await setNotificationsEnabledPreference(value);
+
+	if (value && !granted) {
+		useFeedbackStore.getState().showToast(
+		'Enable notifications in your device settings to receive alerts',
+		'infoLight',
+		);
+		return;
+	}
+
 	useFeedbackStore.getState().showToast(
 		value ? 'Notifications enabled' : 'Notifications disabled',
 		'successLight',

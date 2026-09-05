@@ -1,4 +1,3 @@
-import DraftSavedModal from '@/_components/modals/draft_saved';
 import { useUser } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,6 +10,7 @@ import ErrorModal from '@/_components/modals/error_modal';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { useAuthStore } from '@/store/authStore';
+import ProfileSaveModal from '@/_components/modals/profile_save';
 
 export default function SetupAccount() {
   const router = useRouter();
@@ -163,18 +163,13 @@ export default function SetupAccount() {
         </Pressable>
       </View>
 
-      <DraftSavedModal
+      <ProfileSaveModal
         visible={showSaveProfileModal}
-        title="Save profile?"
-        message="Do you want to save these profile changes?"
-        saveLabel="Save profile"
-        goBackLabel="Cancel"
-        onSaveDraft={() => {
+        onSave={() => {
           setShowSaveProfileModal(false);
           void handleSave();
         }}
-        onDiscard={() => setShowSaveProfileModal(false)}
-        onGoBack={() => setShowSaveProfileModal(false)}
+        onCancel={() => setShowSaveProfileModal(false)}
       />
 
       <ErrorModal
