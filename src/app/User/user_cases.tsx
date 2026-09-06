@@ -1,15 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-	FlatList,
-	SectionList,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native';
+import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
 import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '../../store/caseStore';

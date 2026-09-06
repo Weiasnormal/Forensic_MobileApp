@@ -15,6 +15,8 @@ import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { useAuthStore } from '@/store/authStore';
 import ProfileSaveModal from '@/_components/modals/profile_save';
+import ChangeEmailModal from '@/_components/modals/change_email';
+import ChangeEmailSuccessModal from '@/_components/modals/change_email_success';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -43,6 +45,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const [saveError, setSaveError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
+  const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
 
  const pickImage = async () => {
     try {
@@ -138,12 +144,37 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         </View>
 
         <View style={styles.field}>
-          <FormField
-          label="Email"
-          value={email}
-          style={styles.formField}
-          disabled
-        />
+          <Pressable onPress={() => setShowChangeEmail(true)}>
+            <FormField
+              label="Email"
+              value={email}
+              style={styles.formField}
+              disabled
+              rightIcon={<Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />}
+              onRightIconPress={() => setShowChangeEmail(true)}
+            />
+          </Pressable>
+
+          {pendingNewEmail ? (
+            <View style={verifyStyles.pendingBox}>
+              <Text style={verifyStyles.pendingTitle}>Verification Pending</Text>
+              <Text style={verifyStyles.pendingSubtitle}>
+                Link sent to {pendingNewEmail}. Current email stays active.
+              </Text>
+              <Pressable
+                onPress={async () => {
+                  const { requestEmailChange } = await import('@/services/emailVerificationApi');
+                  const { ok } = await requestEmailChange(pendingNewEmail);
+                  useFeedbackStore.getState().showToast(
+                    ok ? 'Email resent' : 'Unable to resend right now',
+                    ok ? 'successLight' : 'infoLight',
+                  );
+                }}
+              >
+                <Text style={verifyStyles.pendingResend}>Resend</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.field}>
@@ -182,6 +213,22 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           void handleSave();
         }}
         onCancel={() => setShowSaveProfileModal(false)}
+      />
+
+      <ChangeEmailModal
+        visible={showChangeEmail}
+        currentEmail={email}
+        onClose={() => setShowChangeEmail(false)}
+        onSent={(newEmail) => {
+          setShowChangeEmail(false);
+          setPendingNewEmail(newEmail);
+          setShowChangeEmailSuccess(true);
+        }}
+      />
+      <ChangeEmailSuccessModal
+        visible={showChangeEmailSuccess}
+        newEmail={pendingNewEmail ?? ''}
+        onDone={() => setShowChangeEmailSuccess(false)}
       />
 
       <ErrorModal
@@ -302,6 +349,20 @@ const styles = StyleSheet.create({
     ...getTypographyStyle('b1Button'),
     color: colors.primaryText,
   },
+});
+
+const verifyStyles = StyleSheet.create({
+  pendingBox: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  pendingTitle: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.textPrimary },
+  pendingSubtitle: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary, marginTop: 2 },
+  pendingResend: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary, marginTop: 8 },
 });
 
 function getInitials(first = '', last = '') {

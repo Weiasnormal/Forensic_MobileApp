@@ -16,6 +16,7 @@ import FormField from '@/_components/common/FormField';
 import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
+import { useAdminStore } from '@/store/adminStore';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function SignUpPage() {
     outputRange: [0, pillWidth],
   });
 
- const handleContinue = async (values: SignUpFormValues) => {
+const handleContinue = async (values: SignUpFormValues) => {
   setRegisterError(null);
   try {
     await register(
@@ -87,11 +88,20 @@ export default function SignUpPage() {
       activeRole === 'admin' ? 'Admin' : 'User',
     );
 
+    await useAuthStore.getState().login(values.email, values.password);
+
+    if (activeRole === 'admin' && values.organizationName?.trim()) {
+      const tenantId = await useAdminStore.getState().createTenant(values.organizationName.trim());
+      if (!tenantId) {
+        useFeedbackStore.getState().showToast('Account created — organization setup failed, retry in Profile', 'infoLight');
+      }
+    }
+
     useFeedbackStore.getState().showToast('Account created successfully', 'success');
 
     router.push({
-      pathname: '/_login/_signup/User&AdminCodepage',
-      params: { role: activeRole },
+      pathname: '/_login/_signup/VerifyEmailInstruction',
+      params: { role: activeRole, email: values.email },
     });
   } catch (error) {
     setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
@@ -165,6 +175,22 @@ export default function SignUpPage() {
           </View>
 
           <View style={styles.formBody}>
+            {activeRole === 'admin' ? (
+              <Controller
+                control={control}
+                name="organizationName"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <FormField
+                    label="Organization Name"
+                    value={value ?? ''}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="e.g. PNP Crime Laboratory"
+                  />
+                )}
+              />
+            ) : null}
+
             <View style={styles.nameRow}>
               <Controller
                 control={control}
