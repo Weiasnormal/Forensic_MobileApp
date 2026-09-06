@@ -21,6 +21,7 @@ import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
 import { getAuthHeader } from '@/store/authStore';
 import ErrorModal from '@/_components/modals/error_modal';
+import { useUser } from '@/store/userStore';
 
 const getAuthImageSource = (uri?: string | null) => {
   if (!uri) return undefined;
@@ -112,7 +113,8 @@ export function SignatureResultsScreen() {
     safeCaseId ? state.cases.find((c) => String(c.caseId) === safeCaseId) : undefined,
   );
 
-  const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
+  const { user: profile } = useUser();
+  const [activeView, setActiveView] = useState<ViewMode>(profile.defaultResultView ?? 'Heatmap');
   const insets = useSafeAreaInsets();
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
   const [previewLabel, setPreviewLabel] = useState('');

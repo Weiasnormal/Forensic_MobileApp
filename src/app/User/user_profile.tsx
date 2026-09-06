@@ -15,20 +15,21 @@ import { getCaseSummary, useCaseStore } from '@/store/caseStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User, UserX } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import DangerRow from '@/_components/admin/DangerRow';
-import DeleteAccountModal from '@/_components/modals/delete_account';
 import { useAuthStore } from '@/store/authStore';
 import ErrorModal from '@/_components/modals/error_modal';
-import SuccessModal from '@/_components/modals/success_modal';
 import { useFeedbackStore } from '@/store/feedbackStore';
+import TypeToConfirmModal from '@/_components/modals/type_to_confirm';
+import DefaultResultViewModal from '@/_components/modals/default_result_view';
+import { getNotificationsEnabledPreference, setNotificationsEnabledPreference } from '@/services/processingNotifications';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
-	const { user, load } = useUser();
+	const { user, load, setUser } = useUser();
 	const logout = useAuthStore((state) => state.logout);
 	const cases = useCaseStore((state) => state.cases);
 	const resetMockDatabase = useCaseStore((state) => state.resetMockDatabase);
@@ -43,8 +44,8 @@ export default function UserProfileScreen() {
 	);
 	const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 	const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-	const [deleteSuccess, setDeleteSuccess] = useState(false);
 
+	const [showDefaultResultViewModal, setShowDefaultResultViewModal] = useState(false);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 	const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -57,8 +58,22 @@ export default function UserProfileScreen() {
 
 	const [deleteError, setDeleteError] = useState(false);
 
-	const handleToggleNotifications = (value: boolean) => {
+	useEffect(() => {
+	getNotificationsEnabledPreference().then(setNotificationsEnabled);
+	}, []);
+
+	const handleToggleNotifications = async (value: boolean) => {
 	setNotificationsEnabled(value);
+	const granted = await setNotificationsEnabledPreference(value);
+
+	if (value && !granted) {
+		useFeedbackStore.getState().showToast(
+		'Enable notifications in your device settings to receive alerts',
+		'infoLight',
+		);
+		return;
+	}
+
 	useFeedbackStore.getState().showToast(
 		value ? 'Notifications enabled' : 'Notifications disabled',
 		'successLight',
@@ -77,6 +92,7 @@ export default function UserProfileScreen() {
 	setLogoutModalVisible(false);
 	await logout();
 	router.replace('/_login/SignInPage');};
+	
 
 	return (
 		<SafeAreaView edges = {['left', 'right']} style={styles.safeArea}>
@@ -119,7 +135,16 @@ export default function UserProfileScreen() {
 						onValueChange={handleToggleNotifications}
 					/>
 					<Divider />
-					<SettingsRow icon={Grid} title="Default Result View" rightText="Heatmap" />
+					<SettingsRow
+						icon={Grid}
+						title="Default Result View"
+						rightText={user.defaultResultView === 'Bounding Box'
+							? 'Bounding Box'
+							: user.defaultResultView === 'Stroke Diff'
+							? 'Stroke Difference'
+							: 'Heatmap'}
+						onPress={() => setShowDefaultResultViewModal(true)}
+						/>
 					<Divider />
 					<ToggleRow
 						icon={Upload}
@@ -199,40 +224,44 @@ export default function UserProfileScreen() {
 					subtitle="Permanently remove your login access"
 					onPress={() => setShowDeleteAccountModal(true)}
 					/>
-				<DeleteAccountModal
+				<TypeToConfirmModal
 					visible={showDeleteAccountModal}
-					isDeleting={isDeletingAccount}
+					title="Delete Account"
+					message="This will permanently delete your login credentials and personal profile information. Forensic case records you submitted are retained for chain-of-custody purposes. Type DELETE to confirm."
+					confirmWord="DELETE"
+					confirmLabel={isDeletingAccount ? 'Deleting...' : 'Delete My Account'}
+					isLoading={isDeletingAccount}
 					onCancel={() => setShowDeleteAccountModal(false)}
 					onConfirm={async () => {
-					setIsDeletingAccount(true);
-					try {
+						setIsDeletingAccount(true);
+						try {
 						await useAuthStore.getState().deleteAccount();
 						setShowDeleteAccountModal(false);
-						setDeleteSuccess(true);
+						useFeedbackStore.getState().showToast('Account deleted successfully', 'success');
 						router.replace('/_login/SignInPage');
-					} catch {
+						} catch {
 						setShowDeleteAccountModal(false);
 						setDeleteError(true);
-					} finally {
+						} finally {
 						setIsDeletingAccount(false);
-					}
-					}}/>
+						}
+					}}
+				/>
 				<ErrorModal
 					visible={deleteError}
 					title="Error"
 					message="Unable to delete account. Please try again."
 					onPrimaryPress={() => setDeleteError(false)}
 					/>
-				<SuccessModal
-					visible={deleteSuccess}
-					title="Account Deleted"
-					message="Your login access has been removed. Any case records you submitted are retained for chain-of-custody purposes."
-					primaryLabel="Done"
-					onPrimaryPress={() => {
-						setDeleteSuccess(false);
-						router.replace('/_login/SignInPage');
+				<DefaultResultViewModal
+					visible={showDefaultResultViewModal}
+					currentValue={user.defaultResultView ?? 'Heatmap'}
+					onClose={() => setShowDefaultResultViewModal(false)}
+					onSave={async (value) => {
+						await setUser({ defaultResultView: value });
+						useFeedbackStore.getState().showToast('Default result view updated', 'successLight');
 					}}
-					/>
+				/>
 			</ScrollView>
 		</SafeAreaView>
 	);
