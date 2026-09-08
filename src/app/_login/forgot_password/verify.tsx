@@ -58,8 +58,11 @@ export default function VerifyPage() {
 		}
 	};
 
-	const handleVerify = (_values: VerificationCodeFormValues) => {
-		router.push({ pathname: '/_login/forgot_password/reset', params: { role: activeRole } });
+	const handleVerify = (values: VerificationCodeFormValues) => {
+		router.push({
+			pathname: '/_login/forgot_password/reset',
+			params: { role: activeRole, email: roleConfig.verificationEmail, code: values.code },
+		});
 	};
 
 	return (

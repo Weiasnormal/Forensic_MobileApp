@@ -14,10 +14,11 @@ import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengt
 import { resolveRole } from '../../../constants/roles';
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type ResetPasswordFormValues, resetPasswordSchema } from '../../../utils/validation';
+import { resetPassword } from '@/services/authApi';
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
-	const params = useLocalSearchParams<{ role?: string }>();
+	const params = useLocalSearchParams<{ role?: string; email?: string; code?: string }>();
 	const activeRole = resolveRole(params.role);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,10 +44,16 @@ export default function ResetPasswordPage() {
 	const showPasswordError =
 		wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
 
-	const handleReset = async (_values: ResetPasswordFormValues) => {
+	const handleReset = async (values: ResetPasswordFormValues) => {
 		setIsSubmitting(true);
 		try {
+			await resetPassword({
+				email: params.email ?? '',
+				token: params.code ?? '',
+				password: values.password,
+			});
 			router.push({ pathname: '/_login/forgot_password/success', params: { role: activeRole } });
+		} catch {// surface via ErrorBanner — add local error state the same way SignInPage does
 		} finally {
 			setIsSubmitting(false);
 		}
