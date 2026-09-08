@@ -11,6 +11,8 @@ import PrimaryButton from '@/_components/common/PrimaryButton';
 import { resolveRole } from '@/constants/roles';
 import { sendVerificationEmail } from '@/services/emailVerificationApi';
 import { useFeedbackStore } from '@/store/feedbackStore';
+import { useEmailVerificationStore } from '@/store/emailVerificationStore';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 const envelopeArt = require('../../../../assets/expo.icon/Assets/verify_email_1.webp');
 
@@ -28,6 +30,9 @@ export default function VerifyEmailInstruction() {
 	const [isResending, setIsResending] = useState(false);
 	const [isContinuing, setIsContinuing] = useState(false);
 
+	const isVerified = useEmailVerificationStore((s) => s.isVerified);
+	const verificationError = useEmailVerificationStore((s) => s.lastError);
+
 	const handleResend = async () => {
 		setIsResending(true);
 		try {
@@ -42,15 +47,19 @@ export default function VerifyEmailInstruction() {
 	};
 
 	const handleContinue = () => {
-		// BACKEND TODO: swap this for checkEmailVerified() gating once
-		// GET /auth/verification-status exists. Until then we don't block
-		// navigation on a status the backend can't report.
 		setIsContinuing(true);
+
+		if (!isVerified) return;
+
+		if (activeRole === 'admin') {
+			router.replace('/Admin/admin_dashboard');
+			return;
+		}
 		router.push({
 			pathname: '/_login/_signup/User&AdminCodepage',
 			params: { role: activeRole },
 		});
-	};
+		};
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -70,10 +79,12 @@ export default function VerifyEmailInstruction() {
 					We sent a verification link{'\n'}to {email}.
 				</Text>
 
+				<ErrorBanner message={verificationError} title="Verification issue" />
+
 				<View style={styles.stepsList}>
 					{STEPS.map((step, index) => (
 						<View key={step} style={styles.stepRow}>
-							<View style={styles.stepBadge}>
+							<View style={[styles.stepBadge, index === 0 && isVerified && styles.stepBadgeDone]}>
 								<Text allowFontScaling={false} style={styles.stepBadgeText}>{index + 1}</Text>
 							</View>
 							<Text allowFontScaling={false} style={styles.stepText}>{step}</Text>
@@ -84,9 +95,9 @@ export default function VerifyEmailInstruction() {
 
 			<View style={styles.bottomActions}>
 				<PrimaryButton
-					label={isContinuing ? 'Continuing…' : 'Continue'}
+					label={isVerified ? 'Continue' : 'Waiting for verification…'}
 					onPress={handleContinue}
-					loading={isContinuing}
+					disabled={!isVerified}
 					size="large"
 				/>
 
@@ -125,6 +136,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center', justifyContent: 'center',
 	},
 	stepBadgeText: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary },
+	stepBadgeDone: { backgroundColor: colors.primaryLight, borderColor: colors.statusGenuine },
 	stepText: { ...getTypographyStyle('body'), color: colors.textPrimary },
 	bottomActions: { paddingHorizontal: 20, paddingBottom: 24, gap: 4 },
 	resendRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 14 },

@@ -12,6 +12,7 @@ import PrimaryButton from '@/_components/common/PrimaryButton';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type ForgotPasswordFormValues, forgotPasswordSchema } from '../../../utils/validation';
+import { forgotPassword } from '@/services/authApi';
 
 export default function EnterEmailPage() {
 	const router = useRouter();
@@ -29,9 +30,13 @@ export default function EnterEmailPage() {
 		},
 	});
 
-	const handleSendCode = (_values: ForgotPasswordFormValues) => {
-		router.push({ pathname: '/_login/forgot_password/verify', params: { role: activeRole } });
-	};
+	const handleSendCode = async (values: ForgotPasswordFormValues) => {
+		await forgotPassword(values.email); 
+		router.push({
+			pathname: '/_login/forgot_password/verify',
+			params: { role: activeRole, email: values.email },
+		});
+		};
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

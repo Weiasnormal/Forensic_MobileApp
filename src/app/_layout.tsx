@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import GlobalToast from '@/_components/common/GlobalToast';
 import { configureProcessingNotifications } from '@/services/processingNotifications';
+import { useDeepLinkVerification } from '@/hooks/useDeepLinkVerification';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -42,6 +43,8 @@ export default function RootLayout() {
     Sora_700Bold,
     Sora_800ExtraBold,
   });
+  
+  useDeepLinkVerification();
 
   React.useEffect(() => {
     if (fontsLoaded) {

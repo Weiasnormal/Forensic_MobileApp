@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { useAdminStore } from '@/store/adminStore';
+import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -96,6 +97,8 @@ const handleContinue = async (values: SignUpFormValues) => {
         useFeedbackStore.getState().showToast('Account created — organization setup failed, retry in Profile', 'infoLight');
       }
     }
+    
+    useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
 
     useFeedbackStore.getState().showToast('Account created successfully', 'success');
 
