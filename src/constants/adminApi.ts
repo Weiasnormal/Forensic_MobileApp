@@ -19,13 +19,13 @@ export const ADMIN_API_ENDPOINTS = {
     list: '/tenant/members',
     getById: (id: string) => `/tenant/members/${id}`,
     remove: (id: string) => `/tenant/members/${id}`,
-    approve: (id: string) => `/tenant/members/${id}/approve`,
-    reject: (id: string) => `/tenant/members/${id}/reject`,
-    invite: '/tenant/invite',
+
+    invite: '/tenant/invite', // pangtanggal lng ng error muna
   },
-  organization: {
-    get: '/admin/organization',
-    update: '/admin/organization',
+  memberRequests: {
+    pending: '/tenants/member-requests/pending',
+    approve: (requestId: string) => `/tenants/member-requests/${requestId}/approve`,
+    reject: (requestId: string) => `/tenants/member-requests/${requestId}/reject`,
   },
   tenant: {
     getMemberById: (id: string) => `/tenant/members/${id}`,

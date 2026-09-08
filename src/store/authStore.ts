@@ -46,6 +46,7 @@ interface AuthState {
   setHasHydrated: (value: boolean) => void;
 
   joinInviteCode: (inviteCode: string) => Promise<void>;
+  applyNewAccessToken: (accessToken: string) => void;
 }
 
 function decodeToken(token: string): AuthUser {
@@ -57,6 +58,8 @@ function decodeToken(token: string): AuthUser {
     decoded.sub ?? '';
 
   const tenantId =
+    decoded.TenantId ??
+    decoded.tenantId ??
     decoded.groupsid ??
     decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/groupsid'] ?? '';
 
@@ -82,6 +85,17 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticating: false,
       authError: null,
       hasHydrated: false,
+
+      applyNewAccessToken: (accessToken: string) => {
+      // createTenant (POST /tenants) returns a freshly-issued JWT that now carries
+      // the TenantId claim — this MUST replace the session token, or every
+      // tenant-scoped request afterwards will fail with Tenant.NotMember.
+      set({
+        accessToken,
+        user: decodeToken(accessToken),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      });
+    },
 
       login: async (email, password) => {
         set({ isAuthenticating: true, authError: null });

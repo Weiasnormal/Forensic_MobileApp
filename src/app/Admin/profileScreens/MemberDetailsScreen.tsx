@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Folder, MinusCircle, UserX } from 'lucide-react-native';
 import ScreenHeader from '@/_components/common/ScreenHeader';
 import Avatar from '@/_components/common/Avatar';
@@ -9,45 +9,19 @@ import SectionLabel from '@/_components/common/SectionLabel';
 import SettingsRow from '@/_components/common/SettingsRow';
 import DangerRow from '@/_components/admin/DangerRow';
 import Divider from '@/_components/common/Divider';
-import Stepper from '@/_components/common/Stepper';
 import ToggleRow from '@/_components/common/ToggleRow';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useAdminStore } from '@/store/adminStore';
 
-interface MemberDetailsScreenProps {
-  memberInitials: string;
-  memberName: string;
-  memberRole: string;
-  casesThisMonth: number;
-  dailyCaseLimit: number;
-  caseSubmissionEnabled: boolean;
-  onBackPress?: () => void;
-  onViewCaseHistoryPress?: () => void;
-  onDecreaseLimit?: () => void;
-  onIncreaseLimit?: () => void;
-  onToggleCaseSubmission?: (value: boolean) => void;
-  onSuspendAnalystPress?: () => void;
-  onRemoveFromOrgPress?: () => void;
-}
-
-const MemberDetailsScreen: React.FC<MemberDetailsScreenProps> = ({
-  memberInitials,
-  memberName,
-  memberRole,
-  casesThisMonth,
-  dailyCaseLimit,
-  caseSubmissionEnabled,
-  onBackPress,
-  onViewCaseHistoryPress,
-  onDecreaseLimit,
-  onIncreaseLimit,
-  onToggleCaseSubmission,
-  onSuspendAnalystPress,
-  onRemoveFromOrgPress,
-}) => {
+const MemberDetailsScreen: React.FC = () => {
   const { memberId } = useLocalSearchParams<{ memberId?: string }>();
+  const router = useRouter();
   const fetchMemberById = useAdminStore((state) => state.fetchMemberById);
+  const suspendTeamMember = useAdminStore((state) => state.suspendTeamMember);
+  const memberDetail = useAdminStore((state) => state.memberDetail);
+  const isLoadingMemberDetail = useAdminStore((state) => state.isLoadingMemberDetail);
+  const memberDetailError = useAdminStore((state) => state.memberDetailError);
 
   useEffect(() => {
     if (memberId) {
@@ -55,38 +29,54 @@ const MemberDetailsScreen: React.FC<MemberDetailsScreenProps> = ({
     }
   }, [fetchMemberById, memberId]);
 
+  if (!memberId || isLoadingMemberDetail || !memberDetail || memberDetail.id !== memberId) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ScreenHeader title="Member Details" onBackPress={() => router.back()} />
+        <View style={styles.centeredState}>
+          <ActivityIndicator color={colors.primary} />
+          <Text allowFontScaling={false} style={styles.stateText}>
+            {memberDetailError ?? 'Loading member details...'}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const memberName = `${memberDetail.firstName} ${memberDetail.lastName}`.trim();
+  const memberInitials = `${memberDetail.firstName[0] ?? ''}${memberDetail.lastName[0] ?? ''}`.toUpperCase();
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader title="Member Details" onBackPress={onBackPress} />
+      <ScreenHeader title="Member Details" onBackPress={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Avatar initials={memberInitials} size={80} variant="light" />
         <Text allowFontScaling={false} style={styles.name}>{memberName}</Text>
-        <Text allowFontScaling={false} style={styles.role}>{memberRole}</Text>
+        <Text allowFontScaling={false} style={styles.role}>Analyst</Text>
 
         <SectionLabel label="Case Management" style={styles.sectionSpacing} />
         <SettingsRow
           icon={Folder}
           title="View Case History"
-          subtitle={`${casesThisMonth} cases this month`}
-          onPress={onViewCaseHistoryPress}
+          subtitle="Case history unavailable"
         />
         <Divider />
 
         <View style={styles.limitRow}>
           <View style={styles.limitTextWrapper}>
             <Text allowFontScaling={false} style={styles.limitTitle}>Daily Case Limit</Text>
-            <Text allowFontScaling={false} style={styles.limitSubtitle}>Maximum cases per day</Text>
+            <Text allowFontScaling={false} style={styles.limitSubtitle}>Not provided by backend</Text>
           </View>
-          <Stepper value={dailyCaseLimit} onDecrease={onDecreaseLimit} onIncrease={onIncreaseLimit} />
+          <Text allowFontScaling={false} style={styles.unavailableText}>Unavailable</Text>
         </View>
         <Divider />
 
         <ToggleRow
           title="Case Submission"
-          subtitle="Allow this analyst to submit new cases"
-          value={caseSubmissionEnabled}
-          onValueChange={onToggleCaseSubmission}
+          subtitle="Not provided by backend"
+          value={false}
+          disabled
         />
 
         <SectionLabel label="Access Controls" style={styles.sectionSpacing} />
@@ -94,13 +84,12 @@ const MemberDetailsScreen: React.FC<MemberDetailsScreenProps> = ({
           icon={MinusCircle}
           title="Suspend Analyst"
           subtitle="Temporarily disable access"
-          onPress={onSuspendAnalystPress}
+          onPress={() => void suspendTeamMember(memberId)}
         />
         <DangerRow
           icon={UserX}
           title="Remove from Organization"
           subtitle="Permanently remove access"
-          onPress={onRemoveFromOrgPress}
         />
       </ScrollView>
     </SafeAreaView>
@@ -114,6 +103,18 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+  },
+  centeredState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  stateText: {
+    ...getTypographyStyle('body', 'regular'),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 12,
   },
   name: {
     ...getTypographyStyle('t3Title'),
@@ -148,6 +149,10 @@ const styles = StyleSheet.create({
     ...getTypographyStyle('c1Caption', 'regular'),
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  unavailableText: {
+    ...getTypographyStyle('c1Caption', 'regular'),
+    color: colors.textTertiary,
   },
 });
 

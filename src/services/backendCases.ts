@@ -27,18 +27,14 @@ function normalizeCaseStatus(value: unknown): CaseStatus {
   }
 
   if (value === 1 || value === '1') {
-    return 'Genuine';
-  }
-
-  if (value === 2 || value === '2') {
     return 'Suspected';
   }
 
-  if (value === 3 || value === '3') {
+  if (value === 2 || value === '2') {
     return 'Genuine';
   }
 
-  if (value === 'Processing' || value === 'Genuine' || value === 'Suspected' || value === 'Genuine') {
+  if (value === 'Processing' || value === 'Genuine' || value === 'Suspected') {
     return value as CaseStatus;
   }
 
@@ -116,7 +112,9 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
 }
 
 export async function fetchBackendCases() {
-  const response = await fetch(buildApiUrl(API_ENDPOINTS.cases.list), {
+  const response = await fetch(
+    buildApiUrl(`${API_ENDPOINTS.cases.list}?page=1&pageSize=200`), 
+    {
     method: 'GET',
     headers: {
       Accept: 'application/json',

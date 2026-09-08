@@ -179,11 +179,17 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         throw new Error(`Create tenant failed (${response.status})`);
       }
 
-      const json = await response.json();
-      const tenantId: string | null = typeof json === 'string' ? json : json?.id ?? null;
+      // POST /tenants returns the raw NEW ACCESS TOKEN (string), regenerated
+      // with the TenantId claim — NOT a tenant id. See CreateTenantCommandHandler.
+      const newAccessToken: string = await response.json();
+
+      const { useAuthStore } = await import('./authStore');
+      useAuthStore.getState().applyNewAccessToken(newAccessToken);
+
+      const tenantId = useAuthStore.getState().user?.tenantId ?? null;
 
       set({ isCreatingTenant: false });
-      adminLog.info('AdminStore:Tenant', `✓ Tenant created: ${tenantId}`);
+      adminLog.info('AdminStore:Tenant', `✓ Tenant created, session upgraded`, { tenantId });
       return tenantId;
     } catch (error) {
       adminLog.warn('AdminStore:Tenant', 'Unable to create tenant', error);
@@ -233,57 +239,62 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   },
 
   fetchTeamMembers: async () => {
-    adminLog.info('AdminStore:Team', 'Fetching team members');
     set({ isLoadingTeam: true, teamLoadError: null });
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.list), {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'X-Api-Key': API_KEY || '',
-          ...getAuthHeader(),
-        },
-      });
+      const [membersRes, pendingRes] = await Promise.all([
+        fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.list), {
+          headers: { Accept: 'application/json', 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
+        }),
+        fetch(buildApiUrl(ADMIN_API_ENDPOINTS.memberRequests.pending), {
+          headers: { Accept: 'application/json', 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
+        }),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`Unable to load team (${response.status})`);
-      }
+      if (!membersRes.ok) throw new Error(`Unable to load team (${membersRes.status})`);
 
-      const rawText = await response.text();
-      const payload = rawText.trim() ? JSON.parse(rawText) : [];
+      const membersJson = await membersRes.json();
+      const activeMembers: TeamMember[] = (Array.isArray(membersJson) ? membersJson : [])
+        .map((m: any) => ({
+          id: m.id,
+          firstName: m.firstName || 'Unknown',
+          lastName: m.lastName || '',
+          email: m.email || '—',
+          role: 'Analyst' as const,   // backend DTO has no role field yet
+          status: 'active' as const, // /tenant/members only returns joined users
+          casesHandled: 0,           // backend DTO has no casesHandled field yet
+          joinedAt: null,
+        }));
 
-      const records: any[] = Array.isArray(payload)
-        ? payload
-        : isRecord(payload) && Array.isArray((payload as any).members)
-          ? (payload as any).members
-          : [];
-
-      const members = records
-        .map(normalizeTeamMember)
-        .filter((item): item is TeamMember => Boolean(item));
-
-      if (members.length === 0) {
-        throw new Error('Backend returned no team members');
+      let pendingMembers: TeamMember[] = [];
+      if (pendingRes.ok) {
+        const pendingJson = await pendingRes.json();
+        pendingMembers = (Array.isArray(pendingJson) ? pendingJson : []).map((r: any) => {
+          const [firstName, ...rest] = String(r.name ?? '').trim().split(/\s+/);
+          return {
+            id: r.requestId,               // approve/reject use the REQUEST id, not a user id
+            firstName: firstName || 'Unknown',
+            lastName: rest.join(' '),
+            email: '—',
+            role: 'Analyst' as const,
+            status: 'pending' as const,
+            casesHandled: 0,
+            joinedAt: r.requestedAt ?? null,
+          };
+        });
       }
 
       set({
-        teamMembers: members,
-        pendingApprovals: members.filter((member) => member.status === 'pending'),
+        teamMembers: [...activeMembers, ...pendingMembers],
+        pendingApprovals: pendingMembers,
         isLoadingTeam: false,
         isUsingMockTeam: false,
       });
-
-      adminLog.info('AdminStore:Team', `✓ Loaded ${members.length} team member(s)`);
     } catch (error) {
-      // /admin/team isn't implemented on the backend yet — fall back to a
-      // seeded mock roster (same pattern as INITIAL_CASES in caseStore.ts)
-      // instead of surfacing a hard error, so the UI has something real
-      // to demo against.
       adminLog.warn('AdminStore:Team', 'Falling back to mock roster', error);
       set({
         teamMembers: MOCK_TEAM_MEMBERS,
-        pendingApprovals: MOCK_TEAM_MEMBERS.filter((member) => member.status === 'pending'),
+        pendingApprovals: MOCK_TEAM_MEMBERS.filter((m) => m.status === 'pending'),
         isLoadingTeam: false,
         teamLoadError: error instanceof Error ? error.message : 'Unable to load team members',
         isUsingMockTeam: true,
@@ -291,55 +302,41 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
-  approveTeamMember: async (id) => {
-    // Optimistic update first so mock/demo data (and slow networks) still
-    // feel responsive — the backend call is best-effort on top of that.
+  approveTeamMember: async (requestId) => {
     set((state) => ({
-      teamMembers: state.teamMembers.map((member) =>
-        member.id === id ? { ...member, status: 'active' } : member,
-      ),
-      pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
+      teamMembers: state.teamMembers.map((m) => (m.id === requestId ? { ...m, status: 'active' } : m)),
+      pendingApprovals: state.pendingApprovals.filter((m) => m.id !== requestId),
     }));
-
-     useFeedbackStore.getState().showToast('Member request approved', 'success');
-
+    useFeedbackStore.getState().showToast('Member request approved', 'success');
     if (get().isUsingMockTeam) return;
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.approve(id)), {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.memberRequests.approve(requestId)), {
         method: 'POST',
-        headers: {
-          'X-Api-Key': API_KEY || '',
-          ...getAuthHeader(),
-        },
+        headers: { 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
       });
       if (!response.ok) throw new Error(`Approve failed (${response.status})`);
     } catch (error) {
-      adminLog.warn('AdminStore:Team', `Unable to approve member ${id} on the backend`, error);
+      adminLog.warn('AdminStore:Team', `Unable to approve request ${requestId}`, error);
     }
   },
 
-  rejectTeamMember: async (id) => {
+  rejectTeamMember: async (requestId) => {
     set((state) => ({
-      teamMembers: state.teamMembers.filter((member) => member.id !== id),
-      pendingApprovals: state.pendingApprovals.filter((member) => member.id !== id),
+      teamMembers: state.teamMembers.filter((m) => m.id !== requestId),
+      pendingApprovals: state.pendingApprovals.filter((m) => m.id !== requestId),
     }));
-    
     useFeedbackStore.getState().showToast('Member request declined', 'success');
-
     if (get().isUsingMockTeam) return;
 
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.reject(id)), {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.memberRequests.reject(requestId)), {
         method: 'POST',
-        headers: {
-          'X-Api-Key': API_KEY || '',
-          ...getAuthHeader(),
-        },
+        headers: { 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
       });
       if (!response.ok) throw new Error(`Reject failed (${response.status})`);
     } catch (error) {
-      adminLog.warn('AdminStore:Team', `Unable to reject member ${id} on the backend`, error);
+      adminLog.warn('AdminStore:Team', `Unable to reject request ${requestId}`, error);
     }
   },
 

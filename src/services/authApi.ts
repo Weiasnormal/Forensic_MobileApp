@@ -18,6 +18,12 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface ResetPasswordRequest {
+  email: string;
+  token: string;
+  password: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   expiresAt: string;
@@ -111,6 +117,22 @@ export async function changePassword(token: string, request: ChangePasswordReque
 
   if (!res.ok) {
     throw new ApiError(res.status, 'Change password failed', await parseProblem(res));
+  }
+}
+
+export async function resetPassword(request: ResetPasswordRequest): Promise<void> {
+  const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resetPassword), {
+    method: 'POST',
+    headers: baseHeaders(),
+    body: JSON.stringify({
+      email: request.email,
+      token: request.token,
+      password: request.password,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, 'Reset password failed', await parseProblem(res));
   }
 }
 
