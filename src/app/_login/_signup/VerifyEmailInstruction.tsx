@@ -115,31 +115,95 @@ export default function VerifyEmailInstruction() {
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: colors.background2 },
+	container: { 
+		flex: 1, 
+		backgroundColor: colors.background2 
+	},
 	backButton: {
-		width: 36, height: 36, borderRadius: 10, borderWidth: 1,
-		borderColor: colors.primary, alignItems: 'center', justifyContent: 'center',
-		marginLeft: 20, marginTop: 12,
+		width: 36, 
+		height: 36, 
+		borderRadius: 10, 
+		borderWidth: 1,
+		borderColor: colors.primary, 
+		alignItems: 'center', 
+		justifyContent: 'center',
+		marginLeft: 20, 
+		marginTop: 12,
 	},
-	scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, alignItems: 'center' },
-	illustrationWrap: { width: '100%', alignItems: 'center', marginVertical: 20 },
-	illustration: { width: 260, height: 200 },
-	title: { ...getTypographyStyle('t1Title'), color: colors.textPrimary, textAlign: 'center' },
+	scrollContent: { 
+		flexGrow: 1, 
+		paddingHorizontal: 24, 
+		paddingTop: 12, 
+		alignItems: 'center' 
+	},
+	illustrationWrap: { 
+		width: '100%', 
+		alignItems: 'center', 
+		marginVertical: 20 
+	},
+	illustration: { 
+		width: 260, 
+		height: 200 
+	},
+	title: { 
+		...getTypographyStyle('t1Title'), 
+		color: colors.textPrimary, 
+		textAlign: 'center' 
+	},
 	subtitle: {
-		...getTypographyStyle('body'), fontSize: 14, color: colors.textSecondary,
-		textAlign: 'center', marginTop: 8, marginBottom: 28,
+		...getTypographyStyle('body'), 
+		fontSize: 14, 
+		color: colors.textSecondary,
+		textAlign: 'center', 
+		marginTop: 8, 
+		marginBottom: 28,
 	},
-	stepsList: { width: '100%', gap: 16 },
-	stepRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+	stepsList: { 
+		width: '100%', 
+		gap: 16 
+	},
+	stepRow: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		gap: 12 
+	},
 	stepBadge: {
-		width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: colors.primary,
-		alignItems: 'center', justifyContent: 'center',
+		width: 28, 
+		height: 28, 
+		borderRadius: 14, 
+		borderWidth: 1.5, 
+		borderColor: colors.primary,
+		alignItems: 'center', 
+		justifyContent: 'center',
 	},
-	stepBadgeText: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary },
-	stepBadgeDone: { backgroundColor: colors.primaryLight, borderColor: colors.statusGenuine },
-	stepText: { ...getTypographyStyle('body'), color: colors.textPrimary },
-	bottomActions: { paddingHorizontal: 20, paddingBottom: 24, gap: 4 },
-	resendRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 14 },
-	resendPrompt: { ...getTypographyStyle('c1Caption'), color: colors.textSecondary },
-	resendAction: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary },
+	stepBadgeText: { 
+		...getTypographyStyle('c1Caption', 'bold'), 
+		color: colors.primary 
+	},
+	stepBadgeDone: { 
+		backgroundColor: colors.primaryLight, 
+		borderColor: colors.statusGenuine 
+	},
+	stepText: { 
+		...getTypographyStyle('body'), 
+		color: colors.textPrimary 
+	},
+	bottomActions: { 
+		paddingHorizontal: 20, 
+		paddingBottom: 24, 
+		gap: 4 
+	},
+	resendRow: { 
+		flexDirection: 'row', 
+		justifyContent: 'center', 
+		marginTop: 14 
+	},
+	resendPrompt: { 
+		...getTypographyStyle('c1Caption'), 
+		color: colors.textSecondary 
+	},
+	resendAction: { 
+		...getTypographyStyle('c1Caption', 'bold'), 
+		color: colors.primary 
+	},
 });

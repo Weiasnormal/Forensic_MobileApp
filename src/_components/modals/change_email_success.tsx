@@ -36,7 +36,7 @@ export default function ChangeEmailSuccessModal({ visible, newEmail, onDone }: C
 						<Ionicons name="checkmark" size={28} color={colors.statusGenuine} />
 					</View>
 
-					<Text allowFontScaling={false} style={styles.title}>Change Your Inbox</Text>
+					<Text allowFontScaling={false} style={styles.title}>Check Your Inbox</Text>
 					<Text allowFontScaling={false} style={styles.subtitle}>
 						Link sent to {newEmail}. Expires in 30 min.
 					</Text>
@@ -62,13 +62,41 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: colors.sheetBorder,
 	},
-	dragHandleWrap: { alignItems: 'center', paddingBottom: 12, alignSelf: 'stretch' },
-	dragHandle: { width: 44, height: 5, borderRadius: 999, backgroundColor: colors.sheetHandle, alignSelf: 'center' },
-	iconCircle: {
-		width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: colors.statusGenuine,
-		alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+	dragHandleWrap: { 
+		alignItems: 'center', 
+		paddingBottom: 12, 
+		alignSelf: 'stretch' 
 	},
-	title: { ...getTypographyStyle('t3Title'), color: colors.textPrimary, textAlign: 'center' },
-	subtitle: { ...getTypographyStyle('c1Caption', 'regular'), color: colors.textSecondary, textAlign: 'center', marginTop: 6, marginBottom: 22 },
-	button: { width: '100%' },
+	dragHandle: { 
+		width: 44, 
+		height: 5, 
+		borderRadius: 999, 
+		backgroundColor: colors.sheetHandle, 
+		alignSelf: 'center' 
+	},
+	iconCircle: {
+		width: 56, 
+		height: 56, 
+		borderRadius: 28, 
+		borderWidth: 2, 
+		borderColor: colors.statusGenuine,
+		alignItems: 'center', 
+		justifyContent: 'center', 
+		marginBottom: 14,
+	},
+	title: { 
+		...getTypographyStyle('t3Title'), 
+		color: colors.textPrimary, 
+		textAlign: 'center' 
+	},
+	subtitle: { 
+		...getTypographyStyle('c1Caption', 'regular'), 
+		color: colors.textSecondary, 
+		textAlign: 'center', 
+		marginTop: 6, 
+		marginBottom: 22 
+	},
+	button: { 
+		width: '100%' 
+	},
 });

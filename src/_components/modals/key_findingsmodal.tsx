@@ -120,21 +120,75 @@ const styles = StyleSheet.create({
     borderColor: colors.sheetBorder,
     maxHeight: '80%',
   },
-  dragHandleWrap: { alignItems: 'center', paddingBottom: 8 },
-  dragHandle: { width: 44, height: 5, borderRadius: 999, backgroundColor: colors.sheetHandle, marginBottom: 6 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...getTypographyStyle('t2Title'), color: colors.textPrimary, flex: 1 },
-  badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
-  badgeText: { ...getTypographyStyle('c2Caption', 'bold') },
-  sep: { height: 1, backgroundColor: colors.dividerLight, marginVertical: 12 },
-  content: { paddingBottom: 18 },
-  sectionLabel: { ...getTypographyStyle('c2Caption', 'bold'), fontSize: 12, color: colors.label, marginBottom: 8 },
-  observationText: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary, lineHeight: 20 },
-
-  measuredRow: { flexDirection: 'row', gap: 12 },
-  measuredCard: { flex: 1, borderRadius: 10, padding: 12 },
-  measuredCardLabel: { ...getTypographyStyle('b3Button'), marginBottom: 8, color: colors.textPrimary },
-  measuredRowItem: { marginBottom: 8 },
-  measuredKey: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
-  measuredVal: { ...getTypographyStyle('l1List'), color: colors.textPrimary },
+  dragHandleWrap: { 
+    alignItems: 'center', 
+    paddingBottom: 8 
+  },
+  dragHandle: { 
+    width: 44, 
+    height: 5, 
+    borderRadius: 999, 
+    backgroundColor: colors.sheetHandle, 
+    marginBottom: 6 
+  },
+  headerRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between' 
+  },
+  title: { 
+    ...getTypographyStyle('t2Title'), 
+    color: colors.textPrimary, flex: 1 },
+    badge: { paddingHorizontal: 10, 
+    paddingVertical: 6, 
+    borderRadius: 999, 
+    borderWidth: 1 
+  },
+  badgeText: { 
+    ...getTypographyStyle('c2Caption', 'bold') 
+  },
+  sep: { 
+    height: 1, 
+    backgroundColor: colors.dividerLight,
+    marginVertical: 12 
+  },
+  content: { 
+    paddingBottom: 18 
+  },
+  sectionLabel: { 
+    ...getTypographyStyle('c2Caption', 'bold'), 
+    fontSize: 12, 
+    color: colors.label, 
+    marginBottom: 8 
+  },
+  observationText: { 
+    ...getTypographyStyle('c2Caption', 'regular'), 
+    color: colors.textSecondary, 
+    lineHeight: 20 
+  },
+  measuredRow: { 
+    flexDirection: 'row', 
+    gap: 12 
+  },
+  measuredCard: { 
+    flex: 1, 
+    borderRadius: 10, 
+    padding: 12 
+  },
+  measuredCardLabel: { 
+    ...getTypographyStyle('b3Button'), 
+    marginBottom: 8, 
+    color: colors.textPrimary 
+  },
+  measuredRowItem: { 
+    marginBottom: 8 
+  },
+  measuredKey: { 
+    ...getTypographyStyle('c2Caption', 'regular'), 
+    color: colors.label 
+  },
+  measuredVal: { 
+    ...getTypographyStyle('l1List'), 
+    color: colors.textPrimary 
+  },
 });
