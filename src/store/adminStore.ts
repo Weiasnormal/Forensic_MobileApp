@@ -366,6 +366,19 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
+  removeTeamMember: async (userId: string) => {
+  set((state) => ({ teamMembers: state.teamMembers.filter((m) => m.id !== userId) }));
+  try {
+    const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.tenant.getMemberById(userId)), {
+      method: 'DELETE',
+      headers: { 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
+    });
+    if (!response.ok) throw new Error(`Remove failed (${response.status})`);
+  } catch (error) {
+    adminLog.warn('AdminStore:Team', `Unable to remove member ${userId}`, error);
+  }
+},
+
   generateInviteCode: async () => {
     set({ isGeneratingInvite: true });
     try {
