@@ -31,22 +31,32 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   onMembersPress,
 }) => {
   const { user, setUser } = useUser();
-  const resolvedOrganizationName = user?.organization ?? organizationName ?? 'PNP Crime Laboratory';
-  const resolvedOrganizationCode = organizationCode ?? 'UST-A7F3';
-  const resolvedMemberCount = memberCount ?? 0;
-  const resolvedCreatedDate = createdDate ?? 'Jan 12, 2025';
+  const tenantProfile = useAdminStore((state) => state.tenantProfile);
+  const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
+
+  useEffect(() => {
+    fetchTenantProfile();
+  }, [fetchTenantProfile]);
+
+  const resolvedOrganizationName = tenantProfile?.name || user?.organization || organizationName || 'PNP Crime Laboratory';
+  const resolvedOrganizationCode = tenantProfile?.inviteCode || organizationCode || '—';
+  const resolvedMemberCount = tenantProfile?.memberCount ?? memberCount ?? 0;
+  const resolvedCreatedDate = tenantProfile?.createdAt
+    ? new Date(tenantProfile.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : createdDate ?? '—';
 
   const [draftOrganizationName, setDraftOrganizationName] = useState(resolvedOrganizationName);
   const [isEditingOrganizationName, setIsEditingOrganizationName] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
-
+  
   useEffect(() => {
     if (!isEditingOrganizationName) {
       setDraftOrganizationName(resolvedOrganizationName);
     }
   }, [resolvedOrganizationName, isEditingOrganizationName]);
 
+  
   const trimmedOrganizationName = draftOrganizationName.trim();
   const canSaveOrganizationName =
     trimmedOrganizationName.length > 0 && trimmedOrganizationName !== resolvedOrganizationName.trim();

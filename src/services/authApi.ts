@@ -150,13 +150,6 @@ export async function joinInviteCode(token: string, inviteCode: string): Promise
     throw new ApiError(res.status, 'Join invite code failed', await parseProblem(res));
   }
 }
-/**
- * NOT READY: backend ForgotPasswordCommandHandler.ForgotPasswordAsync
- * throws NotImplementedException unconditionally. Calling this will always
- * fail with a 500. Kept here so the UI can call it and show a friendly
- * "not available yet" message instead of a raw network error, but do not
- * build a working reset flow around it until backend ships email sending.
- */
 export async function forgotPassword(email: string): Promise<{ implemented: boolean }> {
   try {
     const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.forgotPassword), {

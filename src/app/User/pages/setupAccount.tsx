@@ -35,6 +35,7 @@ export default function SetupAccount() {
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
   const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
+  const [pendingEmailPassword, setPendingEmailPassword] = useState<string | null>(null);
 
 
   const pickImage = async () => {
@@ -152,7 +153,8 @@ export default function SetupAccount() {
               <Pressable
                 onPress={async () => {
                   const { requestEmailChange } = await import('@/services/emailVerificationApi');
-                  const { ok } = await requestEmailChange(pendingNewEmail);
+                  if (!pendingEmailPassword) return;
+                  const { ok } = await requestEmailChange(pendingNewEmail, pendingEmailPassword);
                   useFeedbackStore.getState().showToast(
                     ok ? 'Email resent' : 'Unable to resend right now',
                     ok ? 'successLight' : 'infoLight',
@@ -204,9 +206,10 @@ export default function SetupAccount() {
         visible={showChangeEmail}
         currentEmail={email}
         onClose={() => setShowChangeEmail(false)}
-        onSent={(newEmail) => {
+        onSent={(newEmail, currentPassword) => {
           setShowChangeEmail(false);
           setPendingNewEmail(newEmail);
+          setPendingEmailPassword(currentPassword);
           setShowChangeEmailSuccess(true);
         }}
       />

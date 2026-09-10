@@ -20,7 +20,7 @@ export const ADMIN_API_ENDPOINTS = {
     getById: (id: string) => `/tenant/members/${id}`,
     remove: (id: string) => `/tenant/members/${id}`,
 
-    invite: '/admin/get-invite-code',
+    
   },
   memberRequests: {
     pending: '/tenants/member-requests/pending',
@@ -32,5 +32,7 @@ export const ADMIN_API_ENDPOINTS = {
     getAllMembers: '/tenant/members',
     create: '/tenants',
     suspendUser: '/admin/suspend-user',
+    inviteCode: '/tenant/invite-code',  
+    profile: '/tenant/profile', 
   },
 } as const;
