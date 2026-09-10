@@ -55,7 +55,6 @@ interface AdminStore {
   rejectTeamMember: (id: string) => Promise<void>;
   suspendTeamMember: (id: string) => Promise<void>;
   removeTeamMember: (id: string) => Promise<void>;
-  generateInviteCode: () => Promise<string | null>;
 
   memberDetail: TenantMemberDetail | null;
   isLoadingMemberDetail: boolean;
@@ -65,6 +64,10 @@ interface AdminStore {
   isCreatingTenant: boolean;
   createTenantError: string | null;
   createTenant: (name: string) => Promise<string | null>;
+
+  tenantProfile: { name: string; inviteCode: string; memberCount: number; createdAt: string } | null;
+  isLoadingTenantProfile: boolean;
+  fetchTenantProfile: () => Promise<void>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -160,6 +163,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   isCreatingTenant: false,
   createTenantError: null,
 
+  tenantProfile: null,
+  isLoadingTenantProfile: false,
+
   createTenant: async (name: string) => {
     adminLog.info('AdminStore:Tenant', `Creating tenant "${name}"`);
     set({ isCreatingTenant: true, createTenantError: null });
@@ -199,6 +205,33 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         createTenantError: error instanceof Error ? error.message : 'Unable to create organization',
       });
       return null;
+    }
+  },
+
+  fetchTenantProfile: async () => {
+    set({ isLoadingTenantProfile: true });
+    try {
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.tenant.profile), {
+        method: 'GET',
+        headers: { Accept: 'application/json', 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
+      });
+      if (!response.ok) throw new Error(`Tenant profile fetch failed (${response.status})`);
+
+      const json = await response.json();
+      set({
+        tenantProfile: {
+          name: json.name ?? json.Name ?? '',
+          inviteCode: json.inviteCode ?? json.InviteCode ?? '',
+          memberCount: Number(json.memberCount ?? json.MemberCount ?? 0),
+          createdAt: json.createdAt ?? json.CreatedAt ?? '',
+        },
+        inviteCode: json.inviteCode ?? json.InviteCode ?? get().inviteCode,
+        isUsingMockInvite: false,
+        isLoadingTenantProfile: false,
+      });
+    } catch (error) {
+      adminLog.warn('AdminStore:Profile', 'Unable to fetch tenant profile', error);
+      set({ isLoadingTenantProfile: false });
     }
   },
 
@@ -261,10 +294,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           firstName: m.firstName || 'Unknown',
           lastName: m.lastName || '',
           email: m.email || '—',
-          role: 'Analyst' as const,   // backend DTO has no role field yet
-          status: 'active' as const, // /tenant/members only returns joined users
-          casesHandled: 0,           // backend DTO has no casesHandled field yet
-          joinedAt: null,
+          role: 'Analyst' as const,
+          status: (m.isSuspended ?? m.IsSuspended) ? 'suspended' as const : 'active' as const,
+          casesHandled: Number(m.casesHandled ?? m.CasesHandled ?? 0),
+          joinedAt: null, // backend TenantMemberDto has no join date field — genuinely unavailable
         }));
 
       let pendingMembers: TeamMember[] = [];
@@ -380,51 +413,27 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   }
 },
 
-  generateInviteCode: async () => {
-    set({ isGeneratingInvite: true });
-    try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.invite), {
-        method: 'POST',
-        headers: {
-          'X-Api-Key': API_KEY || '',
-          ...getAuthHeader(),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Invite generation failed (${response.status})`);
-      }
-
-      const json = await response.json();
-      return json?.code ?? json?.inviteCode ?? null;
-    } catch (error) {
-      adminLog.warn('AdminStore:Team', 'Unable to generate invite code', error);
-      return null;
-    } finally {
-      set({ isGeneratingInvite: false });
-    }
-  },
-
-  fetchOrGenerateInviteCode: async () => {
+    fetchOrGenerateInviteCode: async () => {
     const existing = get().inviteCode;
     if (existing) return existing;
 
     set({ isGeneratingInvite: true });
     try {
-      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.invite), {
-        method: 'POST',
+      const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.tenant.inviteCode), {
+        method: 'GET',
         headers: {
+          Accept: 'application/json',
           'X-Api-Key': API_KEY || '',
           ...getAuthHeader(),
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Invite generation failed (${response.status})`);
+        throw new Error(`Invite code fetch failed (${response.status})`);
       }
 
       const json = await response.json();
-      const code = json?.code ?? json?.inviteCode ?? null;
+      const code = json?.inviteCode ?? json?.InviteCode ?? null;
       if (!code) throw new Error('Backend returned no invite code');
 
       set({ inviteCode: code, isUsingMockInvite: false, isGeneratingInvite: false });

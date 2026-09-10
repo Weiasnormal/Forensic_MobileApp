@@ -5,13 +5,6 @@ import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 import { verifyEmailToken } from '@/services/emailVerificationApi';
 import { useFeedbackStore } from '@/store/feedbackStore';
 
-/**
- * Handles avera://verify-email?token=...&email=... in all three app states:
- *  - fully closed, opened by the tap  (Linking.getInitialURL)
- *  - backgrounded                     (Linking 'url' event)
- *  - already open in the foreground   (Linking 'url' event)
- * No-ops on a normal, non-deep-link app launch.
- */
 export function useDeepLinkVerification() {
   const router = useRouter();
   const markVerified = useEmailVerificationStore((s) => s.markVerified);
@@ -22,20 +15,19 @@ export function useDeepLinkVerification() {
   useEffect(() => {
     async function handleUrl(url: string | null) {
       if (!url) return;
-      console.log('[DeepLink] received', url); // temporary
-    const parsed = Linking.parse(url);
-    console.log('[DeepLink] parsed', parsed); // temporary
-    
+      const parsed = Linking.parse(url);
+
       const isVerifyLink = parsed.hostname === 'verify-email' || parsed.path === 'verify-email';
       if (!isVerifyLink) return;
 
       const token = parsed.queryParams?.token;
+      const userId = parsed.queryParams?.userId;
       const email = parsed.queryParams?.email;
 
-      if (typeof token !== 'string' || !token.trim()) {
+      if (typeof token !== 'string' || !token.trim() || typeof userId !== 'string' || !userId.trim()) {
         markFailed('This verification link is missing or malformed.');
       } else {
-        const { ok } = await verifyEmailToken(token);
+        const { ok } = await verifyEmailToken(userId, token);
         if (ok) {
           markVerified(typeof email === 'string' ? email : undefined);
           useFeedbackStore.getState().showToast('Email verified', 'success');

@@ -15,6 +15,7 @@ import { resolveRole } from '../../../constants/roles';
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type ResetPasswordFormValues, resetPasswordSchema } from '../../../utils/validation';
 import { resetPassword } from '@/services/authApi';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
@@ -44,8 +45,11 @@ export default function ResetPasswordPage() {
 	const showPasswordError =
 		wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
 
+	const [resetError, setResetError] = useState<string | null>(null);
+
 	const handleReset = async (values: ResetPasswordFormValues) => {
 		setIsSubmitting(true);
+		setResetError(null);
 		try {
 			await resetPassword({
 				email: params.email ?? '',
@@ -53,7 +57,8 @@ export default function ResetPasswordPage() {
 				password: values.password,
 			});
 			router.push({ pathname: '/_login/forgot_password/success', params: { role: activeRole } });
-		} catch {// surface via ErrorBanner — add local error state the same way SignInPage does
+		} catch (error) {
+			setResetError(error instanceof Error ? error.message : 'Unable to reset your password. Please try again.');
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -156,6 +161,8 @@ export default function ResetPasswordPage() {
 					</View>
 
 					<View style={styles.bottomActions}>
+						{resetError ? <ErrorBanner message={resetError} title="Reset failed" /> : null}
+						
 						<PrimaryButton
 							label="Reset password"
 							onPress={handleSubmit(handleReset)}

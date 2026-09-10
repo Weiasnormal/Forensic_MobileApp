@@ -39,7 +39,7 @@ export async function sendVerificationEmail(): Promise<{ ok: boolean }> {
  *      UserManager<User>, rejecting invalid/expired/reused tokens.
  * Do not treat a 200 here as proof of anything until that ships.
  */
-export async function verifyEmailToken(token: string): Promise<{ ok: boolean }> {
+export async function verifyEmailToken(userId: string, token: string): Promise<{ ok: boolean }> {
   try {
     const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.verifySignupCode), {
       method: 'POST',
@@ -49,7 +49,7 @@ export async function verifyEmailToken(token: string): Promise<{ ok: boolean }> 
         'X-Api-Key': API_KEY || '',
         ...getAuthHeader(),
       },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ userId, token }),
     });
     return { ok: res.ok };
   } catch {
@@ -67,13 +67,11 @@ export async function checkEmailVerified(): Promise<boolean> {
 }
 
 /**
- * BACKEND TODO: no /auth/change-email endpoint exists yet. Calling this
- * will 404. Kept isolated here so swapping in the real endpoint later is
- * a one-line change in one file.
+ * Requests a password-authenticated email change verification link.
  */
-export async function requestEmailChange(newEmail: string): Promise<{ ok: boolean }> {
+export async function requestEmailChange(newEmail: string, currentPassword: string): Promise<{ ok: boolean }> {
   try {
-    const res = await fetch(buildApiUrl('/auth/change-email'), {
+    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.changeEmail), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -81,7 +79,7 @@ export async function requestEmailChange(newEmail: string): Promise<{ ok: boolea
         'X-Api-Key': API_KEY || '',
         ...getAuthHeader(),
       },
-      body: JSON.stringify({ newEmail }),
+      body: JSON.stringify({ newEmail, currentPassword }),
     });
     return { ok: res.ok };
   } catch {

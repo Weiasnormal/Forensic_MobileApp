@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { AppRole } from '@/constants/roles';
+import { getAuthHeader } from './authStore';
+import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
 
 interface EmailVerificationState {
   pendingEmail: string | null;
@@ -57,3 +59,21 @@ export const useEmailVerificationStore = create<EmailVerificationState>()(
     },
   ),
 );
+
+export async function verifyEmailToken(userId: string, token: string): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.verifySignupCode), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Api-Key': API_KEY || '',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ userId, token }),
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useBottomSheetTransition } from '@/_components/transition';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
@@ -11,7 +12,7 @@ interface ChangeEmailModalProps {
 	visible: boolean;
 	currentEmail: string;
 	onClose: () => void;
-	onSent: (newEmail: string) => void;
+	onSent: (newEmail: string, currentPassword: string) => void;
 }
 
 export default function ChangeEmailModal({ visible, currentEmail, onClose, onSent }: ChangeEmailModalProps) {
@@ -20,12 +21,14 @@ export default function ChangeEmailModal({ visible, currentEmail, onClose, onSen
 		onClose,
 	});
 	const [newEmail, setNewEmail] = useState('');
+	const [currentPassword, setCurrentPassword] = useState('');
+	const [showPassword, setShowPassword] = useState(false);
 	const [isSending, setIsSending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	if (!isMounted) return null;
 
-	const canSend = /\S+@\S+\.\S+/.test(newEmail) && newEmail.trim() !== currentEmail.trim();
+	const canSend = /\S+@\S+\.\S+/.test(newEmail) && newEmail.trim() !== currentEmail.trim() && currentPassword.length > 0;
 
 	const handleSend = async () => {
 		if (!canSend) return;
@@ -33,13 +36,14 @@ export default function ChangeEmailModal({ visible, currentEmail, onClose, onSen
 		setError(null);
 		try {
 			const { requestEmailChange } = await import('@/services/emailVerificationApi');
-			const { ok } = await requestEmailChange(newEmail.trim());
+			const { ok } = await requestEmailChange(newEmail.trim(), currentPassword);
 			if (!ok) {
-				setError('This isn\u2019t available yet — email change requires a backend update.');
+				setError('Unable to request the email change. Check your current password and try again.');
 				return;
 			}
-			onSent(newEmail.trim());
+			onSent(newEmail.trim(), currentPassword);
 			setNewEmail('');
+			setCurrentPassword('');
 		} finally {
 			setIsSending(false);
 		}
@@ -76,6 +80,24 @@ export default function ChangeEmailModal({ visible, currentEmail, onClose, onSen
 						autoCapitalize="none"
 						style={styles.field}
 						error={error ?? undefined}
+					/>
+
+					<FormField
+						label="Current password"
+						value={currentPassword}
+						onChangeText={setCurrentPassword}
+						placeholder="Enter current password"
+						secureTextEntry={!showPassword}
+						autoCapitalize="none"
+						rightIcon={
+							<Ionicons
+								name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+								size={20}
+								color={colors.textTertiary}
+							/>
+						}
+						onRightIconPress={() => setShowPassword((visible) => !visible)}
+						style={styles.field}
 					/>
 
 					<Text allowFontScaling={false} style={styles.footnote}>
