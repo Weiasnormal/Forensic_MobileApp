@@ -21,7 +21,7 @@ function parseOverlayImages(raw: unknown): OverlayImageRef[] {
     if (typeof entry !== 'object' || entry === null) continue;
 
     const id =
-      (entry as any).image_id ?? (entry as any).ImageId ??
+      (entry as any).image_id ?? (entry as any).imageId ?? (entry as any).ImageId ??
       (entry as any).id ?? (entry as any).Id;
     const slot = (entry as any).slot ?? (entry as any).Slot;
     const variant = (entry as any).variant ?? (entry as any).Variant;
@@ -764,13 +764,16 @@ export const useCaseStore = create<CaseStore>()(
                 caseLog.info('CaseStore:Submit', 'ProcessResponse received', processResponse);
 
                 const verdict = processResponse?.Verdict ?? processResponse?.verdict;
-                const confidenceForged = processResponse?.ConfidenceForged ?? processResponse?.confidence_forged ?? 0;
-                const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
+                const confidenceForged =
+                  processResponse?.ConfidenceForged ?? processResponse?.confidenceForged ?? processResponse?.confidence_forged ?? 0;
+                const confidenceGenuine =
+                  processResponse?.ConfidenceGenuine ?? processResponse?.confidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
                 const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
                 const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
-                const rawOverlayImages = processResponse?.GradcamImages ??processResponse?.gradcam_images ??
-                processResponse?.OverlayImages ?? processResponse?.overlay_images ??[];
-              const overlayImages = parseOverlayImages(rawOverlayImages);
+                const rawOverlayImages =
+                  processResponse?.GradcamImages ?? processResponse?.gradcamImages ?? processResponse?.gradcam_images ??
+                  processResponse?.OverlayImages ?? processResponse?.overlayImages ?? processResponse?.overlay_images ?? [];
+                const overlayImages = parseOverlayImages(rawOverlayImages);
 
                 if (rawOverlayImages.length > 0 && overlayImages.length === 0) {
                   caseLog.warn('CaseStore:Submit', 'All overlay image entries failed validation and were dropped', {
@@ -939,14 +942,18 @@ export const useCaseStore = create<CaseStore>()(
 
             const processResponse = await analysisRes.json();
             const verdict = processResponse?.Verdict ?? processResponse?.verdict;
-            const confidenceForged = processResponse?.ConfidenceForged ?? processResponse?.confidence_forged ?? 0;
-            const confidenceGenuine = processResponse?.ConfidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
+            const confidenceForged =
+              processResponse?.ConfidenceForged ?? processResponse?.confidenceForged ?? processResponse?.confidence_forged ?? 0;
+            const confidenceGenuine =
+              processResponse?.ConfidenceGenuine ?? processResponse?.confidenceGenuine ?? processResponse?.confidence_genuine ?? 0;
             const distance = processResponse?.Distance ?? processResponse?.distance ?? 0;
             const threshold = processResponse?.Threshold ?? processResponse?.threshold ?? 0;
             const rawOverlayImages =
               processResponse?.GradcamImages ??
+              processResponse?.gradcamImages ??
               processResponse?.gradcam_images ??
               processResponse?.OverlayImages ??
+              processResponse?.overlayImages ??
               processResponse?.overlay_images ??
               [];
             const overlayImages = parseOverlayImages(rawOverlayImages);
