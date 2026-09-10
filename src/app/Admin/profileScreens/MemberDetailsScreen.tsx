@@ -19,6 +19,7 @@ const MemberDetailsScreen: React.FC = () => {
   const router = useRouter();
   const fetchMemberById = useAdminStore((state) => state.fetchMemberById);
   const suspendTeamMember = useAdminStore((state) => state.suspendTeamMember);
+  const removeTeamMember = useAdminStore((state) => state.removeTeamMember);
   const memberDetail = useAdminStore((state) => state.memberDetail);
   const isLoadingMemberDetail = useAdminStore((state) => state.isLoadingMemberDetail);
   const memberDetailError = useAdminStore((state) => state.memberDetailError);
@@ -90,6 +91,10 @@ const MemberDetailsScreen: React.FC = () => {
           icon={UserX}
           title="Remove from Organization"
           subtitle="Permanently remove access"
+          onPress={async () => {
+            await removeTeamMember(memberId);
+            router.back();
+          }}
         />
       </ScrollView>
     </SafeAreaView>

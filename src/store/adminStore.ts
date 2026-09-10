@@ -54,6 +54,7 @@ interface AdminStore {
   approveTeamMember: (id: string) => Promise<void>;
   rejectTeamMember: (id: string) => Promise<void>;
   suspendTeamMember: (id: string) => Promise<void>;
+  removeTeamMember: (id: string) => Promise<void>;
   generateInviteCode: () => Promise<string | null>;
 
   memberDetail: TenantMemberDetail | null;
@@ -369,7 +370,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   removeTeamMember: async (userId: string) => {
   set((state) => ({ teamMembers: state.teamMembers.filter((m) => m.id !== userId) }));
   try {
-    const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.tenant.getMemberById(userId)), {
+    const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.remove(userId)), {
       method: 'DELETE',
       headers: { 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
     });

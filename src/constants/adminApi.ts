@@ -20,7 +20,7 @@ export const ADMIN_API_ENDPOINTS = {
     getById: (id: string) => `/tenant/members/${id}`,
     remove: (id: string) => `/tenant/members/${id}`,
 
-    invite: '/tenant/invite', // pangtanggal lng ng error muna
+    invite: '/admin/get-invite-code',
   },
   memberRequests: {
     pending: '/tenants/member-requests/pending',
