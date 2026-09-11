@@ -54,7 +54,7 @@ const MemberDetailsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <Avatar initials={memberInitials} size={80} variant="light" />
         <Text allowFontScaling={false} style={styles.name}>{memberName}</Text>
-        <Text allowFontScaling={false} style={styles.role}>Analyst</Text>
+        <Text allowFontScaling={false} style={styles.role}>{memberDetail.role}</Text>
 
         <SectionLabel label="Case Management" style={styles.sectionSpacing} />
         <SettingsRow

@@ -16,6 +16,9 @@ interface EmailVerificationState {
   markFailed: (reason: string) => void;
   clearError: () => void;
   reset: () => void;
+
+  pendingOrganizationName: string | null;
+  setPendingOrganizationName: (name: string) => void;
 }
 
 export const useEmailVerificationStore = create<EmailVerificationState>()(
@@ -26,6 +29,9 @@ export const useEmailVerificationStore = create<EmailVerificationState>()(
       isVerified: false,
       verifiedAt: null,
       lastError: null,
+
+      pendingOrganizationName: null,
+      setPendingOrganizationName: (name) => set({ pendingOrganizationName: name }),
 
       // Called right after signup, before navigating to the instruction page.
       setPendingVerification: (email, role) =>

@@ -2,13 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
 import PrimaryButton from '@/_components/common/PrimaryButton';
+import ErrorBanner from '@/_components/common/ErrorBanner';
 
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type ForgotPasswordFormValues, forgotPasswordSchema } from '../../../utils/validation';
@@ -19,6 +20,7 @@ export default function EnterEmailPage() {
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
+	const [requestError, setRequestError] = useState<string | null>(null);
 	const {
 		control,
 		handleSubmit,
@@ -31,12 +33,18 @@ export default function EnterEmailPage() {
 	});
 
 	const handleSendCode = async (values: ForgotPasswordFormValues) => {
-		await forgotPassword(values.email); 
+		setRequestError(null);
+		const { implemented } = await forgotPassword(values.email);
+		if (!implemented) {
+			setRequestError('Password recovery is temporarily unavailable. Please try again later.');
+			return;
+		}
+
 		router.push({
 			pathname: '/_login/forgot_password/verify',
 			params: { role: activeRole, email: values.email },
 		});
-		};
+	};
 
 	return (
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -88,6 +96,8 @@ export default function EnterEmailPage() {
 					</View>
 
 					<View style={styles.bottomActions}>
+						<ErrorBanner message={requestError} />
+
 						<PrimaryButton
 							label="Send code"
 							onPress={handleSubmit(handleSendCode)}

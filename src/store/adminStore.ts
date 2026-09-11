@@ -35,6 +35,7 @@ export interface TenantMemberDetail {
   firstName: string;
   lastName: string;
   email: string;
+  role: string;
 }
 
 interface AdminStore {
@@ -111,6 +112,7 @@ function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
     firstName: record.firstName?.trim() || '',
     lastName: record.lastName?.trim() || '',
     email: record.email?.trim() || '',
+    role: record.role?.trim() || 'Analyst',
   };
 }
 

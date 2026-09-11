@@ -16,7 +16,6 @@ import FormField from '@/_components/common/FormField';
 import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
-import { useAdminStore } from '@/store/adminStore';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 
 export default function SignUpPage() {
@@ -89,18 +88,14 @@ const handleContinue = async (values: SignUpFormValues) => {
       activeRole === 'admin' ? 'Admin' : 'User',
     );
 
-    await useAuthStore.getState().login(values.email, values.password);
+     useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
 
+    // Stash the org name so we can create it after the admin actually logs in post-verification
     if (activeRole === 'admin' && values.organizationName?.trim()) {
-      const tenantId = await useAdminStore.getState().createTenant(values.organizationName.trim());
-      if (!tenantId) {
-        useFeedbackStore.getState().showToast('Account created — organization setup failed, retry in Profile', 'infoLight');
-      }
+      useEmailVerificationStore.getState().setPendingOrganizationName(values.organizationName.trim());
     }
-    
-    useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
 
-    useFeedbackStore.getState().showToast('Account created successfully', 'success');
+    useFeedbackStore.getState().showToast('Account created — verify your email to continue', 'success');
 
     router.push({
       pathname: '/_login/_signup/VerifyEmailInstruction',

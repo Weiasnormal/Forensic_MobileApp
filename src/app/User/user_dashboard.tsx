@@ -17,6 +17,7 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import EmptyState from '@/_components/common/EmptyState';
 import ListSectionHeader from '@/_components/common/ListSectionHeader';
+import { useAdminStore } from '@/store/adminStore';
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
 
@@ -37,7 +38,10 @@ export default function UserDashboardScreen() {
 	const cases = useCaseStore((state) => state.cases);
 	const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
 	const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend);
-	const { user, load } = useUser();
+	const { user, load, setUser } = useUser();
+	const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
+	const tenantProfile = useAdminStore((state) => state.tenantProfile);
+
 
 	React.useEffect(() => {
 		setActiveTab(resolveTabValue(params.tab));
@@ -46,7 +50,14 @@ export default function UserDashboardScreen() {
 	React.useEffect(() => {
 		load();
 		refreshCasesFromBackend();
-	}, );
+		fetchTenantProfile();
+	}, [fetchTenantProfile, load, refreshCasesFromBackend]);
+
+	useEffect(() => {
+	if (tenantProfile?.name && tenantProfile.name !== user.organization) {
+		setUser({ organization: tenantProfile.name });
+	}
+	}, [setUser, tenantProfile?.name, user.organization]);
 
 	useEffect(() => {
 		if (Platform.OS !== 'android') return;

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -15,9 +15,13 @@ import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import SuccessModal from '@/_components/modals/success_modal';
 import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
+import { useFeedbackStore } from '@/store/feedbackStore';
+import { useAdminStore } from '@/store/adminStore';
+import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 
 export default function LogInPage() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ verifiedEmail?: string }>();
   const [showPassword, setShowPassword] = useState(false);
   const login = useAuthStore((state) => state.login);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
@@ -37,7 +41,7 @@ export default function LogInPage() {
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: '',
+      email: params.verifiedEmail ?? '',
       password: '',
     },
   });
@@ -56,6 +60,16 @@ export default function LogInPage() {
     const authUser = useAuthStore.getState().user;
     const role = resolveRoleFromClaims(authUser?.roles);
     setResolvedRole(role);
+
+    const pendingOrgName = useEmailVerificationStore.getState().pendingOrganizationName;
+    if (role === 'admin' && pendingOrgName && !authUser?.tenantId) {
+      const tenantId = await useAdminStore.getState().createTenant(pendingOrgName);
+      if (tenantId) {
+        useEmailVerificationStore.getState().reset();
+      } else {
+        useFeedbackStore.getState().showToast('Signed in — organization setup failed, retry in Profile', 'infoLight');
+      }
+    }
 
     const isFirstTime = authUser ? await isFirstLoginForUser(authUser.userId) : false;
     setWelcomeInfo({ isFirstTime });

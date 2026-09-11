@@ -42,10 +42,12 @@ export default function AdminDashboard() {
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 
-	const { user, load } = useUser();
+	const { user, load, setUser } = useUser();
 	const cases = useCaseStore((state) => state.cases);
 	const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend);
 
+	const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
+	const tenantProfile = useAdminStore((state) => state.tenantProfile);
 	const teamMembers = useAdminStore((state) => state.teamMembers);
 	const pendingApprovals = useAdminStore((state) => state.pendingApprovals);
 	const fetchTeamMembers = useAdminStore((state) => state.fetchTeamMembers);
@@ -59,8 +61,15 @@ export default function AdminDashboard() {
 	useEffect(() => {
 		load();
 		refreshCasesFromBackend();
+		fetchTenantProfile();
 		fetchTeamMembers();
-	},);
+	}, [fetchTeamMembers, fetchTenantProfile, load, refreshCasesFromBackend]);
+
+	useEffect(() => {
+		if (tenantProfile?.name && tenantProfile.name !== user.organization) {
+			setUser({ organization: tenantProfile.name });
+		}
+	}, [setUser, tenantProfile?.name, user.organization]);
 
 	useEffect(() => {
 		if (Platform.OS !== 'android') return;
