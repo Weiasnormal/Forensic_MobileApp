@@ -14,7 +14,6 @@ import { useAdminStore } from '@/store/adminStore';
 
 const OrgInviteCodeScreen: React.FC = () => {
   const inviteCode = useAdminStore((state) => state.inviteCode);
-  const isUsingMockInvite = useAdminStore((state) => state.isUsingMockInvite);
   const isGeneratingInvite = useAdminStore((state) => state.isGeneratingInvite);
   const fetchOrGenerateInviteCode = useAdminStore((state) => state.fetchOrGenerateInviteCode);
 
@@ -69,24 +68,17 @@ const OrgInviteCodeScreen: React.FC = () => {
           Share this code with analysts to let them join your organization.
         </Text>
 
-        {isUsingMockInvite ? (
-          <Text style={styles.devNote}>
-            Invite codes aren’t available from the server yet — this code will not work
-            for real analysts to join your organization.
-          </Text>
-        ) : null}
-
         <PrimaryButton
           label="Copy Code"
           onPress={handleCopyCode}
           style={styles.button}
-          disabled={!inviteCode || isUsingMockInvite}
+          disabled={!inviteCode}
         />
         <SecondaryButton
           label="Share"
           onPress={handleShare}
           style={styles.button}
-          disabled={!inviteCode || isUsingMockInvite}
+          disabled={!inviteCode}
         />
 
         <View style={styles.warningBanner}>
