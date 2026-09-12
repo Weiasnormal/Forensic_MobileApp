@@ -90,11 +90,6 @@ const handleContinue = async (values: SignUpFormValues) => {
 
      useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
 
-    // Stash the org name so we can create it after the admin actually logs in post-verification
-    if (activeRole === 'admin' && values.organizationName?.trim()) {
-      useEmailVerificationStore.getState().setPendingOrganizationName(values.organizationName.trim());
-    }
-
     useFeedbackStore.getState().showToast('Account created — verify your email to continue', 'success');
 
     router.push({
@@ -173,22 +168,6 @@ const handleContinue = async (values: SignUpFormValues) => {
           </View>
 
           <View style={styles.formBody}>
-            {activeRole === 'admin' ? (
-              <Controller
-                control={control}
-                name="organizationName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <FormField
-                    label="Organization Name"
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="e.g. PNP Crime Laboratory"
-                  />
-                )}
-              />
-            ) : null}
-
             <View style={styles.nameRow}>
               <Controller
                 control={control}

@@ -2,13 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { resolveRole } from '@/constants/roles';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
+import { useFeedbackStore } from '@/store/feedbackStore';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 
@@ -25,9 +27,24 @@ export default function VerifyEmailInstruction() {
 	const params = useLocalSearchParams<{ role?: string; email?: string }>();
 	const activeRole = resolveRole(params.role);
 	const email = params.email ?? 'your email';
+	const [isResending, setIsResending] = useState(false);
 
 	const isVerified = useEmailVerificationStore((s) => s.isVerified);
 	const verificationError = useEmailVerificationStore((s) => s.lastError);
+
+	const handleResend = async () => {
+		if (!email || email === 'your email') return;
+		setIsResending(true);
+		try {
+			const { ok } = await resendVerificationEmail(email);
+			useFeedbackStore.getState().showToast(
+				ok ? 'Verification email resent' : 'Unable to resend right now',
+				ok ? 'successLight' : 'infoLight',
+			);
+		} finally {
+			setIsResending(false);
+		}
+	};
 
 	const handleContinue = () => {
 		if (!isVerified) return;
@@ -80,13 +97,12 @@ export default function VerifyEmailInstruction() {
 
 				<View style={styles.resendRow}>
 					<Text allowFontScaling={false} style={styles.resendPrompt}>Didn&apos;t receive the email? </Text>
-					<TouchableOpacity activeOpacity={0.7} disabled>
-						<Text allowFontScaling={false} style={[styles.resendAction, { opacity: 0.5 }]}>
-							Resend unavailable — check spam folder
+					<TouchableOpacity activeOpacity={0.7} onPress={handleResend} disabled={isResending}>
+						<Text allowFontScaling={false} style={styles.resendAction}>
+							{isResending ? 'Resending…' : 'Resend'}
 						</Text>
 					</TouchableOpacity>
 				</View>
-				{/* BACKEND TODO: add POST /auth/resend-verification-email before re-enabling this. */}
 			</View>
 		</SafeAreaView>
 	);

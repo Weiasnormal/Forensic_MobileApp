@@ -15,8 +15,6 @@ import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import SuccessModal from '@/_components/modals/success_modal';
 import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { useAdminStore } from '@/store/adminStore';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 
 export default function LogInPage() {
@@ -61,16 +59,6 @@ export default function LogInPage() {
     const role = resolveRoleFromClaims(authUser?.roles);
     setResolvedRole(role);
 
-    const pendingOrgName = useEmailVerificationStore.getState().pendingOrganizationName;
-    if (role === 'admin' && pendingOrgName && !authUser?.tenantId) {
-      const tenantId = await useAdminStore.getState().createTenant(pendingOrgName);
-      if (tenantId) {
-        useEmailVerificationStore.getState().reset();
-      } else {
-        useFeedbackStore.getState().showToast('Signed in — organization setup failed, retry in Profile', 'infoLight');
-      }
-    }
-
     const isFirstTime = authUser ? await isFirstLoginForUser(authUser.userId) : false;
     setWelcomeInfo({ isFirstTime });
   } catch (error) {
@@ -86,6 +74,14 @@ export default function LogInPage() {
     await markUserAsSeen(user.userId);
   }
   setWelcomeInfo(null);
+  const isNewAdmin =
+    resolvedRole === 'admin' &&
+    useEmailVerificationStore.getState().pendingRole === 'admin' &&
+    !user?.tenantId;
+  if (isNewAdmin) {
+    router.replace('/_login/_signup/OrganizationCreate');
+    return;
+  }
   router.replace(ROLE_SETTINGS[resolvedRole].signIn.redirectTo);
 };
 

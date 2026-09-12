@@ -1,7 +1,6 @@
 import { getCaseSummary, useCaseStore } from '@/store/caseStore';
 import { formatRelativeTime, getTeamSummary, useAdminStore } from '@/store/adminStore';
 import { useUser } from '@/store/userStore';
-import { MOCK_PENDING_REVIEWS, type MockPendingReview } from '@/constants/adminMockData';
 import { Ionicons } from '@expo/vector-icons';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,7 +9,7 @@ import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdminNavbar, { type AdminTabKey } from '@/_components/admin/AdminNavbar';
 import { colors } from '@/constants/colors';
-import { MemberRequestCard, PendingReviewCard, type MemberRequestData } from './cards';
+import { MemberRequestCard, PendingReviewCard, type MemberRequestData, type PendingReview } from './cards';
 import AdminCasesScreen from './admin_cases';
 import AdminTeamScreen from './admin_team';
 import AdminStatsScreen from './admin_stats';
@@ -51,6 +50,8 @@ export default function AdminDashboard() {
 	const teamMembers = useAdminStore((state) => state.teamMembers);
 	const pendingApprovals = useAdminStore((state) => state.pendingApprovals);
 	const fetchTeamMembers = useAdminStore((state) => state.fetchTeamMembers);
+	const startMemberRequestNotifications = useAdminStore((state) => state.startMemberRequestNotifications);
+	const stopMemberRequestNotifications = useAdminStore((state) => state.stopMemberRequestNotifications);
 	const approveTeamMember = useAdminStore((state) => state.approveTeamMember);
 	const rejectTeamMember = useAdminStore((state) => state.rejectTeamMember);
 
@@ -63,7 +64,11 @@ export default function AdminDashboard() {
 		refreshCasesFromBackend();
 		fetchTenantProfile();
 		fetchTeamMembers();
-	}, [fetchTeamMembers, fetchTenantProfile, load, refreshCasesFromBackend]);
+		void startMemberRequestNotifications();
+		return () => {
+			void stopMemberRequestNotifications();
+		};
+	}, [fetchTeamMembers, fetchTenantProfile, load, refreshCasesFromBackend, startMemberRequestNotifications, stopMemberRequestNotifications]);
 
 	useEffect(() => {
 		if (tenantProfile?.name && tenantProfile.name !== user.organization) {
@@ -214,7 +219,7 @@ function AdminHomeTab({
 	onViewTeam: () => void;
 	onViewAllCases: () => void;
 }) {
-	const [pendingReviews] = useState<MockPendingReview[]>(MOCK_PENDING_REVIEWS);
+	const pendingReviews: PendingReview[] = [];
 
 	return (
 		<View style={styles.paddedSection}>

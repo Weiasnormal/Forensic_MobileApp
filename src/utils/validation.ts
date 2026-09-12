@@ -48,7 +48,6 @@ export const verificationCodeSchema = z.object({
 
 export const signUpSchema = z
   .object({
-    organizationName: z.string().trim().optional(),
     firstName: createNameSchema('First name'),
     lastName: createNameSchema('Last name'),
     email: emailSchema,

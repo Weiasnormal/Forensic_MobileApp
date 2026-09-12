@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/authStore';
 import ProfileSaveModal from '@/_components/modals/profile_save';
 import ChangeEmailModal from '@/_components/modals/change_email';
 import ChangeEmailSuccessModal from '@/_components/modals/change_email_success';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -49,7 +50,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
   const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
-  const [pendingEmailPassword, setPendingEmailPassword] = useState<string | null>(null);
 
  const pickImage = async () => {
     try {
@@ -164,9 +164,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               </Text>
               <Pressable
                 onPress={async () => {
-                  const { requestEmailChange } = await import('@/services/emailVerificationApi');
-                  if (!pendingEmailPassword) return;
-                  const { ok } = await requestEmailChange(pendingNewEmail, pendingEmailPassword);
+                  const { ok } = await resendVerificationEmail(pendingNewEmail);
                   useFeedbackStore.getState().showToast(
                     ok ? 'Email resent' : 'Unable to resend right now',
                     ok ? 'successLight' : 'infoLight',
@@ -221,10 +219,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         visible={showChangeEmail}
         currentEmail={email}
         onClose={() => setShowChangeEmail(false)}
-        onSent={(newEmail, currentPassword) => {
+        onSent={(newEmail) => {
           setShowChangeEmail(false);
           setPendingNewEmail(newEmail);
-          setPendingEmailPassword(currentPassword);
           setShowChangeEmailSuccess(true);
         }}
       />

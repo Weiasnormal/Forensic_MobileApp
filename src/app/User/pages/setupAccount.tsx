@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/authStore';
 import ProfileSaveModal from '@/_components/modals/profile_save';
 import ChangeEmailModal from '@/_components/modals/change_email';
 import ChangeEmailSuccessModal from '@/_components/modals/change_email_success';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
 import FormField from '@/_components/common/FormField';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
@@ -35,7 +36,6 @@ export default function SetupAccount() {
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
   const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
-  const [pendingEmailPassword, setPendingEmailPassword] = useState<string | null>(null);
 
 
   const pickImage = async () => {
@@ -152,9 +152,7 @@ export default function SetupAccount() {
               </Text>
               <Pressable
                 onPress={async () => {
-                  const { requestEmailChange } = await import('@/services/emailVerificationApi');
-                  if (!pendingEmailPassword) return;
-                  const { ok } = await requestEmailChange(pendingNewEmail, pendingEmailPassword);
+                  const { ok } = await resendVerificationEmail(pendingNewEmail);
                   useFeedbackStore.getState().showToast(
                     ok ? 'Email resent' : 'Unable to resend right now',
                     ok ? 'successLight' : 'infoLight',
@@ -206,10 +204,9 @@ export default function SetupAccount() {
         visible={showChangeEmail}
         currentEmail={email}
         onClose={() => setShowChangeEmail(false)}
-        onSent={(newEmail, currentPassword) => {
+        onSent={(newEmail) => {
           setShowChangeEmail(false);
           setPendingNewEmail(newEmail);
-          setPendingEmailPassword(currentPassword);
           setShowChangeEmailSuccess(true);
         }}
       />

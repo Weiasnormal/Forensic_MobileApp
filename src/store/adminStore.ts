@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { API_KEY, buildApiUrl } from '@/constants/api';
+import { API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
-import { MOCK_TEAM_MEMBERS } from '@/constants/adminMockData';
-import { getAuthHeader } from './authStore';
+import { getAuthHeader, useAuthStore } from './authStore';
 import { useFeedbackStore } from './feedbackStore';
+import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
+
+let memberRequestConnection: HubConnection | null = null;
 
 const adminLog = {
   info: (tag: string, message: string, data?: any) => {
@@ -52,6 +54,8 @@ interface AdminStore {
   fetchOrGenerateInviteCode: () => Promise<string>;
 
   fetchTeamMembers: () => Promise<void>;
+  startMemberRequestNotifications: () => Promise<void>;
+  stopMemberRequestNotifications: () => Promise<void>;
   approveTeamMember: (id: string) => Promise<void>;
   rejectTeamMember: (id: string) => Promise<void>;
   suspendTeamMember: (id: string) => Promise<void>;
@@ -69,39 +73,6 @@ interface AdminStore {
   tenantProfile: { name: string; inviteCode: string; memberCount: number; createdAt: string } | null;
   isLoadingTenantProfile: boolean;
   fetchTenantProfile: () => Promise<void>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function normalizeRole(value: unknown): TeamMemberRole {
-  if (value === 'Admin' || value === 'OrgAdmin' || value === 'Org Admin' || value === 1) {
-    return 'Org Admin';
-  }
-  return 'Analyst';
-}
-
-function normalizeStatus(value: unknown): TeamMemberStatus {
-  if (value === 'pending' || value === 'Pending') return 'pending';
-  if (value === 'suspended' || value === 'Suspended') return 'suspended';
-  return 'active';
-}
-
-function normalizeTeamMember(record: any): TeamMember | null {
-  const id = record?.id?.toString().trim();
-  if (!id) return null;
-
-  return {
-    id,
-    firstName: record.firstName?.trim() || record.givenName?.trim() || 'Unknown',
-    lastName: record.lastName?.trim() || record.familyName?.trim() || '',
-    email: record.email?.trim() || '—',
-    role: normalizeRole(record.role),
-    status: normalizeStatus(record.status),
-    casesHandled: Number(record.casesHandled ?? 0),
-    joinedAt: record.joinedAt ?? record.createdAt ?? null,
-  };
 }
 
 function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
@@ -135,16 +106,6 @@ export function formatRelativeTime(dateIso: string | null): string {
 
   const diffYears = Math.floor(diffMonths / 12);
   return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
-}
-
-function generateMockInviteCode(): string {
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const alphanumeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let prefix = '';
-  let suffix = '';
-  for (let i = 0; i < 3; i++) prefix += letters[Math.floor(Math.random() * letters.length)];
-  for (let i = 0; i < 4; i++) suffix += alphanumeric[Math.floor(Math.random() * alphanumeric.length)];
-  return `${prefix}-${suffix}`;
 }
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
@@ -188,12 +149,23 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         throw new Error(`Create tenant failed (${response.status})`);
       }
 
-      // POST /tenants returns the raw NEW ACCESS TOKEN (string), regenerated
-      // with the TenantId claim — NOT a tenant id. See CreateTenantCommandHandler.
-      const newAccessToken: string = await response.json();
+      const tokenResponse = await response.json() as {
+        accessToken?: string;
+        AccessToken?: string;
+        expireAt?: string;
+        ExpireAt?: string;
+      };
+      const newAccessToken = tokenResponse.accessToken ?? tokenResponse.AccessToken;
+
+      if (!newAccessToken) {
+        throw new Error('Create tenant response did not include an access token');
+      }
 
       const { useAuthStore } = await import('./authStore');
-      useAuthStore.getState().applyNewAccessToken(newAccessToken);
+      useAuthStore.getState().applyNewAccessToken(
+        newAccessToken,
+        tokenResponse.expireAt ?? tokenResponse.ExpireAt,
+      );
 
       const tenantId = useAuthStore.getState().user?.tenantId ?? null;
 
@@ -327,15 +299,54 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         isUsingMockTeam: false,
       });
     } catch (error) {
-      adminLog.warn('AdminStore:Team', 'Falling back to mock roster', error);
+      adminLog.warn('AdminStore:Team', 'Unable to load team from backend', error);
       set({
-        teamMembers: MOCK_TEAM_MEMBERS,
-        pendingApprovals: MOCK_TEAM_MEMBERS.filter((m) => m.status === 'pending'),
+        teamMembers: [],
+        pendingApprovals: [],
         isLoadingTeam: false,
         teamLoadError: error instanceof Error ? error.message : 'Unable to load team members',
         isUsingMockTeam: true,
       });
     }
+  },
+
+  startMemberRequestNotifications: async () => {
+    if (memberRequestConnection?.state === HubConnectionState.Connected ||
+        memberRequestConnection?.state === HubConnectionState.Connecting ||
+        memberRequestConnection?.state === HubConnectionState.Reconnecting) {
+      return;
+    }
+
+    memberRequestConnection = new HubConnectionBuilder()
+      .withUrl(NOTIFICATION_HUB_URL, {
+        accessTokenFactory: () => useAuthStore.getState().accessToken ?? '',
+      })
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Warning)
+      .build();
+
+    memberRequestConnection.on('MemberRequestCreated', () => {
+      void get().fetchTeamMembers();
+    });
+
+    memberRequestConnection.onclose((error) => {
+      if (error) adminLog.warn('AdminStore:SignalR', 'Member request notifications disconnected', error);
+    });
+
+    try {
+      await memberRequestConnection.start();
+      adminLog.info('AdminStore:SignalR', 'Member request notifications connected');
+    } catch (error) {
+      adminLog.warn('AdminStore:SignalR', 'Unable to connect member request notifications', error);
+      await memberRequestConnection.stop();
+      memberRequestConnection = null;
+    }
+  },
+
+  stopMemberRequestNotifications: async () => {
+    if (!memberRequestConnection) return;
+    await memberRequestConnection.stop();
+    memberRequestConnection = null;
   },
 
   approveTeamMember: async (requestId) => {
@@ -434,17 +445,29 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         throw new Error(`Invite code fetch failed (${response.status})`);
       }
 
-      const json = await response.json();
-      const code = json?.inviteCode ?? json?.InviteCode ?? null;
+      const responseText = await response.text();
+      let responseValue: unknown = responseText;
+      try {
+        responseValue = JSON.parse(responseText);
+      } catch {
+        // The endpoint may return either a plain code or a JSON payload.
+      }
+
+      const responseObject = typeof responseValue === 'object' && responseValue !== null
+        ? responseValue as Record<string, unknown>
+        : null;
+      const rawCode = typeof responseValue === 'string'
+        ? responseValue
+        : responseObject?.inviteCode ?? responseObject?.InviteCode ?? responseObject?.code ?? responseObject?.Code;
+      const code = typeof rawCode === 'string' ? rawCode.trim() : null;
       if (!code) throw new Error('Backend returned no invite code');
 
       set({ inviteCode: code, isUsingMockInvite: false, isGeneratingInvite: false });
       return code;
     } catch (error) {
-      adminLog.warn('AdminStore:Invite', 'Falling back to local mock invite code', error);
-      const mockCode = generateMockInviteCode();
-      set({ inviteCode: mockCode, isUsingMockInvite: true, isGeneratingInvite: false });
-      return mockCode;
+      adminLog.warn('AdminStore:Invite', 'Unable to fetch invite code from the backend', error);
+      set({ inviteCode: null, isUsingMockInvite: false, isGeneratingInvite: false });
+      return '';
     }
   },
 }));

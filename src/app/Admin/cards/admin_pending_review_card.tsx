@@ -1,10 +1,18 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { MockPendingReview } from '@/constants/adminMockData';
+
+export interface PendingReview {
+	id: string;
+	caseCode: string;
+	examiner: string;
+	dateLabel: string;
+	verdictLabel: string;
+	confidence: number;
+}
 
 interface PendingReviewCardProps {
-	review: MockPendingReview;
-	onReview: (review: MockPendingReview) => void;
+	review: PendingReview;
+	onReview: (review: PendingReview) => void;
 }
 
 export default function PendingReviewCard({ review, onReview }: PendingReviewCardProps) {

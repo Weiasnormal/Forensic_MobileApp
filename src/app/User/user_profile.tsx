@@ -32,7 +32,6 @@ export default function UserProfileScreen() {
 	const { user, load, setUser } = useUser();
 	const logout = useAuthStore((state) => state.logout);
 	const cases = useCaseStore((state) => state.cases);
-	const resetMockDatabase = useCaseStore((state) => state.resetMockDatabase);
 	const allowUploadSourceChoice = useCaseStore((state) => state.allowUploadSourceChoice);
 	const setAllowUploadSourceChoice = useCaseStore((state) => state.setAllowUploadSourceChoice);
 	const { totalCases, genuineCount, suspectCount } = getCaseSummary(cases);
@@ -201,7 +200,6 @@ export default function UserProfileScreen() {
 							'This will remove the mock cases and drafts from the app. Continue?',
 							[
 								{ text: 'Cancel', style: 'cancel' },
-								{ text: 'Reset', style: 'destructive', onPress: () => resetMockDatabase() },
 							],
 						);
 					}}

@@ -86,3 +86,21 @@ export async function requestEmailChange(newEmail: string, currentPassword: stri
     return { ok: false };
   }
 }
+
+export async function resendVerificationEmail(email: string): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Api-Key': API_KEY || '',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
+}

@@ -12,13 +12,17 @@ export function buildApiUrl(path: string) {
   return new URL(normalizedPath, API_BASE_URL).toString();
 }
 
+export const NOTIFICATION_HUB_URL = buildApiUrl('/hubs/notification');
+
 export const API_ENDPOINTS = {
   auth: {
     login: '/auth/login',
+    profile: '/auth/me',
     register: '/auth/register',
     logout: '/auth/logout',
     changePassword: '/auth/change-password',
     changeEmail: '/auth/change-email',
+    resendVerificationEmail: '/auth/resend-verification-email',
 
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',

@@ -46,7 +46,7 @@ interface AuthState {
   setHasHydrated: (value: boolean) => void;
 
   joinInviteCode: (inviteCode: string) => Promise<void>;
-  applyNewAccessToken: (accessToken: string) => void;
+  applyNewAccessToken: (accessToken: string, expiresAt?: string) => void;
 }
 
 function decodeToken(token: string): AuthUser {
@@ -86,14 +86,14 @@ export const useAuthStore = create<AuthState>()(
       authError: null,
       hasHydrated: false,
 
-      applyNewAccessToken: (accessToken: string) => {
+      applyNewAccessToken: (accessToken: string, expiresAt?: string) => {
       // createTenant (POST /tenants) returns a freshly-issued JWT that now carries
       // the TenantId claim — this MUST replace the session token, or every
       // tenant-scoped request afterwards will fail with Tenant.NotMember.
       set({
         accessToken,
         user: decodeToken(accessToken),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: expiresAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       });
     },
 

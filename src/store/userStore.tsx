@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from './authStore';
+import { fetchCurrentUser } from '@/services/authApi';
 import type { SignatureAnalysisViewMode } from '@/services/signatureAnalysis';
 
 type UserProfile = {
@@ -22,15 +23,15 @@ type UserStore = {
 };
 
 const DEFAULT_USER: UserProfile = {
-  firstName: 'Wincel',
-  lastName: 'Crusit',
-  email: 'user@institution.gov.ph',
-  role: 'Forensic Analyst',
-  organization: 'PNP Crime Laboratory',
+  firstName: '',
+  lastName: '',
+  email: '',
+  role: '',
+  organization: '',
   avatarUri: null,
 };
 
-const KEY = 'wincel_pogi_key_user_profile';
+const KEY = 'avera_user_profile_metadata';
 
 const log = {
   info: (_tag: string, _message: string, _data?: any) => {},
@@ -46,14 +47,10 @@ const log = {
 
 const UserContext = createContext<UserStore | null>(null);
 
-function shallowEqualProfile(a: UserProfile, b: UserProfile) {
-  const keys = Object.keys({ ...a, ...b }) as (keyof UserProfile)[];
-  return keys.every((k) => a[k] === b[k]);
-}
-
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<UserProfile>(DEFAULT_USER);
   const authEmail = useAuthStore((state) => state.user?.email);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   const load = useCallback(async () => {
     const startTime = performance.now();
@@ -72,31 +69,35 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         hasData: !!raw,
       });
 
-      if (!raw) {
-        log.info('UserStore', 'No stored profile found, using default user', { defaultUser: DEFAULT_USER });
+      let localAvatarUri: string | null | undefined;
+      if (raw) {
+        try {
+          localAvatarUri = JSON.parse(raw).avatarUri;
+        } catch (parseError) {
+          log.error('UserStore', 'Failed to parse stored profile metadata', parseError);
+        }
+      }
+
+      if (!accessToken) {
+        setUserState({ ...DEFAULT_USER, avatarUri: localAvatarUri ?? null });
         return;
       }
 
-      try {
-        const parsed = JSON.parse(raw);
-        setUserState((prev) => {
-          const next = { ...prev, ...parsed };
-          if (shallowEqualProfile(prev, next)) {
-            log.info('UserStore', 'Loaded profile identical to current state, skipping update');
-            return prev;
-          }
-          log.info('UserStore', 'Updating user state', { previous: prev, next });
-          return next;
-        });
-      } catch (parseError) {
-        log.error('UserStore', 'Failed to parse stored JSON', parseError);
-      }
+      const remoteProfile = await fetchCurrentUser(accessToken);
+      setUserState({
+        firstName: remoteProfile.firstName?.trim() ?? '',
+        lastName: remoteProfile.lastName?.trim() ?? '',
+        email: remoteProfile.email?.trim() || authEmail || '',
+        role: remoteProfile.role?.trim() ?? '',
+        organization: remoteProfile.organization?.trim() ?? '',
+        avatarUri: remoteProfile.avatarUri ?? localAvatarUri ?? null,
+      });
     } catch (e) {
       const error = e as Error;
       log.error('UserStore', 'Failed to load user profile', error);
-      log.warn('UserStore', 'Using default user as fallback');
+      setUserState((prev) => ({ ...DEFAULT_USER, email: authEmail || '', avatarUri: prev.avatarUri }));
     }
-  }, []);
+  }, [accessToken, authEmail]);
 
   const persist = useCallback(async (next: UserProfile) => {
     const startTime = performance.now();
@@ -119,7 +120,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!authEmail) return;
+    if (!authEmail) {
+      setUserState((prev) => ({ ...DEFAULT_USER, avatarUri: prev.avatarUri }));
+      return;
+    }
 
     setUserState((prev) => {
       if (prev.email === authEmail) return prev;

@@ -86,7 +86,6 @@ export interface DraftCase {
   examiner: string;
   documentType: string;
   priority: AnalysisPriority;
-  mockTemplateNumber?: number;
   uploads: DraftUploads;
 }
 
@@ -110,7 +109,6 @@ interface CaseStore {
   draftSignatureCase: DraftCase;
   isSubmitting: boolean;
   nextCaseNumber: number;
-  nextMockTemplateNumber: number;
   activeSignatureCaseId: string | null;
   hiddenSavedCases: SavedCase[] | null;
   allowUploadSourceChoice: boolean;
@@ -132,7 +130,6 @@ interface CaseStore {
   updateDraftCase: <K extends DraftEditableField>(field: K, value: DraftCase[K]) => void;
   setDraftUpload: (type: DraftUploadType, index: number, uri: string | null) => void;
   submitNewCase: () => Promise<SavedCase>;
-  resetMockDatabase: () => void;
 
   submissionStatus: 'idle' | 'submitting' | 'success' | 'error';
   submissionStep: string;
@@ -143,7 +140,7 @@ interface CaseStore {
 
 const DEFAULT_DOCUMENT_TYPE = 'Bank cheque';
 const DEFAULT_PRIORITY: AnalysisPriority = 'Medium';
-const STORAGE_KEY = 'avera_mock_case_store';
+const STORAGE_KEY = 'avera_case_store_v2';
 
 
 function buildCaseId(sequence: number) {
@@ -162,19 +159,10 @@ function createDraftCase(caseId: string): DraftCase {
     examiner: '',
     documentType: DEFAULT_DOCUMENT_TYPE,
     priority: DEFAULT_PRIORITY,
-    mockTemplateNumber: undefined,
     uploads: {
       references: [null, null, null, null],
       suspect: null,
     },
-  };
-}
-
-function createSavedCase(seed: Omit<SavedCase, 'uploads'> & { uploads?: DraftUploads }): SavedCase {
-  return {
-    ...createDraftCase(seed.caseId),
-    ...seed,
-    uploads: seed.uploads ?? createDraftCase(seed.caseId).uploads,
   };
 }
 
@@ -191,86 +179,6 @@ function getNextCaseNumberFromCases(cases: SavedCase[]) {
 
   return highestSequence + 1;
 }
-
-function mergeCasesById(existingCases: SavedCase[], incomingCases: SavedCase[]) {
-  const mergedCases = new Map<string, SavedCase>();
-
-  existingCases.forEach((item) => {
-    mergedCases.set(item.caseId, item);
-  });
-
-  incomingCases.forEach((item) => {
-    const existing = mergedCases.get(item.caseId);
-    if (existing && existing.uploads && existing.uploads.suspect) {
-      item.uploads = existing.uploads;
-    }
-    mergedCases.set(item.caseId, item); 
-  });
-
-  return Array.from(mergedCases.values());
-}
-
-const INITIAL_CASES: SavedCase[] = [
-  createSavedCase({
-    caseId: 'CASE-04-27-2026-001',
-    mockTemplateNumber: 4,
-    subjectName: 'Juan dela Cruz',
-    examiner: 'Ana Rivera',
-    documentType: 'Bank cheque',
-    priority: 'High',
-    createdAt: '2026-04-27T09:30:00.000Z',
-    status: 'Genuine',
-    analysisType: 'SIG',
-  }),
-  createSavedCase({
-    caseId: 'CASE-04-28-2026-002',
-    mockTemplateNumber: 5,
-    subjectName: 'Maria Santos',
-    examiner: 'Ana Rivera',
-    documentType: 'Legal contract',
-    priority: 'Urgent',
-    createdAt: '2026-04-28T13:15:00.000Z',
-    status: 'Suspected',
-    analysisType: 'SIG',
-  }),
-  createSavedCase({
-    caseId: 'CASE-04-29-2026-003',
-    mockTemplateNumber: 6,
-    subjectName: 'Pedro Reyes',
-    examiner: 'Ana Rivera',
-    documentType: 'Government form',
-    priority: 'Medium',
-    createdAt: '2026-04-29T17:45:00.000Z',
-    status: 'Processing',
-    analysisType: 'SIG',
-    resultViewed: false,
-  }),
-  createSavedCase({
-    caseId: 'CASE-04-30-2026-004',
-    mockTemplateNumber: 7,
-    subjectName: 'Elena Garcia',
-    examiner: 'Ana Rivera',
-    documentType: 'Passport copy',
-    priority: 'Low',
-    createdAt: '2026-04-30T08:20:00.000Z',
-    status: 'Genuine',
-    analysisType: 'SIG',
-    resultViewed: false,
-  }),
-  createSavedCase({
-    caseId: 'CASE-05-01-2026-005',
-    mockTemplateNumber: 8,
-    subjectName: 'Ricardo Mendez',
-    examiner: 'Ana Rivera',
-    documentType: 'Employment record',
-    priority: 'High',
-    createdAt: '2026-05-01T11:05:00.000Z',
-    status: 'Genuine',
-    analysisType: 'SIG',
-  }),
-];
-
-const INITIAL_CASE_SEQUENCE = getNextCaseNumberFromCases(INITIAL_CASES);
 
 function createInitialDraft(nextCaseNumber: number) {
   return createDraftCase(buildCaseId(nextCaseNumber));
@@ -330,11 +238,10 @@ export const useCaseStore = create<CaseStore>()(
       }
 
       return {
-        cases: INITIAL_CASES,
-        draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
+        cases: [],
+        draftSignatureCase: createInitialDraft(1),
         isSubmitting: false,
-        nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
-        nextMockTemplateNumber: 1,
+        nextCaseNumber: 2,
         activeSignatureCaseId: null,
         hiddenSavedCases: null,
         allowUploadSourceChoice: false,
@@ -395,17 +302,10 @@ export const useCaseStore = create<CaseStore>()(
           try {
             const backendCases = await fetchBackendCases();
 
-            if (backendCases.length === 0) {
-              caseLog.warn('CaseStore:Sync', 'Backend returned no case records');
-              return false;
-            }
-
             set((state) => {
-              const mergedCases = mergeCasesById(state.cases, backendCases);
-
               return {
-                cases: mergedCases,
-                nextCaseNumber: Math.max(state.nextCaseNumber, getNextCaseNumberFromCases(mergedCases)),
+                cases: backendCases,
+                nextCaseNumber: Math.max(state.nextCaseNumber, getNextCaseNumberFromCases(backendCases)),
               };
             });
 
@@ -604,7 +504,6 @@ export const useCaseStore = create<CaseStore>()(
                 status: 'Processing',
                 analysisType: DEFAULT_ANALYSIS_TYPE,
                 resultViewed: false,
-                mockTemplateNumber: state.nextMockTemplateNumber,
               };
 
               const filteredCases = state.cases.filter((c) => c.caseId !== currentDraft.caseId);
@@ -832,7 +731,6 @@ export const useCaseStore = create<CaseStore>()(
               status: finalStatus,
               analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
-              mockTemplateNumber: get().nextMockTemplateNumber,
             };
 
             caseLog.info('CaseStore:Submit', 'Saving case to store', {
@@ -847,10 +745,9 @@ export const useCaseStore = create<CaseStore>()(
             set((state) => ({
               cases: state.cases.map((item) =>
                 item.caseId === caseId
-                  ? { ...item, status: finalStatus, mockTemplateNumber: state.nextMockTemplateNumber }
+                  ? { ...item, ...savedCase }
                   : item,
               ),
-              nextMockTemplateNumber: state.nextMockTemplateNumber + 1,
               signatureAnalysisResults: {
                 ...state.signatureAnalysisResults,
                 [caseId]: analysisResult,
@@ -1013,22 +910,6 @@ export const useCaseStore = create<CaseStore>()(
           }
         },
 
-        resetMockDatabase: () => {
-          caseLog.warn('CaseStore:Reset', 'Resetting mock database to initial state');
-          set({
-            cases: INITIAL_CASES,
-            draftSignatureCase: createInitialDraft(INITIAL_CASE_SEQUENCE),
-            isSubmitting: false,
-            nextCaseNumber: INITIAL_CASE_SEQUENCE + 1,
-            activeSignatureCaseId: null,
-            signatureAnalysisResults: {},
-            processingJobs: {},
-            submissionStatus: 'idle',
-            submissionStep: '',
-            submissionProgress: 0,
-            submissionError: null,
-          });
-        },
       };
     },
     {
@@ -1057,15 +938,10 @@ export const useCaseStore = create<CaseStore>()(
           return currentState;
         }
 
-        const mergedCases = [
-          ...INITIAL_CASES,
-          ...persisted.cases.filter((item) => !INITIAL_CASES.some((seed) => seed.caseId === item.caseId)),
-        ];
-
         return {
           ...currentState,
           ...persisted,
-          cases: mergedCases,
+          cases: persisted.cases,
           signatureAnalysisResults: persisted.signatureAnalysisResults ?? currentState.signatureAnalysisResults,
           processingJobs: persisted.processingJobs ?? currentState.processingJobs,
         };

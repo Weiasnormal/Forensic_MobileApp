@@ -26,7 +26,7 @@ export default function AdminTeamScreen() {
 
 	useEffect(() => {
 		fetchTeamMembers();
-	}, );
+	}, [fetchTeamMembers]);
 
 	const memberRequests: MemberRequestData[] = useMemo(
 		() =>

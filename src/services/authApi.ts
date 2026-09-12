@@ -29,6 +29,15 @@ export interface LoginResponse {
   expiresAt: string;
 }
 
+export interface UserProfileResponse {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string;
+  organization?: string;
+  avatarUri?: string | null;
+}
+
 class ApiError extends Error {
   constructor(public status: number, public title: string, message: string) {
     super(message);
@@ -91,6 +100,19 @@ export async function register(request: RegisterRequest): Promise<void> {
   if (!res.ok) {
     throw new ApiError(res.status, 'Registration failed', await parseProblem(res));
   }
+}
+
+export async function fetchCurrentUser(token: string): Promise<UserProfileResponse> {
+  const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.profile), {
+    method: 'GET',
+    headers: authHeaders(token),
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, 'Profile fetch failed', await parseProblem(res));
+  }
+
+  return res.json();
 }
 
 export async function logout(token: string): Promise<void> {
