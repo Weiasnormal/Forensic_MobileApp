@@ -1,12 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, {  useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, TextInput, Switch } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import { useCaseStore } from '@/store/caseStore';
+import { resolveCaseVerdict } from '@/services/signatureAnalysis';
+import ErrorModal from '@/_components/modals/error_modal';
 
 const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
 type ViewMode = typeof viewModes[number];
@@ -16,21 +19,23 @@ export default function CaseResultAdmin() {
   const nav = router as any;
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ caseId?: string }>();
-
-  // Use the same store architecture as signature_results.tsx
-  const currentCaseId = params.caseId || '0429-2026-001'; 
+  const caseId = params.caseId ?? '';
   const [activeView, setActiveView] = useState<ViewMode>('Heatmap');
 
+  // Use the same store architecture as signature_results.tsx
+  const currentCase = useCaseStore((s) => s.cases.find((c) => String(c.caseId) === caseId));
+  const analysisResult = useCaseStore((s) => (caseId ? s.signatureAnalysisResults[caseId] : undefined));
+  
   // Supervisor Review State
   const [reviewDecision, setReviewDecision] = useState<'suspected' | 'genuine' | null>(null);
   const [flagInternalReview, setFlagInternalReview] = useState(false);
   const [pdfExportPermission, setPdfExportPermission] = useState(true);
   const [reviewNote, setReviewNote] = useState('');
 
-  // Mock ML Verdict data (In production, replace with resolveCaseVerdict from your store)
-  const mlConfidence = 94.3;
-  const mlVerdict = 'SUSPECTED'; 
-  const isMlSuspected = mlVerdict === 'SUSPECTED';
+  const resolved = resolveCaseVerdict(currentCase ?? null, analysisResult);
+  const mlConfidence = (resolved.confidence || 0).toFixed(1);
+  const mlVerdict = resolved.verdictLabel; // 'SUSPECTED' | 'GENUINE' | 'UNKNOWN'
+  const isMlSuspected = resolved.isSuspected;
 
   // Computed Override Status
   const isOverridden = 
@@ -41,19 +46,18 @@ export default function CaseResultAdmin() {
     ? reviewDecision.toUpperCase() 
     : mlVerdict;
 
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const handleSaveReview = () => {
-    // Implement API call to save supervisor review
-    nav.back();
+    setReviewError('Supervisor review submission is not yet available. This will be enabled in a future update.');
   };
-
   const handleExportReport = () => {
-    // Implement Export
+    setReviewError('PDF export permissioning is not yet available.');
   };
 
   return (
     <SafeAreaView style={styles.screen}>
       {/* Case ID Header */}
-      <TopBar title={currentCaseId} onBackPress={() => nav.back()} />
+      <TopBar title={caseId} onBackPress={() => nav.back()} />
 
       <ScrollView 
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(160, insets.bottom + 120) }]} 
@@ -69,7 +73,7 @@ export default function CaseResultAdmin() {
               {mlConfidence}% <Text style={styles.heroLabel}>{mlVerdict}</Text>
             </Text>
             <Text style={[styles.heroCase, { color: colors.textSecondary }]}>
-              VERDICT · {currentCaseId}
+              VERDICT · {caseId}
             </Text>
           </View>
         </View>
@@ -78,15 +82,15 @@ export default function CaseResultAdmin() {
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Analyst</Text>
-            <Text style={styles.infoValue}>Maria Cruz</Text>
+            <Text style={styles.infoValue}>{currentCase?.examiner ?? '—'}</Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Date</Text>
-            <Text style={styles.infoValue}>Mar 29, 2026</Text>
+            <Text style={styles.infoValue}>{currentCase?.createdAt ? new Date(currentCase.createdAt).toLocaleDateString() : '—'}</Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Document Type</Text>
-            <Text style={styles.infoValue}>Bank Cheque</Text>
+            <Text style={styles.infoValue}>{currentCase?.documentType ?? '—'}</Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Admin Status</Text>
@@ -165,8 +169,8 @@ export default function CaseResultAdmin() {
 
             <View style={styles.modelAssessmentRow}>
                 <Text style={styles.modelAssessmentLabel}>Model Assessment</Text>
-                <Text style={[styles.modelAssessmentVerdict, { color: isMlSuspected ? colors.danger : colors.statusGenuine }]}>
-                    {mlConfidence}% {mlVerdict}
+                  <Text style={[styles.modelAssessmentVerdict, { color: isMlSuspected ? colors.danger : colors.statusGenuine }]}>
+                      {mlConfidence}% {mlVerdict}
                 </Text>
             </View>
 
@@ -288,6 +292,13 @@ export default function CaseResultAdmin() {
         </View>
 
       </ScrollView>
+
+      <ErrorModal
+        visible={!!reviewError}
+        title="Not Available Yet"
+        message={reviewError ?? ''}
+        onPrimaryPress={() => setReviewError(null)}
+      />
 
       {/* Floating Action Buttons */}
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>

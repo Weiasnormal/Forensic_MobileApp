@@ -309,6 +309,25 @@ export function SignatureResultsScreen() {
           </View>
         </View>
 
+        <View style={styles.infoGrid}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Document Type</Text>
+            <Text style={styles.infoValue}>{currentCase?.documentType ?? '—'}</Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Date</Text>
+            <Text style={styles.infoValue}>
+              {currentCase?.createdAt
+                ? new Date(currentCase.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : '—'}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.viewTabsRow}>
           {viewModes.map((mode) => {
             const selected = mode === activeView;
@@ -673,6 +692,27 @@ const styles = StyleSheet.create({
   heroProcessingTime: {
     ...getTypographyStyle('c2Caption', 'regular'),
     color: colors.textSecondary,
+    marginTop: 6,
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.dividerLight,
+  },
+  infoLabel: {
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.label,
+  },
+  infoValue: {
+    ...getTypographyStyle('l1List'),
+    color: colors.textPrimary,
     marginTop: 6,
   },
   viewTabsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },

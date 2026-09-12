@@ -437,7 +437,7 @@ export const useCaseStore = create<CaseStore>()(
           try {
             const createRequest = {
               SubjectName: currentDraft.subjectName,
-              //Examiner: currentDraft.examiner,
+              DocumentType: currentDraft.documentType,
               Priority: PRIORITY_MAP[currentDraft.priority],
               AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
             };

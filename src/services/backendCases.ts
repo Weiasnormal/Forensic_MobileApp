@@ -8,6 +8,8 @@ type BackendCaseRecord = {
   caseCode?: string;
   subjectName?: string;
   examiner?: string;
+  documentType?: string;
+  DocumentType?: string;
   priority?: AnalysisPriority;
   createdAt?: string;
   caseStatus?: CaseStatus;
@@ -88,6 +90,7 @@ function normalizePriority(value: unknown): AnalysisPriority {
 function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
   const caseId = record.id?.trim();
   const caseCode = record.caseCode?.trim();
+  const documentType = (record.documentType ?? record.DocumentType)?.trim();
 
   if (!caseId || !record.createdAt) {
     return null;
@@ -98,7 +101,7 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     caseCode: caseCode || caseId,
     subjectName: record.subjectName?.trim() || 'No Subject',
     examiner: record.examiner?.trim() || 'Unknown',
-    documentType: DEFAULT_DOCUMENT_TYPE,
+    documentType: documentType || DEFAULT_DOCUMENT_TYPE,
     priority: normalizePriority(record.priority),
     uploads: {
       references: [null, null, null, null],
