@@ -1,4 +1,4 @@
-import { formatAnalysisTypeLabel, type SavedCase, useCaseStore } from '@/store/caseStore';
+import { useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -25,9 +25,9 @@ export default function UserStatsScreen() {
         accumulator.genuine += item.status === 'Genuine' ? 1 : 0;
         accumulator.suspected += item.status === 'Suspected' ? 1 : 0;
         accumulator.processing += item.workflowStatus === 'Processing' ? 1 : 0;
-        const analysisType = formatAnalysisTypeLabel(item.analysisType);
-        accumulator.documentTypeCounts[analysisType] =
-          (accumulator.documentTypeCounts[item.documentType] || 0) + 1;
+        const documentType = item.documentType || 'Other';
+        accumulator.documentTypeCounts[documentType] =
+          (accumulator.documentTypeCounts[documentType] || 0) + 1;
         return accumulator;
       },
       {

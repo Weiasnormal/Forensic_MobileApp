@@ -10,11 +10,11 @@ import ErrorModal from '@/_components/modals/error_modal';
 import VerdictCard from '@/_components/common/VerdIctCard';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
-import { formatAnalysisTypeLabel, useCaseStore } from '@/store/caseStore';
+import { useCaseStore } from '@/store/caseStore';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { getAuthHeader } from '@/store/authStore';
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
-import { findOverlayImage, REFERENCE_SLOTS } from '@/services/signatureAnalysis';
+import { findOverlayImage, REFERENCE_SLOTS, type OverlayImageRef } from '@/services/signatureAnalysis';
 import {
   FinalVerdict,
   fetchCaseForReview,
@@ -50,13 +50,6 @@ export default function CaseResultAdmin() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Grad-CAM overlay images still come from the local store's copy of the
-  // ProcessResponse from the last time this device ran the analysis.
-  // BACKEND TODO: there's no "list GradCamImages for a case" endpoint yet
-  // (only GET a single image by its GUID), so an admin opening a case that
-  // was processed on a different device will see placeholders here instead
-  // of overlays. Not something the frontend can work around without that
-  // endpoint.
   const localCase = useCaseStore((s) => s.cases.find((c) => String(c.caseId) === caseId));
   const localAnalysisResult = useCaseStore((s) => (caseId ? s.signatureAnalysisResults[caseId] : undefined));
 
@@ -109,17 +102,28 @@ export default function CaseResultAdmin() {
 
   const overlayVariant = activeView === 'Heatmap' ? 'Overlay' : activeView === 'Bounding Box' ? 'BoundingBox' : 'StrokeDiff';
 
+  const backendOverlayImages = useMemo<OverlayImageRef[]>(
+    () => (caseDetail?.mlResponse?.gradCamResults ?? []).map((item) => ({
+      id: item.imageId,
+      slot: item.slot as OverlayImageRef['slot'],
+      variant: item.variant as OverlayImageRef['variant'],
+    })),
+    [caseDetail],
+  );
+
   const referenceOverlayUris = useMemo(() => {
     return REFERENCE_SLOTS.map((slot) => {
-      const ref = findOverlayImage(localAnalysisResult?.overlay_images, slot as any, overlayVariant as any);
+      const ref = findOverlayImage(backendOverlayImages, slot, overlayVariant)
+        ?? findOverlayImage(localAnalysisResult?.overlay_images, slot, overlayVariant);
       return caseId && ref ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(caseId, ref.id)) : null;
     });
-  }, [localAnalysisResult, overlayVariant, caseId]);
+  }, [backendOverlayImages, localAnalysisResult, overlayVariant, caseId]);
 
   const suspectOverlayUri = useMemo(() => {
-    const ref = findOverlayImage(localAnalysisResult?.overlay_images, 'Suspected', overlayVariant as any);
+    const ref = findOverlayImage(backendOverlayImages, 'Suspected', overlayVariant)
+      ?? findOverlayImage(localAnalysisResult?.overlay_images, 'Suspected', overlayVariant);
     return caseId && ref ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(caseId, ref.id)) : null;
-  }, [localAnalysisResult, overlayVariant, caseId]);
+  }, [backendOverlayImages, localAnalysisResult, overlayVariant, caseId]);
 
   const referenceImageUris = useMemo(
     () => REFERENCE_SLOTS.map((_, index) =>
@@ -243,7 +247,11 @@ export default function CaseResultAdmin() {
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Document Type</Text>
-            <Text style={styles.infoValue}>{formatAnalysisTypeLabel(caseDetail.analysisType)}</Text>
+            <Text style={styles.infoValue}>
+              {caseDetail.documentType === 'Other' && caseDetail.otherDocumentType
+                ? caseDetail.otherDocumentType
+                : caseDetail.documentType}
+            </Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Admin Status</Text>

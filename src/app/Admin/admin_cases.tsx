@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CaseCard from '@/_components/caseCards';
 import FilterCasesModal from '@/_components/modals/filtercases';
-import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '@/store/caseStore';
+import { formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '@/store/caseStore';
 import { caseMatchesSearch, normalizeCaseSearchQuery } from '@/utils/caseSearch';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -59,7 +59,7 @@ export default function AdminCasesScreen() {
 				activeFilter === 'All' ||
 				item.status === activeFilter ||
 				(activeFilter === 'Processing' && item.workflowStatus === 'Processing') ||
-				formatAnalysisTypeLabel(item.analysisType) === activeFilter ||
+				item.documentType === activeFilter ||
 				item.priority === activeFilter;
 
 			return matchesQuery && matchesFilter;
@@ -190,7 +190,7 @@ export default function AdminCasesScreen() {
 						<CaseCard
 							caseCode={item.caseCode ?? item.caseId}
 							createdAt={item.createdAt}
-							type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+							type={`${item.documentType} • `}
 							priority={item.priority}
 							name={`${item.subjectName} · ${item.examiner}`}
 							status={item.status}

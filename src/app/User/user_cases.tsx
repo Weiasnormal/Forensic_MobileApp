@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
-import { formatAnalysisTypeLabel, formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '../../store/caseStore';
+import { formatCaseDateLabel, getCaseSummary, type SavedCase, useCaseStore } from '../../store/caseStore';
 import { caseMatchesSearch, normalizeCaseSearchQuery } from '../../utils/caseSearch';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { colors } from '@/constants/colors';
@@ -67,7 +67,7 @@ export default function UserCasesScreen() {
 				activeFilter === 'All' ||
 				item.status === activeFilter ||
 				(activeFilter === 'Processing' && item.workflowStatus === 'Processing') ||
-				formatAnalysisTypeLabel(item.analysisType) === activeFilter ||
+				item.documentType === activeFilter ||
 				item.priority === activeFilter;
 
 			return matchesQuery && matchesFilter;
@@ -203,9 +203,9 @@ export default function UserCasesScreen() {
             <CaseCard
               caseCode={item.caseCode ?? item.caseId}
               createdAt={item.createdAt}
-              type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+			  type={`${item.documentType} • `}
               priority={item.priority}
-							name={`${item.subjectName} · ${formatAnalysisTypeLabel(item.analysisType)}`}
+							name={`${item.subjectName} · ${item.documentType}`} 
               status={item.status}
               onPress={() => {
                 setActiveSignatureCaseId(item.caseId);

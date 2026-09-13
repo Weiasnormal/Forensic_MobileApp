@@ -1,4 +1,4 @@
-import { formatAnalysisTypeLabel, type SavedCase, useCaseStore } from '@/store/caseStore';
+import { type SavedCase, useCaseStore } from '@/store/caseStore';
 import { getTeamSummary, useAdminStore } from '@/store/adminStore';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -120,9 +120,9 @@ export default function AdminStatsScreen() {
 				accumulator.total += 1;
 				accumulator.genuine += item.status === 'Genuine' ? 1 : 0;
 				accumulator.suspected += item.status === 'Suspected' ? 1 : 0;
-				const analysisType = formatAnalysisTypeLabel(item.analysisType);
-				accumulator.documentTypeCounts[analysisType] =
-					(accumulator.documentTypeCounts[analysisType] || 0) + 1;
+				const documentType = item.documentType || 'Other';
+				accumulator.documentTypeCounts[documentType] =
+					(accumulator.documentTypeCounts[documentType] || 0) + 1;
 				return accumulator;
 			},
 			{ total: 0, genuine: 0, suspected: 0, documentTypeCounts: {} as Record<string, number> },

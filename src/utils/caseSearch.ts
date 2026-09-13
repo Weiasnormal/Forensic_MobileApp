@@ -1,4 +1,4 @@
-import { formatAnalysisTypeLabel, type SavedCase } from '../store/caseStore';
+import type { SavedCase } from '../store/caseStore';
 
 export function normalizeCaseSearchQuery(query: string) {
 	return query.trim().toLowerCase();
@@ -15,6 +15,6 @@ export function caseMatchesSearch(item: SavedCase, normalizedQuery: string) {
 		item.examiner,
 		item.documentType,
 		item.priority,
-		formatAnalysisTypeLabel(item.analysisType),
+		item.documentType,
 	].some((value) => value.toLowerCase().includes(normalizedQuery));
 }

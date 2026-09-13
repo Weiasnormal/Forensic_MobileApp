@@ -6,6 +6,7 @@ import type {
   AnalysisType,
   CaseStatus,
   CaseWorkflowStatus,
+  DocumentType,
   SavedCase,
 } from '@/store/caseStore';
 
@@ -14,8 +15,10 @@ type BackendCaseRecord = {
   caseCode?: string;
   subjectName?: string;
   examiner?: string;
-  documentType?: string;
-  DocumentType?: string;
+  documentType?: unknown;
+  DocumentType?: unknown;
+  optionalDocumentType?: string;
+  OptionalDocumentType?: string;
   priority?: AnalysisPriority;
   createdAt?: string;
   caseStatus?: unknown;
@@ -72,23 +75,16 @@ function normalizeVerdict(record: BackendCaseRecord): CaseStatus {
 }
 
 function normalizeAnalysisType(value: unknown): AnalysisType {
-  if (value === 0 || value === '0') {
-    return 'SIG';
-  }
+  return value === 'HW' ? 'HW' : value === 'DOC' ? 'DOC' : 'SIG';
+}
 
-  if (value === 1 || value === '1') {
-    return 'HW';
-  }
-
-  if (value === 2 || value === '2') {
-    return 'DOC';
-  }
-
-  if (value === 'SIG' || value === 'HW' || value === 'DOC') {
-    return value;
-  }
-
-  return 'SIG';
+function normalizeDocumentType(value: unknown): DocumentType {
+  if (value === 0 || value === '0' || value === 'BankCheque' || value === 'Bank cheque') return 'Bank cheque';
+  if (value === 1 || value === '1' || value === 'PropertyDeed' || value === 'Property deed') return 'Property deed';
+  if (value === 2 || value === '2' || value === 'LastWill' || value === 'Last will') return 'Last will';
+  if (value === 3 || value === '3' || value === 'Contract') return 'Contract';
+  if (value === 4 || value === '4' || value === 'Affidavit') return 'Affidavit';
+  return 'Other';
 }
 
 function normalizePriority(value: unknown): AnalysisPriority {
@@ -118,7 +114,8 @@ function normalizePriority(value: unknown): AnalysisPriority {
 function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
   const caseId = record.id?.trim();
   const caseCode = record.caseCode?.trim();
-  const documentType = (record.documentType ?? record.DocumentType)?.trim();
+  const documentType = normalizeDocumentType(record.documentType ?? record.DocumentType ?? record.analysisType);
+  const otherDocumentType = (record.optionalDocumentType ?? record.OptionalDocumentType ?? '').trim();
 
   if (!caseId || !record.createdAt) {
     return null;
@@ -132,6 +129,7 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     subjectName: record.subjectName?.trim() || 'No Subject',
     examiner: record.examiner?.trim() || 'Unknown',
     documentType: documentType || DEFAULT_DOCUMENT_TYPE,
+    otherDocumentType,
     priority: normalizePriority(record.priority),
     uploads: {
       references: [null, null, null, null],

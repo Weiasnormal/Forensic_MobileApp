@@ -1,4 +1,4 @@
-import { type AnalysisPriority, useCaseStore } from '@/store/caseStore';
+import { type AnalysisPriority, type DocumentType, useCaseStore } from '@/store/caseStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -13,7 +13,7 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 
-const documentOptions = ['Bank cheque', 'Property deed', 'Last will', 'Contract', 'Affidavit', 'Other'];
+const documentOptions: DocumentType[] = ['Bank cheque', 'Property deed', 'Last will', 'Contract', 'Affidavit', 'Other'];
 const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
 
 export default function SignatureStep1Route() {
@@ -24,7 +24,8 @@ export default function SignatureStep1Route() {
   const discardSignatureDraft = useCaseStore((state) => state.discardSignatureDraft);
   const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
   const [showDraftSavedModal, setShowDraftSavedModal] = useState(false);
-  const canContinue = draftCase.subjectName.trim().length > 1 && draftCase.examiner.trim().length > 1;
+  const canContinue = draftCase.subjectName.trim().length > 1 && draftCase.examiner.trim().length > 1 &&
+    (draftCase.documentType !== 'Other' || draftCase.otherDocumentType.trim().length > 0);
   const caseIdParts = draftCase.caseId.split('-');
   const month = caseIdParts[0];
   const day = caseIdParts[1];
@@ -99,13 +100,25 @@ export default function SignatureStep1Route() {
           {showDocumentDropdown && (
             <View style={styles.dropdownMenu}>
               {documentOptions.map((option) => (
-                <Pressable key={option} onPress={() => { updateDraftCase('documentType', option); setShowDocumentDropdown(false); }} style={styles.dropdownItem}>
+                <Pressable key={option} onPress={() => {
+                  updateDraftCase('documentType', option);
+                  if (option !== 'Other') updateDraftCase('otherDocumentType', '');
+                  setShowDocumentDropdown(false);
+                }} style={styles.dropdownItem}>
                   <Text style={styles.dropdownItemText}>{option}</Text>
                 </Pressable>
               ))}
             </View>
           )}
         </View>
+        {draftCase.documentType === 'Other' ? (
+          <FormField
+            label="Document type details"
+            value={draftCase.otherDocumentType}
+            onChangeText={(value) => updateDraftCase('otherDocumentType', value)}
+            placeholder="Enter document type"
+          />
+        ) : null}
         <View style={styles.formGroup}>
           <FieldLabel label="Priority" />
           <View style={styles.priorityRow}>
