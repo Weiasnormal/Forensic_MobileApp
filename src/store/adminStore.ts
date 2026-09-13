@@ -329,6 +329,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       void get().fetchTeamMembers();
     });
 
+    memberRequestConnection.onreconnected(() => {
+      void get().fetchTeamMembers();
+    });
+
     memberRequestConnection.onclose((error) => {
       if (error) adminLog.warn('AdminStore:SignalR', 'Member request notifications disconnected', error);
     });
@@ -338,7 +342,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       adminLog.info('AdminStore:SignalR', 'Member request notifications connected');
     } catch (error) {
       adminLog.warn('AdminStore:SignalR', 'Unable to connect member request notifications', error);
-      await memberRequestConnection.stop();
+      await memberRequestConnection.stop().catch(() => {});
       memberRequestConnection = null;
     }
   },

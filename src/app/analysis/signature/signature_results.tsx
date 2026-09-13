@@ -136,10 +136,15 @@ export function SignatureResultsScreen() {
       .configureLogging(LogLevel.Warning)
       .build();
 
-    connection.on('CaseReviewCompleted', (notification: { caseId: string }) => {
-      if (notification?.caseId === currentCaseId) {
+    connection.on('CaseReviewCompleted', (notification: { caseId?: string; CaseId?: string }) => {
+      const notificationCaseId = notification?.caseId ?? notification?.CaseId;
+      if (notificationCaseId && String(notificationCaseId).toLowerCase() === String(currentCaseId).toLowerCase()) {
         loadReviewDetail();
       }
+    });
+
+    connection.onreconnected(() => {
+      void loadReviewDetail();
     });
 
     connection.start().catch((error) => {
