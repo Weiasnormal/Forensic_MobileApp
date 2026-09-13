@@ -194,6 +194,18 @@ export function SignatureResultsScreen() {
       : null;
   }, [currentCaseId, analysisResult, activeView]);
 
+  const referenceImageUris = useMemo(
+    () => REFERENCE_SLOTS.map((_, index) =>
+      currentCaseId ? buildApiUrl(API_ENDPOINTS.signatures.getReference(currentCaseId, index + 1)) : null,
+    ),
+    [currentCaseId],
+  );
+
+  const suspectedImageUri = useMemo(
+    () => currentCaseId ? buildApiUrl(API_ENDPOINTS.signatures.getSuspected(currentCaseId, 1)) : null,
+    [currentCaseId],
+  );
+
   // Prefetch all overlay images to reduce flicker when switching views
   useEffect(() => {
     const refs = currentCase?.uploads.references ?? [];
@@ -204,7 +216,12 @@ export function SignatureResultsScreen() {
       ExpoImage.prefetch(localUris);
     }
     if (backendUris.length > 0) {
-      ExpoImage.prefetch(backendUris, { headers: { 'X-Api-Key': API_KEY || '' } });
+      ExpoImage.prefetch(backendUris, {
+        headers: {
+          'X-Api-Key': API_KEY || '',
+          ...getAuthHeader(),
+        },
+      });
     }
   }, [currentCase, suspectOverlayUri, referenceOverlayUris]);
 
@@ -406,7 +423,7 @@ export function SignatureResultsScreen() {
         <View style={styles.thumbsGrid}>
           <View style={styles.smallThumbsGrid}>
             {referenceSlots.map((i) => {
-              const uri = uploadedReferences[i];
+              const uri = uploadedReferences[i] ?? referenceImageUris[i];
               const referenceLabel = `SIG ${String(i + 1).padStart(2, '0')}`;
 
               if (uri) {
@@ -446,13 +463,13 @@ export function SignatureResultsScreen() {
             })}
           </View>
 
-          {uploadedSuspect ? (
+          {uploadedSuspect || suspectedImageUri ? (
             <Pressable
               style={styles.largeThumbWrap}
               onPress={() => {
                 const hasOverlay = Boolean(findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]));
                 openPreview(
-                  { uri: hasOverlay ? suspectOverlayUri! : uploadedSuspect.split('?')[0] },
+                  { uri: hasOverlay ? suspectOverlayUri! : (uploadedSuspect ?? suspectedImageUri)!.split('?')[0] },
                   hasOverlay ? `Suspected Signature — ${activeView}` : 'Uploaded Suspected Signature'
                 );
               }}
@@ -466,7 +483,7 @@ export function SignatureResultsScreen() {
                 />
               ) : (
                 <ExpoImage
-                  source={{ uri: uploadedSuspect.split('?')[0] }}
+                  source={getAuthImageSource(uploadedSuspect ?? suspectedImageUri)}
                   style={StyleSheet.absoluteFill}
                   contentFit="contain"
                 />

@@ -121,6 +121,18 @@ export default function CaseResultAdmin() {
     return caseId && ref ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(caseId, ref.id)) : null;
   }, [localAnalysisResult, overlayVariant, caseId]);
 
+  const referenceImageUris = useMemo(
+    () => REFERENCE_SLOTS.map((_, index) =>
+      caseId ? buildApiUrl(API_ENDPOINTS.signatures.getReference(caseId, index + 1)) : null,
+    ),
+    [caseId],
+  );
+
+  const suspectedImageUri = useMemo(
+    () => caseId ? buildApiUrl(API_ENDPOINTS.signatures.getSuspected(caseId, 1)) : null,
+    [caseId],
+  );
+
   const handleSaveReview = async () => {
     if (!caseId || !reviewDecision) return;
 
@@ -255,7 +267,7 @@ export default function CaseResultAdmin() {
             {REFERENCE_SLOTS.map((slot, idx) => {
               const localUri = localCase?.uploads?.references?.[idx];
               const backendUri = referenceOverlayUris[idx];
-              const uri = backendUri ?? localUri;
+              const uri = backendUri ?? localUri ?? referenceImageUris[idx];
               if (!uri) {
                 return (
                   <View key={`ref-${idx}`} style={[styles.thumbCardSmall, styles.thumbPlaceholder]}>
@@ -280,12 +292,15 @@ export default function CaseResultAdmin() {
           </View>
 
           <View style={styles.largeThumbWrap}>
-            {localCase?.uploads?.suspect || suspectOverlayUri ? (
+            {localCase?.uploads?.suspect || suspectOverlayUri || suspectedImageUri ? (
               <ExpoImage
                 source={
                   suspectOverlayUri
                     ? { uri: suspectOverlayUri, headers: { 'X-Api-Key': API_KEY || '', ...getAuthHeader() } }
-                    : { uri: String(localCase?.uploads?.suspect ?? '').split('?')[0] }
+                    : {
+                        uri: String(localCase?.uploads?.suspect ?? suspectedImageUri ?? '').split('?')[0],
+                        headers: { 'X-Api-Key': API_KEY || '', ...getAuthHeader() },
+                      }
                 }
                 style={styles.largeThumbImage}
                 contentFit="contain"
