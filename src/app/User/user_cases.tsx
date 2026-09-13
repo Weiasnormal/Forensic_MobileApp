@@ -58,6 +58,7 @@ export default function UserCasesScreen() {
 			const matchesFilter =
 				activeFilter === 'All' ||
 				item.status === activeFilter ||
+				(activeFilter === 'Processing' && item.workflowStatus === 'Processing') ||
 				formatAnalysisTypeLabel(item.analysisType) === activeFilter ||
 				item.priority === activeFilter;
 
@@ -201,7 +202,7 @@ export default function UserCasesScreen() {
               onPress={() => {
                 setActiveSignatureCaseId(item.caseId);
 
-                if (item.status === 'Processing') {
+				if (item.workflowStatus === 'Processing') {
                   if (item.analysisType === 'HW') {
                     nav.push('/analysis/handwriting/processing');
                     return;

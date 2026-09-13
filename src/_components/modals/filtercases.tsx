@@ -53,7 +53,11 @@ export default function FilterCasesModal({ visible, onClose, cases, onApply }: F
 		let filteredCases = [...cases];
 
 		if (verdictValue && verdictValue !== 'All') {
-			filteredCases = filteredCases.filter((item) => item.status === verdictValue);
+			filteredCases = filteredCases.filter((item) =>
+				verdictValue === 'Processing'
+					? item.workflowStatus === 'Processing'
+					: item.status === verdictValue,
+			);
 		}
 
 		if (priorityValue && priorityValue !== 'All') {

@@ -58,6 +58,7 @@ function stripFingerprintSuffix(uri: string): string {
 export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type AnalysisType = 'SIG' | 'HW' | 'DOC';
 export type CaseStatus = 'Processing' | 'Genuine' | 'Suspected';
+export type CaseWorkflowStatus = 'Processing' | 'PendingReview' | 'Reviewed';
 export type DraftUploadType = 'reference' | 'suspect';
 export type PendingCardStatus = 'draft' | 'processing' | 'result-ready';
 
@@ -92,6 +93,7 @@ export interface DraftCase {
 export interface SavedCase extends DraftCase {
   createdAt: string;
   status: CaseStatus;
+  workflowStatus: CaseWorkflowStatus;
   analysisType: AnalysisType;
   resultViewed?: boolean;
   caseCode?: string; 
@@ -198,11 +200,7 @@ async function parseBackendError(response: Response, fallback: string): Promise<
   }
 }
 
-const BACKEND_STATUS_MAP: Record<CaseStatus, string> = {
-  Processing: 'Processing',
-  Genuine: 'Genuine',
-  Suspected: 'Suspected',
-};
+const BACKEND_ANALYSIS_COMPLETE_STATUS: CaseWorkflowStatus = 'PendingReview';
 const PRIORITY_MAP: Record<AnalysisPriority, number> = {
   Low: 0, Medium: 1, High: 2, Urgent: 3,
 };
@@ -286,7 +284,13 @@ export const useCaseStore = create<CaseStore>()(
               [caseId]: result,
             },
             cases: state.cases.map((item) =>
-              item.caseId === caseId ? { ...item, status: getSignatureAnalysisCaseStatus(result) } : item,
+              item.caseId === caseId
+                ? {
+                    ...item,
+                    status: getSignatureAnalysisCaseStatus(result),
+                    workflowStatus: BACKEND_ANALYSIS_COMPLETE_STATUS,
+                  }
+                : item,
             ),
           }));
         },
@@ -502,6 +506,7 @@ export const useCaseStore = create<CaseStore>()(
                 caseCode: caseCode ?? caseId,
                 createdAt: new Date().toISOString(),
                 status: 'Processing',
+                workflowStatus: 'Processing',
                 analysisType: DEFAULT_ANALYSIS_TYPE,
                 resultViewed: false,
               };
@@ -656,6 +661,7 @@ export const useCaseStore = create<CaseStore>()(
 
             let analysisResult: any = null;
             let finalStatus: CaseStatus = 'Processing';
+            let workflowStatus: CaseWorkflowStatus = 'Processing';
 
             if (analysisRes.ok) {
               try {
@@ -683,6 +689,7 @@ export const useCaseStore = create<CaseStore>()(
 
                 if (verdict) {
                   finalStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+                  workflowStatus = BACKEND_ANALYSIS_COMPLETE_STATUS;
                 }
 
                 analysisResult = {
@@ -702,10 +709,10 @@ export const useCaseStore = create<CaseStore>()(
               }
             }
 
-            if (finalStatus !== 'Processing') {
+            if (workflowStatus === BACKEND_ANALYSIS_COMPLETE_STATUS) {
               try {
-                await fetch(
-                  buildApiUrl(`${API_ENDPOINTS.cases.updateStatus(caseId)}?status=${BACKEND_STATUS_MAP[finalStatus]}`),
+                const statusResponse = await fetch(
+                  buildApiUrl(`${API_ENDPOINTS.cases.updateStatus(caseId)}?status=${workflowStatus}`),
                   {
                     method: 'PATCH',
                     headers: {
@@ -715,6 +722,9 @@ export const useCaseStore = create<CaseStore>()(
                     },
                   },
                 );
+                if (!statusResponse.ok) {
+                  throw new Error(`Case workflow status update failed (${statusResponse.status})`);
+                }
               } catch (statusError) {
                 caseLog.warn('CaseStore:Submit', 'Unable to persist case status to backend', statusError);
               }
@@ -729,6 +739,7 @@ export const useCaseStore = create<CaseStore>()(
               caseCode: caseCode ?? caseId,
               createdAt: new Date().toISOString(),
               status: finalStatus,
+              workflowStatus,
               analysisType: DEFAULT_ANALYSIS_TYPE,
               resultViewed: false,
             };
@@ -860,6 +871,7 @@ export const useCaseStore = create<CaseStore>()(
             }
 
             const finalStatus: CaseStatus = verdict === 'FORGED' ? 'Suspected' : 'Genuine';
+            const workflowStatus: CaseWorkflowStatus = BACKEND_ANALYSIS_COMPLETE_STATUS;
 
             const analysisResult: SignatureAnalysisResult = {
               case_name: processResponse?.CaseName ?? processResponse?.case_name ?? caseId,
@@ -873,8 +885,8 @@ export const useCaseStore = create<CaseStore>()(
             };
 
             try {
-              await fetch(
-                buildApiUrl(`${API_ENDPOINTS.cases.updateStatus(caseId)}?status=${BACKEND_STATUS_MAP[finalStatus]}`),
+              const statusResponse = await fetch(
+                buildApiUrl(`${API_ENDPOINTS.cases.updateStatus(caseId)}?status=${workflowStatus}`),
                 {
                   method: 'PATCH',
                   headers: {
@@ -884,12 +896,19 @@ export const useCaseStore = create<CaseStore>()(
                   },
                 },
               );
+              if (!statusResponse.ok) {
+                throw new Error(`Case workflow status update failed (${statusResponse.status})`);
+              }
             } catch (statusError) {
               caseLog.warn('CaseStore:Retry', 'Unable to persist case status to backend', statusError);
             }
 
             set((state) => ({
-              cases: state.cases.map((item) => (item.caseId === caseId ? { ...item, status: finalStatus } : item)),
+              cases: state.cases.map((item) =>
+                item.caseId === caseId
+                  ? { ...item, status: finalStatus, workflowStatus }
+                  : item,
+              ),
               signatureAnalysisResults: {
                 ...state.signatureAnalysisResults,
                 [caseId]: analysisResult,
@@ -941,7 +960,10 @@ export const useCaseStore = create<CaseStore>()(
         return {
           ...currentState,
           ...persisted,
-          cases: persisted.cases,
+          cases: persisted.cases.map((item) => ({
+            ...item,
+            workflowStatus: item.workflowStatus ?? (item.status === 'Processing' ? 'Processing' : 'PendingReview'),
+          })),
           signatureAnalysisResults: persisted.signatureAnalysisResults ?? currentState.signatureAnalysisResults,
           processingJobs: persisted.processingJobs ?? currentState.processingJobs,
         };
@@ -1043,7 +1065,7 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
   }
 
   cases.forEach((item) => {
-    if (item.status === 'Processing') {
+    if (item.workflowStatus === 'Processing') {
       pendingCards.push({
         id: item.caseId,
         caseCode: item.caseCode ?? item.caseId,
@@ -1054,7 +1076,7 @@ export function getPendingCards(cases: SavedCase[], draft: DraftCase): PendingCa
       });
     }
 
-    if (item.status !== 'Processing' && !item.resultViewed) {
+    if (item.workflowStatus !== 'Processing' && !item.resultViewed) {
       pendingCards.push({
         id: item.caseId,
         caseCode: item.caseCode ?? item.caseId,

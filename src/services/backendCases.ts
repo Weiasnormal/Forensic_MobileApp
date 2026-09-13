@@ -1,7 +1,13 @@
 import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
 import { getAuthHeader, handleUnauthorizedResponse } from '@/store/authStore';
 
-import type { AnalysisPriority, AnalysisType, CaseStatus, SavedCase } from '@/store/caseStore';
+import type {
+  AnalysisPriority,
+  AnalysisType,
+  CaseStatus,
+  CaseWorkflowStatus,
+  SavedCase,
+} from '@/store/caseStore';
 
 type BackendCaseRecord = {
   id?: string;
@@ -12,9 +18,11 @@ type BackendCaseRecord = {
   DocumentType?: string;
   priority?: AnalysisPriority;
   createdAt?: string;
-  caseStatus?: CaseStatus;
+  caseStatus?: unknown;
   analysisType?: AnalysisType;
   isDeleted?: boolean;
+  mlResponse?: unknown;
+  finalVerdict?: unknown;
 };
 
 const DEFAULT_DOCUMENT_TYPE = 'Bank cheque';
@@ -23,22 +31,42 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function normalizeCaseStatus(value: unknown): CaseStatus {
+function normalizeWorkflowStatus(value: unknown): CaseWorkflowStatus {
   if (value === 0 || value === '0') {
     return 'Processing';
   }
 
   if (value === 1 || value === '1') {
-    return 'Suspected';
+    return 'PendingReview';
   }
 
   if (value === 2 || value === '2') {
+    return 'Reviewed';
+  }
+
+  if (value === 'Processing' || value === 'PendingReview' || value === 'Reviewed') {
+    return value;
+  }
+
+  return 'Processing';
+}
+
+function normalizeVerdict(record: BackendCaseRecord): CaseStatus {
+  const mlResponse = isRecord(record.mlResponse) ? record.mlResponse : null;
+  const rawVerdict = mlResponse?.verdict ?? mlResponse?.Verdict;
+  const finalVerdict = record.finalVerdict;
+
+  // A supervisor's final verdict is the only value allowed to override the ML verdict.
+  if (finalVerdict === 2 || finalVerdict === '2' || finalVerdict === 'Forged') {
+    return 'Suspected';
+  }
+
+  if (finalVerdict === 1 || finalVerdict === '1' || finalVerdict === 'Genuine') {
     return 'Genuine';
   }
 
-  if (value === 'Processing' || value === 'Genuine' || value === 'Suspected') {
-    return value as CaseStatus;
-  }
+  if (rawVerdict === 'FORGED' || rawVerdict === 'Forged') return 'Suspected';
+  if (rawVerdict === 'GENUINE' || rawVerdict === 'Genuine') return 'Genuine';
 
   return 'Processing';
 }
@@ -96,6 +124,8 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     return null;
   }
 
+  const workflowStatus = normalizeWorkflowStatus(record.caseStatus);
+
   return {
     caseId,
     caseCode: caseCode || caseId,
@@ -108,9 +138,10 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
       suspect: null,
     },
     createdAt: record.createdAt,
-    status: normalizeCaseStatus(record.caseStatus),
+    status: workflowStatus === 'Processing' ? 'Processing' : normalizeVerdict(record),
+    workflowStatus,
     analysisType: normalizeAnalysisType(record.analysisType),
-    resultViewed: normalizeCaseStatus(record.caseStatus) !== 'Processing' ? false : undefined,
+    resultViewed: workflowStatus !== 'Processing' ? false : undefined,
   };
 }
 

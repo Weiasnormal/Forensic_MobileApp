@@ -24,7 +24,7 @@ export default function UserStatsScreen() {
         accumulator.total += 1;
         accumulator.genuine += item.status === 'Genuine' ? 1 : 0;
         accumulator.suspected += item.status === 'Suspected' ? 1 : 0;
-        accumulator.processing += item.status === 'Processing' ? 1 : 0;
+        accumulator.processing += item.workflowStatus === 'Processing' ? 1 : 0;
         accumulator.documentTypeCounts[item.documentType] =
           (accumulator.documentTypeCounts[item.documentType] || 0) + 1;
         return accumulator;

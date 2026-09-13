@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -16,12 +16,16 @@ import { findOverlayImage, REFERENCE_SLOTS, getSignatureAnalysisCaseStatus, getS
     type SignatureAnalysisViewMode,
     type OverlayVariant,
 } from '@/services/signatureAnalysis';
-import { API_ENDPOINTS, buildApiUrl, API_KEY } from '../../../constants/api';
+import { API_ENDPOINTS, buildApiUrl, API_KEY, NOTIFICATION_HUB_URL } from '../../../constants/api';
 import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
 import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
-import { getAuthHeader } from '@/store/authStore';
+import { getAuthHeader, useAuthStore} from '@/store/authStore';
 import ErrorModal from '@/_components/modals/error_modal';
 import { useUser } from '@/store/userStore';
+
+import VerdictCard from '@/_components/common/VerdIctCard';
+import { fetchCaseForReview, FinalVerdict, type AdminCaseDetail } from '@/services/caseReviewApi';
+import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
 
 const getAuthImageSource = (uri?: string | null) => {
   if (!uri) return undefined;
@@ -104,6 +108,50 @@ export function SignatureResultsScreen() {
 
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
+  const [reviewDetail, setReviewDetail] = useState<AdminCaseDetail | null>(null);
+
+  const loadReviewDetail = useCallback(async () => {
+    if (!currentCaseId) return;
+    try {
+      const detail = await fetchCaseForReview(currentCaseId);
+      setReviewDetail(detail);
+    } catch (error) {
+      // Non-fatal - the screen still works fine without supervisor review data.
+      console.warn('Unable to load supervisor review status:', error);
+    }
+  }, [currentCaseId]);
+
+  useEffect(() => {
+    loadReviewDetail();
+  }, [loadReviewDetail]);
+
+  useEffect(() => {
+    if (!currentCaseId) return;
+
+    const connection: HubConnection = new HubConnectionBuilder()
+      .withUrl(NOTIFICATION_HUB_URL, {
+        accessTokenFactory: () => useAuthStore.getState().accessToken ?? '',
+      })
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Warning)
+      .build();
+
+    connection.on('CaseReviewCompleted', (notification: { caseId: string }) => {
+      if (notification?.caseId === currentCaseId) {
+        loadReviewDetail();
+      }
+    });
+
+    connection.start().catch((error) => {
+      console.warn('Unable to connect to notification hub:', error);
+    });
+
+    return () => {
+      if (connection.state !== HubConnectionState.Disconnected) {
+        connection.stop().catch(() => {});
+      }
+    };
+  }, [currentCaseId, loadReviewDetail]);
 
   const safeCaseId = String(currentCaseId).trim();
   const analysisResult = useCaseStore((state) =>
@@ -161,12 +209,12 @@ export function SignatureResultsScreen() {
   }, [currentCase, suspectOverlayUri, referenceOverlayUris]);
 
   useEffect(() => {
-    if (currentCase?.status === 'Processing') {
+    if (currentCase?.workflowStatus === 'Processing') {
       nav.replace({ pathname: '/analysis/signature/processing', params: { caseId: currentCaseId ?? undefined } });
     }
-  }, [currentCase?.status, currentCaseId, nav]);
+  }, [currentCase?.workflowStatus, currentCaseId, nav]);
 
-  if (currentCase?.status === 'Processing') return null;
+  if (currentCase?.workflowStatus === 'Processing') return null;
 
   // SAFETY CHECK
   if (!analysisResult) {
@@ -190,6 +238,22 @@ export function SignatureResultsScreen() {
 
   const { verdictLabel, isSuspected, confidence: confidenceValue } =
     resolveCaseVerdict(currentCase, activeResult);
+
+  const isCaseReviewed =
+    reviewDetail?.finalVerdict !== null &&
+    reviewDetail?.finalVerdict !== undefined &&
+    reviewDetail.finalVerdict !== FinalVerdict.None;
+
+  const mlVerdictRaw = reviewDetail?.mlResponse?.verdict?.toUpperCase();
+  const originalVerdictLabel =
+    mlVerdictRaw === 'FORGED' ? 'SUSPECTED' : mlVerdictRaw === 'GENUINE' ? 'GENUINE' : verdictLabel;
+
+  const newVerdictLabel =
+    reviewDetail?.finalVerdict === FinalVerdict.Genuine
+      ? 'GENUINE'
+      : reviewDetail?.finalVerdict === FinalVerdict.Forged
+        ? 'SUSPECTED'
+        : undefined;
 
   const resultCardTheme = isSuspected
     ? {
@@ -446,6 +510,22 @@ export function SignatureResultsScreen() {
             })}
           </View>
         </View>
+
+        {reviewDetail ? (
+          <View>
+            <Text style={styles.findingsTitle}>Supervisor Review</Text>
+            <View style={{ marginTop: 8 }}>
+              <VerdictCard
+                status={isCaseReviewed ? 'updated' : 'pending'}
+                supervisorName="Supervisor"
+                originalVerdict={originalVerdictLabel}
+                newVerdict={newVerdictLabel}
+                date={reviewDetail.reviewedAt ? new Date(reviewDetail.reviewedAt).toLocaleDateString() : undefined}
+                reviewNote={reviewDetail.reviewNote ?? undefined}
+              />
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
 
         <KeyFindingsModal

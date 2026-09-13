@@ -143,7 +143,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 	const goToCaseDestination = (item: SavedCase) => {
 		setActiveSignatureCaseId(item.caseId);
 
-		if (item.status === 'Processing') {
+		if (item.workflowStatus === 'Processing') {
 			if (item.analysisType === 'HW') {
 				nav.push('/analysis/handwriting/processing');
 				return;
