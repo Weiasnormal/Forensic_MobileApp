@@ -57,6 +57,7 @@ function stripFingerprintSuffix(uri: string): string {
 
 export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type AnalysisType = 'SIG' | 'HW' | 'DOC';
+export type DocumentType = 'Bank cheque' | 'Property deed' | 'Last will' | 'Contract' | 'Affidavit' | 'Other';
 export type CaseStatus = 'Processing' | 'Genuine' | 'Suspected';
 export type CaseWorkflowStatus = 'Processing' | 'PendingReview' | 'Reviewed';
 export type DraftUploadType = 'reference' | 'suspect';
@@ -85,7 +86,8 @@ export interface DraftCase {
   caseId: string;
   subjectName: string;
   examiner: string;
-  documentType: string;
+  documentType: DocumentType;
+  otherDocumentType: string;
   priority: AnalysisPriority;
   uploads: DraftUploads;
 }
@@ -104,7 +106,7 @@ export interface SavedCase extends DraftCase {
   examiner: string;
 }
 
-type DraftEditableField = 'subjectName' | 'examiner' | 'documentType' | 'priority';
+type DraftEditableField = 'subjectName' | 'examiner' | 'documentType' | 'otherDocumentType' | 'priority';
 
 interface CaseStore {
   cases: SavedCase[];
@@ -140,7 +142,15 @@ interface CaseStore {
   resetSubmissionState: () => void;
 }
 
-const DEFAULT_DOCUMENT_TYPE = 'Bank cheque';
+export const DEFAULT_DOCUMENT_TYPE: DocumentType = 'Bank cheque';
+const DOCUMENT_TYPE_MAP: Record<DocumentType, number> = {
+  'Bank cheque': 0,
+  'Property deed': 1,
+  'Last will': 2,
+  Contract: 3,
+  Affidavit: 4,
+  Other: 5,
+};
 const DEFAULT_PRIORITY: AnalysisPriority = 'Medium';
 const STORAGE_KEY = 'avera_case_store_v2';
 
@@ -160,6 +170,7 @@ function createDraftCase(caseId: string): DraftCase {
     subjectName: '',
     examiner: '',
     documentType: DEFAULT_DOCUMENT_TYPE,
+    otherDocumentType: '',
     priority: DEFAULT_PRIORITY,
     uploads: {
       references: [null, null, null, null],
@@ -441,7 +452,7 @@ export const useCaseStore = create<CaseStore>()(
           try {
             const createRequest = {
               SubjectName: currentDraft.subjectName,
-              DocumentType: currentDraft.documentType,
+              DocumentType: DOCUMENT_TYPE_MAP[currentDraft.documentType],
               Priority: PRIORITY_MAP[currentDraft.priority],
               AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
             };

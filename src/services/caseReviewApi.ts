@@ -1,6 +1,6 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
 import { getAuthHeader, handleUnauthorizedResponse } from '@/store/authStore';
-import type { AnalysisPriority, AnalysisType } from '@/store/caseStore';
+import type { AnalysisPriority, DocumentType } from '@/store/caseStore';
 
 /** Mirrors Avera.Domain/Cases/FinalVerdict.cs — do not reorder, values match backend exactly. */
 export enum FinalVerdict {
@@ -24,10 +24,16 @@ export interface MLResponseDto {
   confidenceForged: number;
   confidenceGenuine: number;
   distance: number;
-  gradcamBlobId: string[];
+  gradCamResults: GradCamDto[];
   threshold: number;
   /** Raw ML service verdict string, e.g. "GENUINE" | "FORGED". */
   verdict: string;
+}
+
+export interface GradCamDto {
+  slot: string;
+  variant: string;
+  imageId: string;
 }
 
 /** Mirrors Avera.Application/Cases/CaseDto.cs */
@@ -39,7 +45,8 @@ export interface AdminCaseDetail {
   priority: AnalysisPriority;
   createdAt: string;
   caseStatus: CaseWorkflowStatus;
-  analysisType: AnalysisType;
+  documentType: DocumentType;
+  otherDocumentType: string;
   isDeleted: boolean;
   mlResponse: MLResponseDto | null;
   reviewedByUserId: string | null;
@@ -95,10 +102,13 @@ function normalizeFinalVerdict(value: unknown): FinalVerdict | null {
   return null;
 }
 
-function normalizeAnalysisType(value: unknown): AnalysisType {
-  if (value === 1 || value === '1' || value === 'HW') return 'HW';
-  if (value === 2 || value === '2' || value === 'DOC') return 'DOC';
-  return 'SIG';
+function normalizeDocumentType(value: unknown): DocumentType {
+  if (value === 0 || value === '0' || value === 'BankCheque' || value === 'Bank cheque') return 'Bank cheque';
+  if (value === 1 || value === '1' || value === 'PropertyDeed' || value === 'Property deed') return 'Property deed';
+  if (value === 2 || value === '2' || value === 'LastWill' || value === 'Last will') return 'Last will';
+  if (value === 3 || value === '3' || value === 'Contract') return 'Contract';
+  if (value === 4 || value === '4' || value === 'Affidavit') return 'Affidavit';
+  return 'Other';
 }
 
 function normalizePriority(value: unknown): AnalysisPriority {
@@ -119,14 +129,21 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     priority: normalizePriority(raw?.priority ?? raw?.Priority),
     createdAt: raw?.createdAt ?? raw?.CreatedAt ?? '',
     caseStatus: normalizeWorkflowStatus(raw?.caseStatus ?? raw?.CaseStatus),
-    analysisType: normalizeAnalysisType(raw?.analysisType ?? raw?.AnalysisType),
+    documentType: normalizeDocumentType(raw?.documentType ?? raw?.DocumentType ?? raw?.analysisType ?? raw?.AnalysisType),
+    otherDocumentType: String(raw?.optionalDocumentType ?? raw?.OptionalDocumentType ?? ''),
     isDeleted: Boolean(raw?.isDeleted ?? raw?.IsDeleted),
     mlResponse: mlRaw
       ? {
           confidenceForged: Number(mlRaw.confidenceForged ?? mlRaw.ConfidenceForged ?? 0),
           confidenceGenuine: Number(mlRaw.confidenceGenuine ?? mlRaw.ConfidenceGenuine ?? 0),
           distance: Number(mlRaw.distance ?? mlRaw.Distance ?? 0),
-          gradcamBlobId: mlRaw.gradcamBlobId ?? mlRaw.GradcamBlobId ?? [],
+          gradCamResults: Array.isArray(mlRaw.gradCamResults ?? mlRaw.GradCamResults)
+            ? (mlRaw.gradCamResults ?? mlRaw.GradCamResults).map((item: any) => ({
+                slot: String(item?.slot ?? item?.Slot ?? ''),
+                variant: String(item?.variant ?? item?.Variant ?? ''),
+                imageId: String(item?.imageId ?? item?.ImageId ?? ''),
+              }))
+            : [],
           threshold: Number(mlRaw.threshold ?? mlRaw.Threshold ?? 0),
           verdict: String(mlRaw.verdict ?? mlRaw.Verdict ?? ''),
         }

@@ -18,6 +18,7 @@ import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
 import { useAuthStore } from '@/store/authStore';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { getNotificationsEnabledPreference, setNotificationsEnabledPreference } from '@/services/processingNotifications';
+import NotificationBell from '@/_components/common/NotificationBell';
 
 const TAB_KEYS: AdminTabKey[] = ['home', 'cases', 'team', 'stats', 'profile'];
 
@@ -128,12 +129,15 @@ export default function AdminDashboard() {
 							<Text style={styles.homeOrgText}>{user?.organization || 'PNP Crime Laboratory'}</Text>
 							<Text style={styles.homeGreeting}>Hello, Admin {user?.lastName}</Text>
 						</View>
-						<View style={styles.homeAvatarCircle}>
+						<View style={styles.homeHeaderActions}>
+							<NotificationBell />
+							<View style={styles.homeAvatarCircle}>
 							{user && user.avatarUri ? (
 								<Image source={{ uri: user.avatarUri }} style={{ width: 44, height: 44, borderRadius: 22 }} />
 							) : (
 								<Text style={styles.homeAvatarText}>{getInitials(user?.firstName || '', user?.lastName || '')}</Text>
 							)}
+							</View>
 						</View>
 					</View>
 				</View>
@@ -308,6 +312,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
+	},
+	homeHeaderActions: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
 	},
 	homeGreeting: {
 		color: colors.textPrimary,

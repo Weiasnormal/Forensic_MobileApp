@@ -8,7 +8,7 @@ import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CaseCard from '../../_components/caseCards';
 import PendingCard from '../../_components/pendingCards';
-import { formatAnalysisTypeLabel, getPendingCards, type SavedCase, useCaseStore } from '../../store/caseStore';
+import { getPendingCards, type SavedCase, useCaseStore } from '../../store/caseStore';
 import Navbar, { type TabKey } from '../_navbar/nav_bar';
 import ProfileScreen from './user_profile';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
@@ -18,6 +18,7 @@ import { getTypographyStyle } from '@/constants/typography';
 import EmptyState from '@/_components/common/EmptyState';
 import ListSectionHeader from '@/_components/common/ListSectionHeader';
 import { useAdminStore } from '@/store/adminStore';
+import NotificationBell from '@/_components/common/NotificationBell';
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
 
@@ -92,7 +93,9 @@ export default function UserDashboardScreen() {
                 Hello, Analyst {user?.lastName}
               </Text>
 						</View>
-						<View style={styles.homeAvatarCircle}>
+						<View style={styles.homeHeaderActions}>
+							<NotificationBell />
+							<View style={styles.homeAvatarCircle}>
 							{user && user.avatarUri ? (
 								<Image source={{ uri: user.avatarUri }} style={styles.homeAvatarImage} />
 							) : (
@@ -100,6 +103,7 @@ export default function UserDashboardScreen() {
 									{getInitials(user?.firstName || '', user?.lastName || '')}
 								</Text>
 							)}
+							</View>
 						</View>
 					</View>
 				</View>
@@ -228,9 +232,9 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 								key={item.caseId}
 								caseCode={item.caseCode ?? item.caseId}
 								createdAt={item.createdAt}
-								type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
+								type={`${item.documentType} • `}
 								priority={item.priority}
-								name={`${item.examiner} · ${formatAnalysisTypeLabel(item.analysisType)}`}
+								name={`${item.examiner} · ${item.documentType}`}
 								status={item.status}
 								onPress={() => goToCaseDestination(item)}
 							/>
@@ -277,6 +281,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
+	},
+	homeHeaderActions: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
 	},
 	homeGreeting: {
 		...getTypographyStyle('t2Title'),

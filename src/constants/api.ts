@@ -64,4 +64,9 @@ export const API_ENDPOINTS = {
     getBlobImage: (caseId: string, imageId: string) =>
       `/cases/${caseId}/images/${imageId}`,
   },
+  notifications: {
+    list: '/notifications/',
+    markAsRead: (notificationId: string) => `/notifications/${notificationId}/read`,
+    markAllAsRead: '/notifications/read-all',
+  },
 } as const;
