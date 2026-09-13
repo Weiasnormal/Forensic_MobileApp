@@ -1,25 +1,10 @@
-// Admin-specific endpoints, kept separate from constants/api.ts so we don't
-// touch the existing analyst-facing endpoint map.
-//
-// NOTE: None of these routes exist yet on the backend (Avera.WebApi/Endpoints/Admin/
-// is currently an empty folder). The store built against these endpoints will
-// fail gracefully (empty state) until the corresponding IEndpoint handlers are
-// added server-side. Suggested shape for the backend team:
-//
-//   GET    /tenant/members             -> list of { id, firstName, lastName, email, role, status, casesHandled, createdAt }
-//   POST   /admin/team/{id}/approve    -> approve a pending analyst signup
-//   POST   /admin/team/{id}/reject     -> deny a pending analyst signup
-//   POST   /admin/team/{id}/suspend    -> suspend/deactivate a team member
-//   POST   /admin/team/invite          -> generate a new invite code, returns { code }
-//   GET    /admin/organization         -> org profile/settings
-//   PUT    /admin/organization         -> update org profile/settings
+// Admin and tenant routes are kept separate from the analyst-facing endpoint map.
 
 export const ADMIN_API_ENDPOINTS = {
   team: {
     list: '/tenant/members',
     getById: (id: string) => `/tenant/members/${id}`,
     remove: (id: string) => `/tenant/members/${id}`,
-
     
   },
   memberRequests: {

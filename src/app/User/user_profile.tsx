@@ -46,7 +46,6 @@ export default function UserProfileScreen() {
 
 	const [showDefaultResultViewModal, setShowDefaultResultViewModal] = useState(false);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 	const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
 	const hiddenSavedCases = useCaseStore((s) => s.hiddenSavedCases);
@@ -75,14 +74,6 @@ export default function UserProfileScreen() {
 
 	useFeedbackStore.getState().showToast(
 		value ? 'Notifications enabled' : 'Notifications disabled',
-		'successLight',
-	);
-	};
-
-	const handleToggleAutoExport = (value: boolean) => {
-	setAutoExportEnabled(value);
-	useFeedbackStore.getState().showToast(
-		value ? 'Auto-export reports enabled' : 'Auto-export reports disabled',
 		'successLight',
 	);
 	};
@@ -144,13 +135,6 @@ export default function UserProfileScreen() {
 							: 'Heatmap'}
 						onPress={() => setShowDefaultResultViewModal(true)}
 						/>
-					<Divider />
-					<ToggleRow
-						icon={Upload}
-						title="Auto-Export Reports"
-						value={autoExportEnabled}
-						onValueChange={handleToggleAutoExport}
-					/>
 				</GroupedCard>
 
 				<SectionLabel label="About" />

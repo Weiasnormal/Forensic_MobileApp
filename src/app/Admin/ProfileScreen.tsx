@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Lock, Briefcase, Copy, Users, BarChart3, Bell, Upload, Info, FileText, UserX } from 'lucide-react-native';
+import { User, Lock, Briefcase, Copy, Users, BarChart3, Bell, Info, FileText, UserX } from 'lucide-react-native';
 import SectionLabel from '@/_components/common/SectionLabel';
 import GroupedCard from '@/_components/common/GroupedCard';
 import SettingsRow from '@/_components/common/SettingsRow';
@@ -29,7 +29,6 @@ interface ProfileScreenProps {
   organization: string;
   appVersion: string;
   notificationsEnabled: boolean;
-  autoExportEnabled: boolean;
   onEditProfilePress?: () => void;
   onChangePasswordPress?: () => void;
   onOrganizationPress?: () => void;
@@ -37,7 +36,6 @@ interface ProfileScreenProps {
   onManageTeamPress?: () => void;
   onOrganizationStatsPress?: () => void;
   onToggleNotifications?: (value: boolean) => void;
-  onToggleAutoExport?: (value: boolean) => void;
   onHelpSupportPress?: () => void;
   onSignOutPress?: () => void;
 }
@@ -49,7 +47,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   organization,
   appVersion,
   notificationsEnabled,
-  autoExportEnabled,
   onEditProfilePress,
   onChangePasswordPress,
   onOrganizationPress,
@@ -57,7 +54,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onManageTeamPress,
   onOrganizationStatsPress,
   onToggleNotifications,
-  onToggleAutoExport,
   onHelpSupportPress,
   onSignOutPress,
 }) => {
@@ -126,13 +122,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             title="Notifications"
             value={notificationsEnabled}
             onValueChange={onToggleNotifications}
-          />
-          <Divider />
-          <ToggleRow
-            icon={Upload}
-            title="Auto-Export Reports"
-            value={autoExportEnabled}
-            onValueChange={onToggleAutoExport}
           />
         </GroupedCard>
 

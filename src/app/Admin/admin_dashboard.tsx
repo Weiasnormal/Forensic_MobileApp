@@ -39,7 +39,6 @@ export default function AdminDashboard() {
 	const insets = useSafeAreaInsets();
 	const [activeTab, setActiveTab] = useState<AdminTabKey>(resolveTabValue(params.tab));
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-	const [autoExportEnabled, setAutoExportEnabled] = useState(false);
 
 	const { user, load, setUser } = useUser();
 	const cases = useCaseStore((state) => state.cases);
@@ -118,13 +117,6 @@ export default function AdminDashboard() {
 	);
 	};
 
-	const handleToggleAutoExport = (value: boolean) => {
-	setAutoExportEnabled(value);
-	useFeedbackStore.getState().showToast(
-		value ? 'Auto-export reports enabled' : 'Auto-export reports disabled',
-		'successLight',
-	);
-	};
 	return (
 		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
 			<ScreenStatusBar variant="onLight" />
@@ -178,7 +170,6 @@ export default function AdminDashboard() {
 					organization={user?.organization || 'PNP Crime Laboratory'}
 					appVersion="v1.0.0"
 					notificationsEnabled={notificationsEnabled}
-					autoExportEnabled={autoExportEnabled}
 					onEditProfilePress={() => router.push('/Admin/profileScreens/EditProfileScreen')}
 					onChangePasswordPress={() => router.push('/User/pages/ChangePasswordScreen')}
 					onOrganizationPress={() => router.push('/Admin/profileScreens/OrganizationScreen')}
@@ -186,7 +177,6 @@ export default function AdminDashboard() {
 					onManageTeamPress={() => setActiveTab('team')}
 					onOrganizationStatsPress={() => setActiveTab('stats')}
 					onToggleNotifications={handleToggleNotifications}
-					onToggleAutoExport={handleToggleAutoExport}
 					onHelpSupportPress={() => router.push('/Admin/profileScreens/HelpSupportScreen')}
 					onSignOutPress={async () => {
 						await useAuthStore.getState().logout();

@@ -30,13 +30,8 @@ export const API_ENDPOINTS = {
     google: '/auth/google',
     verifySignupCode: '/auth/verify-email',
 
-    //wala sa backend
-    resendSignupCode: '/auth/refresh',
     verifyResetCode: '/auth/password/verify-code',
     verifyEmail: '/auth/verify-email',
-    refresh: '/auth/refresh',
-    validateInviteCode: (code: string) => `/auth/validate-invite-code/${code}`,
-    registerAdmin: '/auth/register-admin',
     joinInviteCode: '/auth/join-invite-code',
     
   },
@@ -48,23 +43,13 @@ export const API_ENDPOINTS = {
 
     updateStatus: (caseId: string) => `/cases/${caseId}/status`,
     delete: (caseId: string) => `/cases/${caseId}`,
-    listDrafts: '/cases/drafts',
-    createDraft: '/cases/drafts',
-    updateDraft: (caseId: string) => `/cases/drafts/${caseId}`,
-    deleteDraft: (caseId: string) => `/cases/drafts/${caseId}`,
-
     review: (caseId: string) => `/cases/${caseId}/review`,
-
-    // wala sa backend
-    markResultViewed: (caseId: string) => `/cases/${caseId}/result-viewed`,
   },
   signatures: {
     uploadReference: (caseId: string) => `/cases/${caseId}/signatures/reference`,
     uploadSuspected: (caseId: string) => `/cases/${caseId}/signatures/suspected`,
     getReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
     getSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
-
-    getAll: (caseId: string) => `/cases/${caseId}/signatures`, // wala sa backend
 
     deleteReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
     deleteSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,

@@ -127,7 +127,7 @@ export default function AdminCasesScreen() {
 				{showSearchFeedback ? (
 					<>
 						<Text style={styles.searchHint}>
-							Search covers case ID, subject, examiner, document type, priority, and analysis type across the whole organization.
+							Search covers case ID, subject, examiner, analysis type, and priority across the whole organization.
 						</Text>
 
 						<View style={styles.searchMetaRow}>
@@ -176,7 +176,7 @@ export default function AdminCasesScreen() {
 					<Ionicons name="search-outline" size={34} color={colors.label} />
 					<Text style={styles.emptySearchTitle}>No matching cases</Text>
 					<Text style={styles.emptySearchText}>
-						Try a case ID, subject, examiner, document type, priority, or analysis type.
+						Try a case ID, subject, examiner, analysis type, or priority.
 					</Text>
 					<TouchableOpacity style={styles.clearSearchButtonLarge} activeOpacity={0.88} onPress={() => setQuery('')}>
 						<Text style={styles.clearSearchTextLarge}>Clear search</Text>

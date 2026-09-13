@@ -230,7 +230,7 @@ function HomeTab({ onStartAnalysis, cases, onViewAllPress }: { onStartAnalysis: 
 								createdAt={item.createdAt}
 								type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
 								priority={item.priority}
-								name={`${item.examiner} · ${item.documentType}`}
+								name={`${item.examiner} · ${formatAnalysisTypeLabel(item.analysisType)}`}
 								status={item.status}
 								onPress={() => goToCaseDestination(item)}
 							/>

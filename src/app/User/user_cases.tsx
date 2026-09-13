@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CaseCard from '../../_components/caseCards';
 import FilterCasesModal from '../../_components/modals/filtercases';
@@ -34,6 +35,13 @@ export default function UserCasesScreen() {
 	} | null>(null);
 	const cases = useCaseStore((state) => state.cases);
 	const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
+	const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend);
+
+	useFocusEffect(
+		useCallback(() => {
+			void refreshCasesFromBackend();
+		}, [refreshCasesFromBackend]),
+	);
 
 	useEffect(() => {
 		const debounceId = setTimeout(() => {
@@ -197,7 +205,7 @@ export default function UserCasesScreen() {
               createdAt={item.createdAt}
               type={`${formatAnalysisTypeLabel(item.analysisType)} • `}
               priority={item.priority}
-              name={`${item.subjectName} · ${item.documentType}`}
+							name={`${item.subjectName} · ${formatAnalysisTypeLabel(item.analysisType)}`}
               status={item.status}
               onPress={() => {
                 setActiveSignatureCaseId(item.caseId);

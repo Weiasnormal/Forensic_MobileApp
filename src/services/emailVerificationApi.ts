@@ -1,9 +1,9 @@
 import { buildApiUrl, API_KEY, API_ENDPOINTS } from '@/constants/api';
 import { getAuthHeader } from '@/store/authStore';
 
-export async function sendVerificationEmail(): Promise<{ ok: boolean }> {
+export async function sendVerificationEmail(email: string): Promise<{ ok: boolean }> {
   try {
-    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.verifySignupCode), {
+    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -11,6 +11,7 @@ export async function sendVerificationEmail(): Promise<{ ok: boolean }> {
         'X-Api-Key': API_KEY || '',
         ...getAuthHeader(),
       },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
     });
     return { ok: res.ok };
   } catch {
