@@ -53,6 +53,8 @@ export const API_ENDPOINTS = {
     updateDraft: (caseId: string) => `/cases/drafts/${caseId}`,
     deleteDraft: (caseId: string) => `/cases/drafts/${caseId}`,
 
+    review: (caseId: string) => `/cases/${caseId}/review`,
+
     // wala sa backend
     markResultViewed: (caseId: string) => `/cases/${caseId}/result-viewed`,
   },
