@@ -51,6 +51,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<UserProfile>(DEFAULT_USER);
   const authEmail = useAuthStore((state) => state.user?.email);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const isTokenExpired = useAuthStore((state) => state.isTokenExpired);
 
   const load = useCallback(async () => {
     const startTime = performance.now();
@@ -78,7 +79,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
-      if (!accessToken) {
+      if (!accessToken || isTokenExpired()) {
         setUserState({ ...DEFAULT_USER, avatarUri: localAvatarUri ?? null });
         return;
       }
@@ -97,7 +98,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       log.error('UserStore', 'Failed to load user profile', error);
       setUserState((prev) => ({ ...DEFAULT_USER, email: authEmail || '', avatarUri: prev.avatarUri }));
     }
-  }, [accessToken, authEmail]);
+  }, [accessToken, authEmail, isTokenExpired]);
 
   const persist = useCallback(async (next: UserProfile) => {
     const startTime = performance.now();
