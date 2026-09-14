@@ -23,6 +23,7 @@ export default function LogInPage() {
   const params = useLocalSearchParams<{ verifiedEmail?: string; role?: string }>();
   const [showPassword, setShowPassword] = useState(false);
   const login = useAuthStore((state) => state.login);
+  const logout = useAuthStore((state) => state.logout);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [signInError, setSignInError] = useState<string | null>(null);
   const [showVerifyEmail, setShowVerifyEmail] = useState(false);
@@ -31,6 +32,13 @@ export default function LogInPage() {
 
   function resolveRoleFromClaims(roles: string[] | undefined): AppRole {
     return (roles ?? []).some((r) => r.toLowerCase().includes('admin')) ? 'admin' : 'user';
+  }
+
+  function hasSupportedRole(roles: string[] | undefined): boolean {
+    return (roles ?? []).some((role) => {
+      const normalizedRole = role.toLowerCase();
+      return normalizedRole.includes('admin') || normalizedRole.includes('user') || normalizedRole.includes('analyst');
+    });
   }
 
   
@@ -63,7 +71,26 @@ export default function LogInPage() {
     const role = resolveRoleFromClaims(authUser?.roles);
     setResolvedRole(role);
 
-    const isFirstTime = authUser ? await isFirstLoginForUser(authUser.userId) : false;
+    const authState = useAuthStore.getState();
+    const hasValidSession = Boolean(authState.accessToken) && !authState.isTokenExpired();
+    const hasTenantMembership = Boolean(authUser?.tenantId?.trim());
+
+    if (!authUser?.userId || !hasSupportedRole(authUser.roles) || !hasValidSession) {
+      await logout();
+      router.replace('/_login/GetStarted');
+      return;
+    }
+
+    if (!hasTenantMembership) {
+      router.replace(
+        role === 'admin'
+          ? '/_login/_signup/OrganizationCreate'
+          : '/_login/_signup/PendingUser&Admin?role=user',
+      );
+      return;
+    }
+
+    const isFirstTime = await isFirstLoginForUser(authUser.userId);
     setWelcomeInfo({ isFirstTime });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
@@ -87,18 +114,32 @@ export default function LogInPage() {
   };
 
   const handleDismissWelcome = async () => {
-  const user = useAuthStore.getState().user;
+  const authState = useAuthStore.getState();
+  const user = authState.user;
+  const hasValidSession = Boolean(authState.accessToken) && !authState.isTokenExpired();
+  const hasTenantMembership = Boolean(user?.tenantId?.trim());
+
+  if (!user?.userId || !hasSupportedRole(user.roles) || !hasValidSession) {
+    setWelcomeInfo(null);
+    await logout();
+    router.replace('/_login/GetStarted');
+    return;
+  }
+
+  if (!hasTenantMembership) {
+    setWelcomeInfo(null);
+    router.replace(
+      resolvedRole === 'admin'
+        ? '/_login/_signup/OrganizationCreate'
+        : '/_login/_signup/PendingUser&Admin?role=user',
+    );
+    return;
+  }
+
   if (user) {
     await markUserAsSeen(user.userId);
   }
   setWelcomeInfo(null);
-  const isNewAdmin =
-    resolvedRole === 'admin' &&
-    !user?.tenantId;
-  if (isNewAdmin) {
-    router.replace('/_login/_signup/OrganizationCreate');
-    return;
-  }
   router.replace(ROLE_SETTINGS[resolvedRole].signIn.redirectTo);
 };
 
