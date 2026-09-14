@@ -19,11 +19,12 @@ import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 
 export default function LogInPage() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ verifiedEmail?: string }>();
+  const params = useLocalSearchParams<{ verifiedEmail?: string; role?: string }>();
   const [showPassword, setShowPassword] = useState(false);
   const login = useAuthStore((state) => state.login);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [showVerifyEmail, setShowVerifyEmail] = useState(false);
   const [welcomeInfo, setWelcomeInfo] = useState<{ isFirstTime: boolean } | null>(null);
   const [resolvedRole, setResolvedRole] = useState<AppRole>('user');
 
@@ -34,6 +35,7 @@ export default function LogInPage() {
   
   const {
     control,
+    getValues,
     handleSubmit,
     formState: { errors },
   } = useForm<SignInFormValues>({
@@ -52,6 +54,7 @@ export default function LogInPage() {
 
   const handleSignIn = async (values: SignInFormValues) => {
   setSignInError(null);
+  setShowVerifyEmail(false);
   try {
     await login(values.email, values.password);
 
@@ -62,11 +65,29 @@ export default function LogInPage() {
     const isFirstTime = authUser ? await isFirstLoginForUser(authUser.userId) : false;
     setWelcomeInfo({ isFirstTime });
   } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    setShowVerifyEmail(
+      /not verified|unverified|not confirmed|unconfirmed|verify your email|confirm your email|email verification/i.test(
+        message,
+      ),
+    );
     setSignInError(
-      error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.',
+      message || 'Unable to sign in. Check your email and password.',
     );
   }
 };
+
+  const handleVerifyEmail = () => {
+    const email = getValues('email')?.trim();
+    if (!email) return;
+
+    const role = params.role === 'admin' ? 'admin' : 'user';
+    useEmailVerificationStore.getState().setPendingVerification(email, role);
+    router.push({
+      pathname: '/_login/_signup/VerifyEmailInstruction',
+      params: { role, email },
+    });
+  };
 
   const handleDismissWelcome = async () => {
   const user = useAuthStore.getState().user;
@@ -155,6 +176,16 @@ export default function LogInPage() {
                 />
               )}
             />
+
+            {showVerifyEmail && (
+              <TouchableOpacity
+                style={styles.verifyEmailWrap}
+                activeOpacity={0.7}
+                onPress={handleVerifyEmail}
+              >
+                <Text allowFontScaling={false} style={styles.verifyEmailText}>Verify your email</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.forgotPasswordWrap}
@@ -290,6 +321,15 @@ const styles = StyleSheet.create({
   forgotPasswordWrap: {
     alignSelf: 'flex-end',
     marginTop: -6,
+  },
+  verifyEmailWrap: {
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  verifyEmailText: {
+    ...getTypographyStyle('c1Caption'),
+    color: colors.primary,
   },
   forgotPasswordText: {
     ...getTypographyStyle('c1Caption'),
