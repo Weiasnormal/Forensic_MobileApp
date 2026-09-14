@@ -16,6 +16,7 @@ import ErrorBanner from '@/_components/common/ErrorBanner';
 import SuccessModal from '@/_components/modals/success_modal';
 import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
+import { isEmailVerificationRequired } from '@/services/authApi';
 
 export default function LogInPage() {
   const router = useRouter();
@@ -66,11 +67,7 @@ export default function LogInPage() {
     setWelcomeInfo({ isFirstTime });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
-    setShowVerifyEmail(
-      /not verified|unverified|not confirmed|unconfirmed|verify your email|confirm your email|email verification/i.test(
-        message,
-      ),
-    );
+    setShowVerifyEmail(isEmailVerificationRequired(error));
     setSignInError(
       message || 'Unable to sign in. Check your email and password.',
     );
@@ -97,7 +94,6 @@ export default function LogInPage() {
   setWelcomeInfo(null);
   const isNewAdmin =
     resolvedRole === 'admin' &&
-    useEmailVerificationStore.getState().pendingRole === 'admin' &&
     !user?.tenantId;
   if (isNewAdmin) {
     router.replace('/_login/_signup/OrganizationCreate');
@@ -150,6 +146,15 @@ export default function LogInPage() {
               )}
             />
 
+            {showVerifyEmail && (
+              <TouchableOpacity
+                style={styles.verifyEmailWrap}
+                activeOpacity={0.7}
+                onPress={handleVerifyEmail}
+              >
+                <Text allowFontScaling={false} style={styles.verifyEmailText}>Verify your email</Text>
+              </TouchableOpacity>
+            )}
             <Controller
               control={control}
               name="password"
@@ -176,16 +181,6 @@ export default function LogInPage() {
                 />
               )}
             />
-
-            {showVerifyEmail && (
-              <TouchableOpacity
-                style={styles.verifyEmailWrap}
-                activeOpacity={0.7}
-                onPress={handleVerifyEmail}
-              >
-                <Text allowFontScaling={false} style={styles.verifyEmailText}>Verify your email</Text>
-              </TouchableOpacity>
-            )}
 
             <TouchableOpacity
               style={styles.forgotPasswordWrap}
@@ -325,10 +320,9 @@ const styles = StyleSheet.create({
   verifyEmailWrap: {
     alignSelf: 'flex-end',
     marginTop: 2,
-    marginBottom: 4,
   },
   verifyEmailText: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle('c3Caption'),
     color: colors.primary,
   },
   forgotPasswordText: {

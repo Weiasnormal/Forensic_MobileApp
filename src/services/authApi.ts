@@ -44,6 +44,19 @@ class ApiError extends Error {
   }
 }
 
+export function isEmailVerificationRequired(error: unknown) {
+  if (!(error instanceof ApiError)) {
+    return false;
+  }
+
+  return (
+    (error.status === 400 || error.status === 401 || error.status === 403) &&
+    /email.*(verify|verified|confirm|confirmed|activation)|(verify|verified|confirm|confirmed|activation).*email/i.test(
+      error.message,
+    )
+  );
+}
+
 async function parseProblem(response: Response) {
   try {
     const json = await response.json();
