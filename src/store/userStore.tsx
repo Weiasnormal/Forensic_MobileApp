@@ -184,21 +184,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       log.info('UserStore:SetUser', 'Setting user with partial data', { update: u });
 
       const normalizedAvatarUri = u.avatarUri ? await copyImageToDocuments(u.avatarUri) : u.avatarUri;
-
-      // Functional update avoids a stale closure over `user`
-      let nextRef: UserProfile | null = null;
-      setUserState((prev) => {
-        const next = { ...prev, ...u, avatarUri: normalizedAvatarUri ?? null } as UserProfile;
-        nextRef = next;
-        return next;
-      });
-
-      if (nextRef) {
-        log.info('UserStore:SetUser', 'State updated, persisting to storage');
-        await persist(nextRef);
-      }
+      const next = { ...user, ...u, avatarUri: normalizedAvatarUri ?? null } as UserProfile;
+      setUserState(next);
+      log.info('UserStore:SetUser', 'State updated, persisting to storage');
+      await persist(next);
     },
-    [copyImageToDocuments, persist],
+    [copyImageToDocuments, persist, user],
   );
 
     useEffect(() => {

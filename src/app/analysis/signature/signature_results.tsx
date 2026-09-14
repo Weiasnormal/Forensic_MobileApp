@@ -147,13 +147,13 @@ export function SignatureResultsScreen() {
       void loadReviewDetail();
     });
 
-    connection.start().catch((error) => {
+    void connection.start().catch((error) => {
       console.warn('Unable to connect to notification hub:', error);
     });
 
     return () => {
       if (connection.state !== HubConnectionState.Disconnected) {
-        connection.stop().catch(() => {});
+        void connection.stop().catch(() => {});
       }
     };
   }, [currentCaseId, loadReviewDetail]);

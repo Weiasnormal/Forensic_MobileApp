@@ -98,9 +98,8 @@ const handleContinue = async (values: SignUpFormValues) => {
       params: { role: activeRole, email: values.email },
     });
   } catch (error) {
-    let resumed = false;
     try {
-      resumed = await authApi.resumeUnverifiedRegistration(
+      const resumed = await authApi.resumeUnverifiedRegistration(
         {
           firstName: values.firstName,
           lastName: values.lastName,
@@ -121,7 +120,6 @@ const handleContinue = async (values: SignUpFormValues) => {
         return;
       }
     } catch {
-      resumed = false;
     }
 
     setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');

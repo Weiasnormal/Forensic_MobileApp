@@ -93,7 +93,7 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
   const json = await res.json();
   return {
     accessToken: json.accessToken ?? json.AccessToken,
-    expiresAt: json.expiresAt ?? json.ExpiresAt,
+    expiresAt: json.expiresAt ?? json.ExpiresAt ?? json.expireAt ?? json.ExpireAt,
   };
 }
 
@@ -135,7 +135,7 @@ export async function resumeUnverifiedRegistration(
   request: RegisterRequest,
   registrationError: unknown,
 ): Promise<boolean> {
-  if (!isRegistrationConflict(registrationError)) {
+  if (!isRegistrationConflict(registrationError) && !(registrationError instanceof Error)) {
     throw registrationError;
   }
 
@@ -213,7 +213,7 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<void
   }
 }
 
-export async function joinInviteCode(token: string, inviteCode: string): Promise<void> {
+export async function joinInviteCode(token: string, inviteCode: string): Promise<LoginResponse | null> {
   const url = buildApiUrl(
     `${API_ENDPOINTS.auth.joinInviteCode}?InviteCode=${encodeURIComponent(inviteCode)}`,
   );
@@ -225,6 +225,19 @@ export async function joinInviteCode(token: string, inviteCode: string): Promise
 
   if (!res.ok && res.status !== 201) {
     throw new ApiError(res.status, 'Join invite code failed', await parseProblem(res));
+  }
+
+  if (res.status === 204) return null;
+  try {
+    const json = await res.json();
+    const accessToken = json.accessToken ?? json.AccessToken;
+    if (!accessToken) return null;
+    return {
+      accessToken,
+      expiresAt: json.expiresAt ?? json.ExpiresAt ?? json.expireAt ?? json.ExpireAt,
+    };
+  } catch {
+    return null;
   }
 }
 export async function forgotPassword(email: string): Promise<{ implemented: boolean }> {

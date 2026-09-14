@@ -317,40 +317,44 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       return;
     }
 
-    memberRequestConnection = new HubConnectionBuilder()
+    const connection = new HubConnectionBuilder()
       .withUrl(NOTIFICATION_HUB_URL, {
         accessTokenFactory: () => useAuthStore.getState().accessToken ?? '',
       })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();
+    memberRequestConnection = connection;
 
-    memberRequestConnection.on('MemberRequestCreated', () => {
+    connection.on('MemberRequestCreated', () => {
       void get().fetchTeamMembers();
     });
 
-    memberRequestConnection.onreconnected(() => {
+    connection.onreconnected(() => {
       void get().fetchTeamMembers();
     });
 
-    memberRequestConnection.onclose((error) => {
+    connection.onclose((error) => {
       if (error) adminLog.warn('AdminStore:SignalR', 'Member request notifications disconnected', error);
     });
 
     try {
-      await memberRequestConnection.start();
+      await connection.start();
       adminLog.info('AdminStore:SignalR', 'Member request notifications connected');
     } catch (error) {
       adminLog.warn('AdminStore:SignalR', 'Unable to connect member request notifications', error);
-      await memberRequestConnection.stop().catch(() => {});
-      memberRequestConnection = null;
+      if (connection.state !== HubConnectionState.Disconnected) {
+        await connection.stop().catch(() => {});
+      }
+      if (memberRequestConnection === connection) memberRequestConnection = null;
     }
   },
 
   stopMemberRequestNotifications: async () => {
-    if (!memberRequestConnection) return;
-    await memberRequestConnection.stop();
+    const connection = memberRequestConnection;
     memberRequestConnection = null;
+    if (!connection || connection.state === HubConnectionState.Disconnected) return;
+    await connection.stop().catch(() => {});
   },
 
   approveTeamMember: async (requestId) => {

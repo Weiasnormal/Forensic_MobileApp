@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@/store/userStore';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -37,8 +37,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [lastName, setLastName] = useState(user.lastName ?? '');
   const authEmail = useAuthStore((state) => state.user?.email);
   const email = authEmail || user.email || '';
-  const [role] = useState(user.role ?? '');
-  const [organization] = useState(user.organization ?? '');
+  const [role, setRole] = useState(user.role ?? '');
+  const [organization, setOrganization] = useState(user.organization ?? '');
   const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri ?? null);
   const [showSaveProfileModal, setShowSaveProfileModal] = useState(false);
 
@@ -50,6 +50,17 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
   const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
+  const hasHydratedForm = useRef(false);
+
+  useEffect(() => {
+    if (hasHydratedForm.current || (!user.firstName && !user.lastName && !user.role && !user.organization && !user.avatarUri)) return;
+    setFirstName(user.firstName ?? '');
+    setLastName(user.lastName ?? '');
+    setRole(user.role ?? '');
+    setOrganization(user.organization ?? '');
+    setAvatarUri(user.avatarUri ?? null);
+    hasHydratedForm.current = true;
+  }, [user.avatarUri, user.email, user.firstName, user.lastName, user.organization, user.role]);
 
  const pickImage = async () => {
     try {

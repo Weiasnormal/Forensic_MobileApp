@@ -85,7 +85,7 @@ export default function LogInPage() {
       router.replace(
         role === 'admin'
           ? '/_login/_signup/OrganizationCreate'
-          : '/_login/_signup/PendingUser&Admin?role=user',
+          : '/_login/_signup/User&AdminCodepage?role=user',
       );
       return;
     }
@@ -131,7 +131,7 @@ export default function LogInPage() {
     router.replace(
       resolvedRole === 'admin'
         ? '/_login/_signup/OrganizationCreate'
-        : '/_login/_signup/PendingUser&Admin?role=user',
+        : '/_login/_signup/User&AdminCodepage?role=user',
     );
     return;
   }

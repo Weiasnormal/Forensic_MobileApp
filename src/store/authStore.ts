@@ -4,17 +4,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { jwtDecode } from 'jwt-decode';
 import * as authApi from '@/services/authApi';
 
-interface DecodedAveraToken {
-  nameid?: string;                                   // ClaimTypes.NameIdentifier -> UserId
-  'http://schemas.microsoft.com/ws/2008/06/identity/claims/groupsid'?: string; // ClaimTypes.GroupSid -> TenantId
-  email?: string;
-  role?: string | string[];
-  SecurityStamp?: string;
-  exp: number;
-  iss: string;
-  aud: string;
-}
-
 interface AuthUser {
   userId: string;
   tenantId: string;
@@ -69,7 +58,8 @@ function decodeToken(token: string): AuthUser {
 
   const rawRole =
     decoded.role ??
-    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'] ??
+    decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
 
   const roles = Array.isArray(rawRole) ? rawRole : rawRole ? [rawRole] : [];
 
@@ -101,9 +91,18 @@ export const useAuthStore = create<AuthState>()(
         set({ isAuthenticating: true, authError: null });
         try {
           const { accessToken, expiresAt } = await authApi.login({ email, password });
+          const tokenClaims = jwtDecode<{ exp?: number }>(accessToken);
+          const normalizedExpiresAt = expiresAt ?? (
+            tokenClaims.exp ? new Date(tokenClaims.exp * 1000).toISOString() : null
+          );
+
+          if (!normalizedExpiresAt) {
+            throw new Error('Sign-in response did not include a valid token expiry.');
+          }
+
           set({
             accessToken,
-            expiresAt,
+            expiresAt: normalizedExpiresAt,
             user: decodeToken(accessToken),
             isAuthenticating: false,
           });
@@ -152,7 +151,10 @@ export const useAuthStore = create<AuthState>()(
       joinInviteCode: async (inviteCode: string) => {
         const token = get().accessToken;
         if (!token) throw new Error('You must be signed in to join an organization.');
-        await authApi.joinInviteCode(token, inviteCode);
+        const refreshedSession = await authApi.joinInviteCode(token, inviteCode);
+        if (refreshedSession?.accessToken) {
+          get().applyNewAccessToken(refreshedSession.accessToken, refreshedSession.expiresAt);
+        }
       },
 
       deleteAccount: async () => {

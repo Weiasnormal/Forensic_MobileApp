@@ -30,6 +30,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const isAdminRoute = currentSegment === 'Admin';
     const isAdmin = user?.roles.some((role) => role.toLowerCase().includes('admin')) ?? false;
     const hasTenant = Boolean(user?.tenantId?.trim());
+    const isUserRoute = currentSegment === 'User';
 
     if (!isAuthenticated && !isPublicRoute) {
       router.replace('/_login/GetStarted');
@@ -43,6 +44,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     if (isAuthenticated && isAdminRoute && !hasTenant) {
       router.replace('/_login/_signup/OrganizationCreate');
+      return;
+    }
+
+    if (isAuthenticated && isUserRoute && isAdmin) {
+      router.replace('/Admin/admin_dashboard');
+      return;
+    }
+
+    if (isAuthenticated && isUserRoute && !hasTenant) {
+      router.replace('/_login/_signup/User&AdminCodepage?role=user');
     }
   }, [accessToken, hasHydrated, isTokenExpired, router, segments, user]);
 
