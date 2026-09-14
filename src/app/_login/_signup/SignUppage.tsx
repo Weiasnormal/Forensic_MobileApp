@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/authStore';
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
+import * as authApi from '@/services/authApi';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -97,6 +98,32 @@ const handleContinue = async (values: SignUpFormValues) => {
       params: { role: activeRole, email: values.email },
     });
   } catch (error) {
+    let resumed = false;
+    try {
+      resumed = await authApi.resumeUnverifiedRegistration(
+        {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          email: values.email,
+          password: values.password,
+          role: activeRole === 'admin' ? 'Admin' : 'User',
+        },
+        error,
+      );
+
+      if (resumed) {
+        useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+        useFeedbackStore.getState().showToast('Verification email resent', 'success');
+        router.push({
+          pathname: '/_login/_signup/VerifyEmailInstruction',
+          params: { role: activeRole, email: values.email },
+        });
+        return;
+      }
+    } catch {
+      resumed = false;
+    }
+
     setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
   }
 };

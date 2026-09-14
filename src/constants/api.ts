@@ -27,7 +27,7 @@ export const API_ENDPOINTS = {
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',
 
-    google: '/auth/google',
+    //google: '/auth/google',
     verifySignupCode: '/auth/verify-email',
 
     verifyResetCode: '/auth/password/verify-code',
