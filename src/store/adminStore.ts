@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
+import { normalizeInviteCode } from '@/utils/validation';
 import { getAuthHeader, useAuthStore } from './authStore';
 import { useFeedbackStore } from './feedbackStore';
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
@@ -85,6 +86,11 @@ function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
     email: record.email?.trim() || '',
     role: record.role?.trim() || 'Analyst',
   };
+}
+
+function isProtectedMemberRole(role: string | undefined): boolean {
+  const normalizedRole = role?.trim().toLowerCase() ?? '';
+  return normalizedRole.includes('owner') || normalizedRole.includes('admin');
 }
 
 //"3 days ago" / "2 months ago" style label from an ISO date string. 
@@ -422,6 +428,13 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   },
 
   removeTeamMember: async (userId: string) => {
+  const currentUser = useAuthStore.getState().user;
+  const targetMember = get().teamMembers.find((member) => member.id === userId);
+  if (currentUser?.userId === userId || isProtectedMemberRole(targetMember?.role)) {
+    useFeedbackStore.getState().showToast('Admins cannot be removed', 'infoLight');
+    return;
+  }
+
   set((state) => ({ teamMembers: state.teamMembers.filter((m) => m.id !== userId) }));
   try {
     const response = await fetch(buildApiUrl(ADMIN_API_ENDPOINTS.team.remove(userId)), {
@@ -467,7 +480,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       const rawCode = typeof responseValue === 'string'
         ? responseValue
         : responseObject?.inviteCode ?? responseObject?.InviteCode ?? responseObject?.code ?? responseObject?.Code;
-      const code = typeof rawCode === 'string' ? rawCode.trim() : null;
+      const code = typeof rawCode === 'string' ? normalizeInviteCode(rawCode) : null;
       if (!code) throw new Error('Backend returned no invite code');
 
       set({ inviteCode: code, isUsingMockInvite: false, isGeneratingInvite: false });

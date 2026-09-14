@@ -23,6 +23,7 @@ const MemberDetailsScreen: React.FC = () => {
   const memberDetail = useAdminStore((state) => state.memberDetail);
   const isLoadingMemberDetail = useAdminStore((state) => state.isLoadingMemberDetail);
   const memberDetailError = useAdminStore((state) => state.memberDetailError);
+  const isProtectedMember = /admin/i.test(memberDetail?.role ?? '');
 
   useEffect(() => {
     if (memberId) {
@@ -87,15 +88,17 @@ const MemberDetailsScreen: React.FC = () => {
           subtitle="Temporarily disable access"
           onPress={() => void suspendTeamMember(memberId)}
         />
-        <DangerRow
-          icon={UserX}
-          title="Remove from Organization"
-          subtitle="Permanently remove access"
-          onPress={async () => {
-            await removeTeamMember(memberId);
-            router.back();
-          }}
-        />
+        {!isProtectedMember ? (
+          <DangerRow
+            icon={UserX}
+            title="Remove from Organization"
+            subtitle="Permanently remove access"
+            onPress={async () => {
+              await removeTeamMember(memberId);
+              router.back();
+            }}
+          />
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

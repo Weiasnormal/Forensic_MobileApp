@@ -27,6 +27,14 @@ export const passwordSchema = z
   .regex(/[0-9]/, 'Must contain at least one number')
   .regex(/[^a-zA-Z0-9]/, 'Must contain at least one special character');
 
+export const INVITE_CODE_PATTERN = /^[A-Z]{3}[A-Z0-9]{4}$/;
+
+export function normalizeInviteCode(value: string): string | null {
+  const compactCode = value.trim().toUpperCase().replace(/-/g, '');
+  if (!INVITE_CODE_PATTERN.test(compactCode)) return null;
+  return `${compactCode.slice(0, 3)}-${compactCode.slice(3)}`;
+}
+
 export const confirmPasswordSchema = z
   .string()
   .min(1, 'Please confirm your password');
@@ -37,8 +45,8 @@ export const inviteCodeSchema = z.object({
     .trim()
     .toUpperCase()
     .regex(
-      /^[A-Z]{3}[A-Z0-9]{4}$/,
-      'Invite code must be 3 letters followed by 4 letters/numbers (e.g. ABC-1X2Y)',
+      INVITE_CODE_PATTERN,
+      'Invite code must be 3 letters followed by 4 alphanumeric characters (e.g. ABC-1X2Y)',
     ),
 });
 
