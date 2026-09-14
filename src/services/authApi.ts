@@ -214,13 +214,10 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<void
 }
 
 export async function joinInviteCode(token: string, inviteCode: string): Promise<LoginResponse | null> {
-  const url = buildApiUrl(
-    `${API_ENDPOINTS.auth.joinInviteCode}?InviteCode=${encodeURIComponent(inviteCode)}`,
-  );
-
-  const res = await fetch(url, {
+  const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.joinInviteCode), {
     method: 'POST',
     headers: authHeaders(token),
+    body: JSON.stringify({ inviteCode: inviteCode.trim().toUpperCase() }),
   });
 
   if (!res.ok && res.status !== 201) {

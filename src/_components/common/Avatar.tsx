@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Pencil } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 
 interface AvatarProps {
   initials: string;
+  imageUri?: string | null;
   size?: number;
   /** 'light' = pale blue bg + blue text (Member Details header)
    *  'solid' = solid blue bg + white text (Edit Profile header)
@@ -17,6 +18,7 @@ interface AvatarProps {
 
 const Avatar: React.FC<AvatarProps> = ({
   initials,
+  imageUri,
   size = 80,
   variant = 'light',
   editable = false,
@@ -47,9 +49,11 @@ const Avatar: React.FC<AvatarProps> = ({
           },
         ]}
       >
-        <Text style={[styles.initials, {color: textColor }]}>
-          {initials}
-        </Text>
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.image} />
+        ) : (
+          <Text style={[styles.initials, {color: textColor }]}>{initials}</Text>
+        )}
       </View>
 
       {editable && (
@@ -71,6 +75,11 @@ const styles = StyleSheet.create({
   },
   initials: {
     ...getTypographyStyle('t3Title'),
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 999,
   },
   editBadge: {
     position: 'absolute',

@@ -24,6 +24,7 @@ import TypeToConfirmModal from '@/_components/modals/type_to_confirm';
 
 interface ProfileScreenProps {
   initials: string;
+  avatarUri?: string | null;
   name: string;
   role: string;
   organization: string;
@@ -42,6 +43,7 @@ interface ProfileScreenProps {
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({
   initials,
+  avatarUri,
   name,
   role,
   organization,
@@ -72,7 +74,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <ScreenStatusBar variant="onBrand" />
         <View style={[styles.header, { paddingTop: insets.top + 40 }]}>
           <View style={styles.headerGlow} />
-          <Avatar initials={initials} size={64} variant="onDark" />
+          <Avatar initials={initials} imageUri={avatarUri} size={64} variant="onDark" />
           <View style={styles.headerCopy}>
             <Text style={styles.name}>{name}</Text>
             <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">

@@ -42,6 +42,7 @@ export default function AdminDashboard() {
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
 	const { user, load, setUser } = useUser();
+	const authUser = useAuthStore((state) => state.user);
 	const cases = useCaseStore((state) => state.cases);
 	const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend);
 
@@ -54,12 +55,26 @@ export default function AdminDashboard() {
 	const stopMemberRequestNotifications = useAdminStore((state) => state.stopMemberRequestNotifications);
 	const approveTeamMember = useAdminStore((state) => state.approveTeamMember);
 	const rejectTeamMember = useAdminStore((state) => state.rejectTeamMember);
+	const isAdmin = authUser?.roles.some((role) => role.toLowerCase().includes('admin')) ?? false;
+	const hasTenant = Boolean(authUser?.tenantId?.trim());
 
 	useEffect(() => {
+		if (!isAdmin) {
+			router.replace('/User/user_dashboard');
+			return;
+		}
+		if (!hasTenant) {
+			router.replace('/_login/_signup/OrganizationCreate');
+		}
+	}, [hasTenant, isAdmin, router]);
+
+	useEffect(() => {
+		if (!isAdmin || !hasTenant) return;
 		setActiveTab(resolveTabValue(params.tab));
-	}, [params.tab]);
+	}, [hasTenant, isAdmin, params.tab]);
 
 	useEffect(() => {
+		if (!isAdmin || !hasTenant) return;
 		load();
 		refreshCasesFromBackend();
 		fetchTenantProfile();
@@ -68,19 +83,21 @@ export default function AdminDashboard() {
 		return () => {
 			void stopMemberRequestNotifications();
 		};
-	}, [fetchTeamMembers, fetchTenantProfile, load, refreshCasesFromBackend, startMemberRequestNotifications, stopMemberRequestNotifications]);
+	}, [fetchTeamMembers, fetchTenantProfile, hasTenant, isAdmin, load, refreshCasesFromBackend, startMemberRequestNotifications, stopMemberRequestNotifications]);
 
 	useEffect(() => {
+		if (!isAdmin || !hasTenant) return;
 		if (tenantProfile?.name && tenantProfile.name !== user.organization) {
 			setUser({ organization: tenantProfile.name });
 		}
-	}, [setUser, tenantProfile?.name, user.organization]);
+	}, [hasTenant, isAdmin, setUser, tenantProfile?.name, user.organization]);
 
 	useEffect(() => {
+		if (!isAdmin || !hasTenant) return;
 		if (Platform.OS !== 'android') return;
 		NavigationBar.setBackgroundColorAsync(colors.background2).catch(() => {});
 		NavigationBar.setButtonStyleAsync('dark').catch(() => {});
-	}, [activeTab]);
+	}, [activeTab, hasTenant, isAdmin]);
 
 	const { totalCases, suspectCount } = getCaseSummary(cases);
 	const { activeCount } = getTeamSummary(teamMembers);
@@ -97,8 +114,9 @@ export default function AdminDashboard() {
 	);
 
 	useEffect(() => {
+		if (!isAdmin || !hasTenant) return;
 	getNotificationsEnabledPreference().then(setNotificationsEnabled);
-	}, []);
+	}, [hasTenant, isAdmin]);
 
 	const handleToggleNotifications = async (value: boolean) => {
 	setNotificationsEnabled(value);
@@ -117,6 +135,8 @@ export default function AdminDashboard() {
 		'successLight',
 	);
 	};
+
+	if (!isAdmin || !hasTenant) return null;
 
 	return (
 		<SafeAreaView edges={['left', 'right']} style={styles.screen}>
@@ -169,6 +189,7 @@ export default function AdminDashboard() {
 			) : (
 				<ProfileScreen
 					initials={getInitials(user?.firstName || '', user?.lastName || '')}
+					avatarUri={user?.avatarUri}
 					name={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Admin'}
 					role="Admin"
 					organization={user?.organization || 'PNP Crime Laboratory'}

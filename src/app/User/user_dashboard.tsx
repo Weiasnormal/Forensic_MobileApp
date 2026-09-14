@@ -19,6 +19,7 @@ import EmptyState from '@/_components/common/EmptyState';
 import ListSectionHeader from '@/_components/common/ListSectionHeader';
 import { useAdminStore } from '@/store/adminStore';
 import NotificationBell from '@/_components/common/NotificationBell';
+import { useAuthStore } from '@/store/authStore';
 
 const TAB_KEYS: TabKey[] = ['home', 'cases', 'stats', 'profile'];
 
@@ -40,37 +41,50 @@ export default function UserDashboardScreen() {
 	const startNewSignatureDraft = useCaseStore((state) => state.startNewSignatureDraft);
 	const refreshCasesFromBackend = useCaseStore((state) => state.refreshCasesFromBackend);
 	const { user, load, setUser } = useUser();
+	const authUser = useAuthStore((state) => state.user);
 	const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
 	const tenantProfile = useAdminStore((state) => state.tenantProfile);
+	const hasTenant = Boolean(authUser?.tenantId?.trim());
 
+	useEffect(() => {
+		if (!hasTenant) {
+			router.replace('/_login/_signup/User&AdminCodepage?role=user');
+		}
+	}, [hasTenant, router]);
 
 	React.useEffect(() => {
+		if (!hasTenant) return;
 		setActiveTab(resolveTabValue(params.tab));
-	}, [params.tab]);
+	}, [hasTenant, params.tab]);
 
 	React.useEffect(() => {
+		if (!hasTenant) return;
 		load();
 		refreshCasesFromBackend();
 		fetchTenantProfile();
-	}, [fetchTenantProfile, load, refreshCasesFromBackend]);
+	}, [fetchTenantProfile, hasTenant, load, refreshCasesFromBackend]);
 
 	useEffect(() => {
+		if (!hasTenant) return;
 	if (tenantProfile?.name && tenantProfile.name !== user.organization) {
 		setUser({ organization: tenantProfile.name });
 	}
-	}, [setUser, tenantProfile?.name, user.organization]);
+	}, [hasTenant, setUser, tenantProfile?.name, user.organization]);
 
 	useEffect(() => {
+		if (!hasTenant) return;
 		if (Platform.OS !== 'android') return;
 
 		NavigationBar.setBackgroundColorAsync(colors.background2).catch(() => {});
 		NavigationBar.setButtonStyleAsync('dark').catch(() => {});
-	}, [activeTab]);
+	}, [activeTab, hasTenant]);
 
 	const handleNewAnalysisPress = () => {
 		startNewSignatureDraft();
 		nav.push('/analysis/signature/step1');
 	};
+
+	if (!hasTenant) return null;
 
 	return (
 		<SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
