@@ -17,6 +17,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
   const isTokenExpired = useAuthStore((state) => state.isTokenExpired);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
 
@@ -26,11 +27,24 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const currentSegment = segments[0];
     const isPublicRoute = !currentSegment || PUBLIC_SEGMENTS.includes(currentSegment);
     const isAuthenticated = Boolean(accessToken) && !isTokenExpired();
+    const isAdminRoute = currentSegment === 'Admin';
+    const isAdmin = user?.roles.some((role) => role.toLowerCase().includes('admin')) ?? false;
+    const hasTenant = Boolean(user?.tenantId?.trim());
 
     if (!isAuthenticated && !isPublicRoute) {
       router.replace('/_login/GetStarted');
+      return;
     }
-  }, [accessToken, hasHydrated, isTokenExpired, router, segments]);
+
+    if (isAuthenticated && isAdminRoute && !isAdmin) {
+      router.replace('/User/user_dashboard');
+      return;
+    }
+
+    if (isAuthenticated && isAdminRoute && !hasTenant) {
+      router.replace('/_login/_signup/OrganizationCreate');
+    }
+  }, [accessToken, hasHydrated, isTokenExpired, router, segments, user]);
 
   return <>{children}</>;
 }
