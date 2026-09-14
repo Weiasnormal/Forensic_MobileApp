@@ -1,24 +1,19 @@
 {
-  "cli": {
-    "version": ">= 20.5.1",
-    "appVersionSource": "remote"
-  },
+  "cli": { "version": ">= 20.5.1", "appVersionSource": "remote" },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
+    "development": { "developmentClient": true, "distribution": "internal" },
+    "preview": { "distribution": "internal", "android": { "buildType": "apk" } },
+    "production": { "autoIncrement": true },
+    "apk-arm64": {
+      "extends": "production",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a"
       }
-    },
-    "production": {
-      "autoIncrement": true
     }
   },
-  "submit": {
-    "production": {}
-  }
+  "submit": { "production": {} }
 }

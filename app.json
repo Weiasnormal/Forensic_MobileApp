@@ -35,26 +35,19 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
-        }
-      ],
+      ["expo-splash-screen", { "backgroundColor": "#208AEF", "android": { "image": "./assets/images/splash-icon.png", "imageWidth": 76 } }],
       "expo-font",
       "expo-web-browser",
+      ["expo-camera", { "cameraPermission": "Allow Forensic to access your camera for signature analysis.", "microphonePermission": "Allow Forensic to access your microphone." }],
+      "expo-asset",
       [
-        "expo-camera",
+        "expo-build-properties",
         {
-          "cameraPermission": "Allow Forensic to access your camera for signature analysis.",
-          "microphonePermission": "Allow Forensic to access your microphone."
+          "android": {
+            "buildArchs": ["arm64-v8a"]
+          }
         }
-      ],
-      "expo-asset"
+      ]
     ],
     "extra": {
       "router": {},
