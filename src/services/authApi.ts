@@ -102,6 +102,48 @@ export async function register(request: RegisterRequest): Promise<void> {
   }
 }
 
+function isRegistrationConflict(error: unknown) {
+  return (
+    error instanceof ApiError &&
+    (error.status === 400 || error.status === 409) &&
+    /already|taken|exists|registered/i.test(error.message)
+  );
+}
+
+function isUnverifiedLoginError(error: unknown) {
+  return (
+    error instanceof ApiError &&
+    (error.status === 401 || error.status === 403) &&
+    /not verified|unverified|verify your email|email verification/i.test(error.message)
+  );
+}
+
+export async function resumeUnverifiedRegistration(
+  request: RegisterRequest,
+  registrationError: unknown,
+): Promise<boolean> {
+  if (!isRegistrationConflict(registrationError)) {
+    throw registrationError;
+  }
+
+  try {
+    await login({ email: request.email, password: request.password });
+    return false;
+  } catch (loginError) {
+    if (!isUnverifiedLoginError(loginError)) {
+      return false;
+    }
+  }
+
+  const resendResponse = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
+    method: 'POST',
+    headers: baseHeaders(),
+    body: JSON.stringify({ email: request.email.trim().toLowerCase() }),
+  });
+
+  return resendResponse.ok;
+}
+
 export async function fetchCurrentUser(token: string): Promise<UserProfileResponse> {
   const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.profile), {
     method: 'GET',
