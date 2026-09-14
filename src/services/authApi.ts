@@ -141,7 +141,6 @@ export async function resumeUnverifiedRegistration(
 
   try {
     await login({ email: request.email, password: request.password });
-    return false;
   } catch (loginError) {
     if (!isUnverifiedLoginError(loginError)) {
       return false;

@@ -26,7 +26,8 @@ export default function VerifyEmailInstruction() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string; email?: string }>();
 	const activeRole = resolveRole(params.role);
-	const email = params.email ?? 'your email';
+	const pendingEmail = useEmailVerificationStore((s) => s.pendingEmail);
+	const email = params.email ?? pendingEmail ?? 'your email';
 	const [isResending, setIsResending] = useState(false);
 
 	const isVerified = useEmailVerificationStore((s) => s.isVerified);

@@ -203,7 +203,6 @@ const handleContinue = async (values: SignUpFormValues) => {
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    placeholder="Your first name"
                     autoCapitalize="words"
                     textContentType="givenName"
                     autoComplete="name-given"
@@ -222,7 +221,6 @@ const handleContinue = async (values: SignUpFormValues) => {
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    placeholder="Your last name"
                     autoCapitalize="words"
                     textContentType="familyName"
                     autoComplete="name-family"

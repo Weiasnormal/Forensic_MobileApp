@@ -17,6 +17,8 @@ import SuccessModal from '@/_components/modals/success_modal';
 import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 import { isEmailVerificationRequired } from '@/services/authApi';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
+import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function LogInPage() {
   const router = useRouter();
@@ -101,12 +103,17 @@ export default function LogInPage() {
   }
 };
 
-  const handleVerifyEmail = () => {
+  const handleVerifyEmail = async () => {
     const email = getValues('email')?.trim();
     if (!email) return;
 
     const role = params.role === 'admin' ? 'admin' : 'user';
     useEmailVerificationStore.getState().setPendingVerification(email, role);
+    const { ok } = await resendVerificationEmail(email);
+    useFeedbackStore.getState().showToast(
+      ok ? 'Verification email sent' : 'Unable to send verification email',
+      ok ? 'success' : 'infoLight',
+    );
     router.push({
       pathname: '/_login/_signup/VerifyEmailInstruction',
       params: { role, email },
