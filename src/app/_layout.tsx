@@ -1,13 +1,14 @@
-import React from 'react';
-import { UserProvider } from '@/store/userStore';
+import GlobalToast from '@/_components/common/GlobalToast';
+import NotificationSignalRListener from '@/_components/common/NotificationSignalRListener';
+import { useDeepLinkVerification } from '@/hooks/useDeepLinkVerification';
+import { configureProcessingNotifications } from '@/services/processingNotifications';
 import { useAuthStore } from '@/store/authStore';
+import { UserProvider } from '@/store/userStore';
 import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold, useFonts } from '@expo-google-fonts/sora';
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
+import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import GlobalToast from '@/_components/common/GlobalToast';
-import { configureProcessingNotifications } from '@/services/processingNotifications';
-import { useDeepLinkVerification } from '@/hooks/useDeepLinkVerification';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -86,6 +87,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <UserProvider>
         <AuthGate>
+          <NotificationSignalRListener />
           <Stack screenOptions={{ headerShown: false }} />
         </AuthGate>
         <GlobalToast />

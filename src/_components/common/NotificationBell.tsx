@@ -1,13 +1,13 @@
+import { colors } from '@/constants/colors';
+import {
+    fetchNotifications,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+    type BackendNotification,
+} from '@/services/notificationsApi';
 import { Bell, CheckCheck } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/constants/colors';
-import {
-  fetchNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-  type BackendNotification,
-} from '@/services/notificationsApi';
 
 type Props = {
   tintColor?: string;
