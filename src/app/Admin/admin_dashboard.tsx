@@ -3,16 +3,20 @@ import NotificationBell from "@/_components/common/NotificationBell";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import { colors } from "@/constants/colors";
 import {
-    getNotificationsEnabledPreference,
-    setNotificationsEnabledPreference,
+	getNotificationsEnabledPreference,
+	setNotificationsEnabledPreference,
 } from "@/services/processingNotifications";
 import {
-    formatRelativeTime,
-    getTeamSummary,
-    useAdminStore,
+	formatRelativeTime,
+	getTeamSummary,
+	useAdminStore,
 } from "@/store/adminStore";
 import { useAuthStore } from "@/store/authStore";
-import { getCaseSummary, useCaseStore } from "@/store/caseStore";
+import {
+	getCaseSummary,
+	useCaseStore,
+	type SavedCase,
+} from "@/store/caseStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,26 +24,26 @@ import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+	Image,
+	Platform,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+	SafeAreaView,
+	useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import AdminCasesScreen from "./admin_cases";
 import AdminStatsScreen from "./admin_stats";
 import AdminTeamScreen from "./admin_team";
 import {
-    MemberRequestCard,
-    PendingReviewCard,
-    type MemberRequestData,
-    type PendingReview,
+	MemberRequestCard,
+	PendingReviewCard,
+	type MemberRequestData,
+	type PendingReview,
 } from "./cards";
 import ProfileScreen from "./ProfileScreen";
 
@@ -231,6 +235,7 @@ export default function AdminDashboard() {
           <AdminHomeTab
             totalCases={totalCases}
             suspectCount={suspectCount}
+            cases={cases}
             activeAnalysts={activeCount}
             memberRequests={memberRequests}
             onApproveRequest={approveTeamMember}
@@ -289,6 +294,7 @@ export default function AdminDashboard() {
 function AdminHomeTab({
   totalCases,
   suspectCount,
+  cases,
   activeAnalysts,
   memberRequests,
   onApproveRequest,
@@ -298,6 +304,7 @@ function AdminHomeTab({
 }: {
   totalCases: number;
   suspectCount: number;
+  cases: SavedCase[];
   activeAnalysts: number;
   memberRequests: MemberRequestData[];
   onApproveRequest: (id: string) => void;
@@ -305,7 +312,26 @@ function AdminHomeTab({
   onViewTeam: () => void;
   onViewAllCases: () => void;
 }) {
-  const pendingReviews: PendingReview[] = [];
+  const pendingReviews: PendingReview[] = cases
+    .filter((item) => item.workflowStatus === "PendingReview")
+    .sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime(),
+    )
+    .map((item) => ({
+      id: item.caseId,
+      caseCode: item.caseCode ?? item.caseId,
+      examiner: item.examiner,
+      dateLabel: new Date(item.createdAt).toLocaleDateString(),
+      verdictLabel:
+        item.status === "Suspected"
+          ? "Suspected"
+          : item.status === "Genuine"
+            ? "Genuine"
+            : "Awaiting verdict",
+      confidence: item.confidence ?? item.Confidence ?? 0,
+    }));
 
   return (
     <View style={styles.paddedSection}>

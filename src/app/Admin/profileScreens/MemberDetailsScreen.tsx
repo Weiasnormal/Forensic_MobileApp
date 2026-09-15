@@ -1,18 +1,25 @@
-import DangerRow from '@/_components/admin/DangerRow';
-import Avatar from '@/_components/common/Avatar';
-import Divider from '@/_components/common/Divider';
-import ScreenHeader from '@/_components/common/ScreenHeader';
-import SectionLabel from '@/_components/common/SectionLabel';
-import SettingsRow from '@/_components/common/SettingsRow';
-import ToggleRow from '@/_components/common/ToggleRow';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import { useAdminStore } from '@/store/adminStore';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Folder, MinusCircle, UserX } from 'lucide-react-native';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import DangerRow from "@/_components/admin/DangerRow";
+import Avatar from "@/_components/common/Avatar";
+import Divider from "@/_components/common/Divider";
+import ScreenHeader from "@/_components/common/ScreenHeader";
+import SectionLabel from "@/_components/common/SectionLabel";
+import SettingsRow from "@/_components/common/SettingsRow";
+import ToggleRow from "@/_components/common/ToggleRow";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { useAdminStore } from "@/store/adminStore";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Folder, MinusCircle, UserX } from "lucide-react-native";
+import React, { useEffect } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const MemberDetailsScreen: React.FC = () => {
   const { memberId } = useLocalSearchParams<{ memberId?: string }>();
@@ -21,9 +28,11 @@ const MemberDetailsScreen: React.FC = () => {
   const suspendTeamMember = useAdminStore((state) => state.suspendTeamMember);
   const removeTeamMember = useAdminStore((state) => state.removeTeamMember);
   const memberDetail = useAdminStore((state) => state.memberDetail);
-  const isLoadingMemberDetail = useAdminStore((state) => state.isLoadingMemberDetail);
+  const isLoadingMemberDetail = useAdminStore(
+    (state) => state.isLoadingMemberDetail,
+  );
   const memberDetailError = useAdminStore((state) => state.memberDetailError);
-  const isProtectedMember = /admin/i.test(memberDetail?.role ?? '');
+  const isProtectedMember = /admin/i.test(memberDetail?.role ?? "");
 
   useEffect(() => {
     if (memberId) {
@@ -31,14 +40,22 @@ const MemberDetailsScreen: React.FC = () => {
     }
   }, [fetchMemberById, memberId]);
 
-  if (!memberId || isLoadingMemberDetail || !memberDetail || memberDetail.id !== memberId) {
+  if (
+    !memberId ||
+    isLoadingMemberDetail ||
+    !memberDetail ||
+    memberDetail.id !== memberId
+  ) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScreenHeader title="Member Details" onBackPress={() => router.back()} />
+        <ScreenHeader
+          title="Member Details"
+          onBackPress={() => router.back()}
+        />
         <View style={styles.centeredState}>
           <ActivityIndicator color={colors.primary} />
           <Text allowFontScaling={false} style={styles.stateText}>
-            {memberDetailError ?? 'Loading member details...'}
+            {memberDetailError ?? "Loading member details..."}
           </Text>
         </View>
       </SafeAreaView>
@@ -48,7 +65,10 @@ const MemberDetailsScreen: React.FC = () => {
   if (isProtectedMember) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScreenHeader title="Member Details" onBackPress={() => router.back()} />
+        <ScreenHeader
+          title="Member Details"
+          onBackPress={() => router.back()}
+        />
         <View style={styles.centeredState}>
           <Text allowFontScaling={false} style={styles.stateText}>
             Organization administrators do not have analyst member details.
@@ -58,8 +78,10 @@ const MemberDetailsScreen: React.FC = () => {
     );
   }
 
-  const memberName = `${memberDetail.firstName} ${memberDetail.lastName}`.trim();
-  const memberInitials = `${memberDetail.firstName[0] ?? ''}${memberDetail.lastName[0] ?? ''}`.toUpperCase();
+  const memberName =
+    `${memberDetail.firstName} ${memberDetail.lastName}`.trim();
+  const memberInitials =
+    `${memberDetail.firstName[0] ?? ""}${memberDetail.lastName[0] ?? ""}`.toUpperCase();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -67,8 +89,12 @@ const MemberDetailsScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Avatar initials={memberInitials} size={80} variant="light" />
-        <Text allowFontScaling={false} style={styles.name}>{memberName}</Text>
-        <Text allowFontScaling={false} style={styles.role}>{memberDetail.role}</Text>
+        <Text allowFontScaling={false} style={styles.name}>
+          {memberName}
+        </Text>
+        <Text allowFontScaling={false} style={styles.role}>
+          {memberDetail.role}
+        </Text>
 
         <SectionLabel label="Case Management" style={styles.sectionSpacing} />
         <SettingsRow
@@ -80,10 +106,16 @@ const MemberDetailsScreen: React.FC = () => {
 
         <View style={styles.limitRow}>
           <View style={styles.limitTextWrapper}>
-            <Text allowFontScaling={false} style={styles.limitTitle}>Daily Case Limit</Text>
-            <Text allowFontScaling={false} style={styles.limitSubtitle}>Not provided by backend</Text>
+            <Text allowFontScaling={false} style={styles.limitTitle}>
+              Daily Case Limit
+            </Text>
+            <Text allowFontScaling={false} style={styles.limitSubtitle}>
+              Not provided by backend
+            </Text>
           </View>
-          <Text allowFontScaling={false} style={styles.unavailableText}>Unavailable</Text>
+          <Text allowFontScaling={false} style={styles.unavailableText}>
+            Unavailable
+          </Text>
         </View>
         <Divider />
 
@@ -99,7 +131,20 @@ const MemberDetailsScreen: React.FC = () => {
           icon={MinusCircle}
           title="Suspend Analyst"
           subtitle="Temporarily disable access"
-          onPress={() => void suspendTeamMember(memberId)}
+          onPress={() => {
+            Alert.alert(
+              "Suspend analyst?",
+              "This will temporarily disable the analyst's access. Continue?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Suspend",
+                  style: "destructive",
+                  onPress: () => void suspendTeamMember(memberId),
+                },
+              ],
+            );
+          }}
         />
         {!isProtectedMember ? (
           <DangerRow
@@ -127,25 +172,25 @@ const styles = StyleSheet.create({
   },
   centeredState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 24,
   },
   stateText: {
-    ...getTypographyStyle('body', 'regular'),
+    ...getTypographyStyle("body", "regular"),
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
   },
   name: {
-    ...getTypographyStyle('t3Title'),
-    textAlign: 'center',
+    ...getTypographyStyle("t3Title"),
+    textAlign: "center",
     color: colors.textPrimary,
     marginTop: 14,
   },
   role: {
-    ...getTypographyStyle('headline', 'regular'),
-    textAlign: 'center',
+    ...getTypographyStyle("headline", "regular"),
+    textAlign: "center",
     color: colors.textSecondary,
     marginTop: 2,
     marginBottom: 8,
@@ -154,25 +199,25 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   limitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 14,
   },
   limitTextWrapper: {
     flex: 1,
   },
   limitTitle: {
-    ...getTypographyStyle('body', 'semiBold'),
+    ...getTypographyStyle("body", "semiBold"),
     color: colors.textPrimary,
   },
   limitSubtitle: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
     marginTop: 2,
   },
   unavailableText: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textTertiary,
   },
 });
