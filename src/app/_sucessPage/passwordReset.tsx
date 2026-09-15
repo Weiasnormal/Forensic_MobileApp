@@ -1,15 +1,15 @@
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import PrimaryButton from '@/_components/common/PrimaryButton';
 
-import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+import { resolveRole, ROLE_SETTINGS } from '../../constants/roles';
 
-const successIllustration = require('../../../../assets/expo.icon/Assets/success.webp');
+const successIllustration = require('../../../assets/expo.icon/Assets/success.webp');
 
 export default function SuccessPage() {
 	const router = useRouter();
@@ -33,10 +33,11 @@ export default function SuccessPage() {
 							<Image source={successIllustration} style={styles.illustration} contentFit="contain" />
 						</View>
 
-						<Text allowFontScaling={false} style={styles.title}>Password Reset</Text>
+						<Text allowFontScaling={false} style={styles.title}>
+							Password Reset
+						</Text>
 						<Text allowFontScaling={false} style={styles.subtitle}>
-							{roleConfig.successMessage}
-							{'\n'}Sign in with your new password.
+							{`${roleConfig.successMessage}\nSign in with your new password.`}
 						</Text>
 					</View>
 
