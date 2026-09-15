@@ -9,6 +9,7 @@ import {
   OverlaySlot,
   OverlayVariant,
   getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisConfidence,
   type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -122,7 +123,6 @@ export interface DraftUploads {
 export interface DraftCase {
   caseId: string;
   subjectName: string;
-  examiner: string;
   documentType: DocumentType;
   otherDocumentType: string;
   priority: AnalysisPriority;
@@ -131,6 +131,7 @@ export interface DraftCase {
 
 export interface SavedCase extends DraftCase {
   createdAt: string;
+  examiner: string;
   status: CaseStatus;
   workflowStatus: CaseWorkflowStatus;
   analysisType: AnalysisType;
@@ -140,12 +141,10 @@ export interface SavedCase extends DraftCase {
   Verdict?: string;
   confidence?: number;
   Confidence?: number;
-  examiner: string;
 }
 
 type DraftEditableField =
   | "subjectName"
-  | "examiner"
   | "documentType"
   | "otherDocumentType"
   | "priority";
@@ -171,6 +170,11 @@ interface CaseStore {
   setSignatureAnalysisResult: (
     caseId: string,
     result: SignatureAnalysisResult,
+  ) => void;
+  hydrateSignatureAnalysisResult: (
+    caseId: string,
+    result: SignatureAnalysisResult,
+    workflowStatus: CaseWorkflowStatus,
   ) => void;
   setActiveSignatureCaseId: (caseId: string | null) => void;
   refreshCasesFromBackend: () => Promise<boolean>;
@@ -224,7 +228,6 @@ function createDraftCase(caseId: string): DraftCase {
   return {
     caseId,
     subjectName: "",
-    examiner: "",
     documentType: DEFAULT_DOCUMENT_TYPE,
     otherDocumentType: "",
     priority: DEFAULT_PRIORITY,
@@ -276,12 +279,6 @@ const PRIORITY_MAP: Record<AnalysisPriority, number> = {
   Medium: 1,
   High: 2,
   Urgent: 3,
-};
-
-const ANALYSIS_TYPE_MAP: Record<AnalysisType, number> = {
-  SIG: 0,
-  HW: 1,
-  DOC: 2,
 };
 
 export const useCaseStore = create<CaseStore>()(
@@ -380,6 +377,27 @@ export const useCaseStore = create<CaseStore>()(
                     ...item,
                     status: getSignatureAnalysisCaseStatus(result),
                     workflowStatus: BACKEND_ANALYSIS_COMPLETE_STATUS,
+                  }
+                : item,
+            ),
+          }));
+        },
+
+        hydrateSignatureAnalysisResult: (caseId, result, workflowStatus) => {
+          set((state) => ({
+            signatureAnalysisResults: {
+              ...state.signatureAnalysisResults,
+              [caseId]: result,
+            },
+            cases: state.cases.map((item) =>
+              item.caseId === caseId
+                ? {
+                    ...item,
+                    status: getSignatureAnalysisCaseStatus(result),
+                    workflowStatus,
+                    verdict: result.verdict,
+                    Verdict: result.Verdict,
+                    confidence: getSignatureAnalysisConfidence(result),
                   }
                 : item,
             ),
@@ -611,12 +629,8 @@ export const useCaseStore = create<CaseStore>()(
           const currentDraft = get().draftSignatureCase;
           let caseId = "";
 
-          if (
-            !currentDraft.subjectName.trim() ||
-            !currentDraft.examiner.trim()
-          ) {
-            const message =
-              "Subject name and examiner are required before submission.";
+          if (!currentDraft.subjectName.trim()) {
+            const message = "Subject name is required before submission.";
             caseLog.error("CaseStore:Error", message);
             set({ submissionStatus: "error", submissionError: message });
             throw new Error(message);
@@ -640,15 +654,17 @@ export const useCaseStore = create<CaseStore>()(
           });
 
           try {
+            const selectedDocumentType = currentDraft.documentType;
             const createRequest = {
               SubjectName: currentDraft.subjectName,
-              DocumentType: DOCUMENT_TYPE_MAP[currentDraft.documentType],
+              DocumentType: DOCUMENT_TYPE_MAP[selectedDocumentType],
               Priority: PRIORITY_MAP[currentDraft.priority],
-              AnalysisType: ANALYSIS_TYPE_MAP[DEFAULT_ANALYSIS_TYPE],
             };
 
             caseLog.info("CaseStore:Submit", "Creating case on backend", {
               SubjectName: createRequest.SubjectName,
+              DocumentType: selectedDocumentType,
+              DocumentTypeValue: createRequest.DocumentType,
             });
 
             const createRes = await fetch(
@@ -718,6 +734,7 @@ export const useCaseStore = create<CaseStore>()(
                 caseId,
                 caseCode: caseCode ?? caseId,
                 createdAt: new Date().toISOString(),
+                examiner: "Unknown",
                 status: "Processing",
                 workflowStatus: "Processing",
                 analysisType: DEFAULT_ANALYSIS_TYPE,
@@ -1058,6 +1075,7 @@ export const useCaseStore = create<CaseStore>()(
               caseId,
               caseCode: caseCode ?? caseId,
               createdAt: new Date().toISOString(),
+              examiner: "Unknown",
               status: finalStatus,
               workflowStatus,
               analysisType: DEFAULT_ANALYSIS_TYPE,
@@ -1435,7 +1453,6 @@ const MAX_PENDING_CARDS = 3;
 function hasDraftProgress(draft: DraftCase) {
   return Boolean(
     draft.subjectName.trim() ||
-    draft.examiner.trim() ||
     draft.documentType.trim() !== DEFAULT_DOCUMENT_TYPE ||
     draft.priority !== DEFAULT_PRIORITY ||
     draft.uploads.references.some(Boolean) ||
@@ -1453,7 +1470,7 @@ export function getPendingCards(
     pendingCards.push({
       id: draft.caseId,
       caseCode: draft.caseId,
-      name: draft.examiner.trim() || "Draft in progress",
+      name: draft.subjectName.trim() || "Draft in progress",
       type: draft.documentType,
       status: "draft",
       sortKey: Number.MAX_SAFE_INTEGER,
@@ -1465,7 +1482,7 @@ export function getPendingCards(
       pendingCards.push({
         id: item.caseId,
         caseCode: item.caseCode ?? item.caseId,
-        name: item.examiner,
+        name: item.subjectName,
         type: item.documentType,
         status: "processing",
         sortKey: new Date(item.createdAt).getTime(),
@@ -1476,7 +1493,7 @@ export function getPendingCards(
       pendingCards.push({
         id: item.caseId,
         caseCode: item.caseCode ?? item.caseId,
-        name: item.examiner,
+        name: item.subjectName,
         type: item.documentType,
         status: "result-ready",
         sortKey: new Date(item.createdAt).getTime(),

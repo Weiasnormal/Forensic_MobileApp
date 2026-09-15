@@ -1,18 +1,17 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type AnalysisFlowType = 'signature' | 'handwriting';
-export type AnalysisPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
+export type AnalysisFlowType = "signature" | "handwriting";
+export type AnalysisPriority = "Low" | "Medium" | "High" | "Urgent";
 
 export interface AnalysisCaseDetails {
   caseId: string;
   subjectName: string;
-  examinerName: string;
   documentType: string;
   priority: AnalysisPriority;
 }
 
 export interface AnalysisUploads {
-  references: Array<string | null>;
+  references: (string | null)[];
   suspect: string | null;
 }
 
@@ -28,23 +27,26 @@ interface AnalysisFlowStore {
   currentAnalysisType: AnalysisFlowType | null;
   initializeFlow: (type: AnalysisFlowType) => void;
   setSubjectName: (type: AnalysisFlowType, value: string) => void;
-  setExaminerName: (type: AnalysisFlowType, value: string) => void;
   setDocumentType: (type: AnalysisFlowType, value: string) => void;
   setPriority: (type: AnalysisFlowType, value: AnalysisPriority) => void;
-  setReference: (type: AnalysisFlowType, index: number, uri: string | null) => void;
+  setReference: (
+    type: AnalysisFlowType,
+    index: number,
+    uri: string | null,
+  ) => void;
   setSuspect: (type: AnalysisFlowType, uri: string | null) => void;
   resetUploads: (type: AnalysisFlowType) => void;
   setCurrentAnalysisType: (type: AnalysisFlowType | null) => void;
 }
 
-const INITIAL_PRIORITY: AnalysisPriority = 'Medium';
+const INITIAL_PRIORITY: AnalysisPriority = "Medium";
 
 function buildCaseId(caseNumber: number) {
   const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
   const year = now.getFullYear();
-  const counter = String(caseNumber).padStart(3, '0');
+  const counter = String(caseNumber).padStart(3, "0");
   return `${month}-${day}-${year}-${counter}`;
 }
 
@@ -52,9 +54,8 @@ function createInitialFlow(caseId: string): AnalysisFlowState {
   return {
     caseDetails: {
       caseId,
-      subjectName: '',
-      examinerName: '',
-      documentType: '',
+      subjectName: "",
+      documentType: "",
       priority: INITIAL_PRIORITY,
     },
     uploads: {
@@ -71,7 +72,9 @@ function withUpdatedFlow(
 ) {
   const nextFlow = updater(state[type]);
   return {
-    ...(type === 'signature' ? { signature: nextFlow } : { handwriting: nextFlow }),
+    ...(type === "signature"
+      ? { signature: nextFlow }
+      : { handwriting: nextFlow }),
   };
 }
 
@@ -101,17 +104,6 @@ export const useAnalysisFlowStore = create<AnalysisFlowStore>((set) => ({
         caseDetails: {
           ...flow.caseDetails,
           subjectName: value,
-        },
-      })),
-    ),
-
-  setExaminerName: (type, value) =>
-    set((state) =>
-      withUpdatedFlow(state, type, (flow) => ({
-        ...flow,
-        caseDetails: {
-          ...flow.caseDetails,
-          examinerName: value,
         },
       })),
     ),

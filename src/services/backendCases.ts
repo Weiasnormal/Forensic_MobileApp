@@ -14,7 +14,8 @@ type BackendCaseRecord = {
   id?: string;
   caseCode?: string;
   subjectName?: string;
-  examiner?: string;
+  createdByUser?: unknown;
+  CreatedByUser?: unknown;
   documentType?: unknown;
   DocumentType?: unknown;
   optionalDocumentType?: string;
@@ -48,6 +49,21 @@ export interface FetchCasesResult {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function normalizeCreatedByUser(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (!isRecord(value)) return "Unknown";
+
+  const displayName =
+    value.name ??
+    value.fullName ??
+    value.userName ??
+    value.username ??
+    value.email;
+  return typeof displayName === "string" && displayName.trim()
+    ? displayName.trim()
+    : "Unknown";
 }
 
 function normalizeWorkflowStatus(value: unknown): CaseWorkflowStatus {
@@ -175,12 +191,26 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
   }
 
   const workflowStatus = normalizeWorkflowStatus(record.caseStatus);
+  const mlResponse = isRecord(record.mlResponse) ? record.mlResponse : null;
+  const rawConfidence =
+    mlResponse?.confidence ??
+    mlResponse?.Confidence ??
+    Math.max(
+      Number(
+        mlResponse?.confidenceGenuine ?? mlResponse?.ConfidenceGenuine ?? 0,
+      ),
+      Number(mlResponse?.confidenceForged ?? mlResponse?.ConfidenceForged ?? 0),
+    );
+  const confidence = Number(rawConfidence);
+  const rawVerdict = mlResponse?.verdict ?? mlResponse?.Verdict;
 
   return {
     caseId,
     caseCode: caseCode || caseId,
     subjectName: record.subjectName?.trim() || "No Subject",
-    examiner: record.examiner?.trim() || "Unknown",
+    examiner: normalizeCreatedByUser(
+      record.createdByUser ?? record.CreatedByUser,
+    ),
     documentType: documentType || DEFAULT_DOCUMENT_TYPE,
     otherDocumentType,
     priority: normalizePriority(record.priority),
@@ -193,6 +223,8 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
       workflowStatus === "Processing" ? "Processing" : normalizeVerdict(record),
     workflowStatus,
     analysisType: normalizeAnalysisType(record.analysisType),
+    verdict: typeof rawVerdict === "string" ? rawVerdict : undefined,
+    confidence: Number.isFinite(confidence) ? confidence : undefined,
     resultViewed: workflowStatus !== "Processing" ? false : undefined,
   };
 }
