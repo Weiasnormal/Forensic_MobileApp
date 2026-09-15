@@ -1,3 +1,11 @@
+import ErrorBanner from '@/_components/common/ErrorBanner';
+import FormField from '@/_components/common/FormField';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import * as authApi from '@/services/authApi';
+import { useAuthStore } from '@/store/authStore';
+import { setPendingSignupCredentials, useEmailVerificationStore } from '@/store/emailVerificationStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
@@ -10,14 +18,6 @@ import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengt
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
 import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import FormField from '@/_components/common/FormField';
-import { useAuthStore } from '@/store/authStore';
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { useEmailVerificationStore } from '@/store/emailVerificationStore';
-import * as authApi from '@/services/authApi';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -89,7 +89,8 @@ const handleContinue = async (values: SignUpFormValues) => {
       activeRole === 'admin' ? 'Admin' : 'User',
     );
 
-     useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+    useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+      setPendingSignupCredentials(values.email, values.password);
 
     useFeedbackStore.getState().showToast('Account created — verify your email to continue', 'success');
 
@@ -112,6 +113,7 @@ const handleContinue = async (values: SignUpFormValues) => {
 
       if (resumed) {
         useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+        setPendingSignupCredentials(values.email, values.password);
         useFeedbackStore.getState().showToast('Verification email resent', 'success');
         router.push({
           pathname: '/_login/_signup/VerifyEmailInstruction',

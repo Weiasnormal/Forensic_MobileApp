@@ -1,34 +1,35 @@
+import ErrorBanner from '@/_components/common/ErrorBanner';
+import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import SuccessModal from '@/_components/modals/success_modal';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import { isEmailVerificationRequired } from '@/services/authApi';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
+import { useAuthStore } from '@/store/authStore';
+import { clearPendingSignupCredentials, useEmailVerificationStore } from '@/store/emailVerificationStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
+import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
 import { type AppRole, ROLE_SETTINGS } from '../../constants/roles';
 import { type SignInFormValues, signInSchema } from '../../utils/validation';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import FormField from '@/_components/common/FormField';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import { useAuthStore } from '@/store/authStore';
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import SuccessModal from '@/_components/modals/success_modal';
-import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
-import { useEmailVerificationStore } from '@/store/emailVerificationStore';
-import { isEmailVerificationRequired } from '@/services/authApi';
-import { resendVerificationEmail } from '@/services/emailVerificationApi';
-import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function LogInPage() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ verifiedEmail?: string; role?: string }>();
+  const params = useLocalSearchParams<{ verifiedEmail?: string; role?: string; next?: string }>();
   const [showPassword, setShowPassword] = useState(false);
   const login = useAuthStore((state) => state.login);
   const logout = useAuthStore((state) => state.logout);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [signInError, setSignInError] = useState<string | null>(null);
   const [showVerifyEmail, setShowVerifyEmail] = useState(false);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [welcomeInfo, setWelcomeInfo] = useState<{ isFirstTime: boolean } | null>(null);
   const [resolvedRole, setResolvedRole] = useState<AppRole>('user');
 
@@ -76,6 +77,7 @@ export default function LogInPage() {
     const authState = useAuthStore.getState();
     const hasValidSession = Boolean(authState.accessToken) && !authState.isTokenExpired();
     const hasTenantMembership = Boolean(authUser?.tenantId?.trim());
+    const shouldEnterOrganizationCode = params.next === 'organizationCode' && role === 'user';
 
     if (!authUser?.userId || !hasSupportedRole(authUser.roles) || !hasValidSession) {
       await logout();
@@ -83,7 +85,7 @@ export default function LogInPage() {
       return;
     }
 
-    if (!hasTenantMembership) {
+    if (!hasTenantMembership || shouldEnterOrganizationCode) {
       router.replace(
         role === 'admin'
           ? '/_login/_signup/OrganizationCreate'
@@ -104,20 +106,28 @@ export default function LogInPage() {
 };
 
   const handleVerifyEmail = async () => {
+    if (isSendingVerification) return;
+
     const email = getValues('email')?.trim();
     if (!email) return;
 
+    setIsSendingVerification(true);
     const role = params.role === 'admin' ? 'admin' : 'user';
-    useEmailVerificationStore.getState().setPendingVerification(email, role);
-    const { ok } = await resendVerificationEmail(email);
-    useFeedbackStore.getState().showToast(
-      ok ? 'Verification email sent' : 'Unable to send verification email',
-      ok ? 'success' : 'infoLight',
-    );
-    router.push({
-      pathname: '/_login/_signup/VerifyEmailInstruction',
-      params: { role, email },
-    });
+    clearPendingSignupCredentials();
+    try {
+      useEmailVerificationStore.getState().setPendingVerification(email, role);
+      const { ok } = await resendVerificationEmail(email);
+      useFeedbackStore.getState().showToast(
+        ok ? 'Verification email sent' : 'Unable to send verification email',
+        ok ? 'success' : 'infoLight',
+      );
+      router.push({
+        pathname: '/_login/_signup/VerifyEmailInstruction',
+        params: { role, email },
+      });
+    } finally {
+      setIsSendingVerification(false);
+    }
   };
 
   const handleDismissWelcome = async () => {
@@ -199,8 +209,12 @@ export default function LogInPage() {
                 style={styles.verifyEmailWrap}
                 activeOpacity={0.7}
                 onPress={handleVerifyEmail}
+                disabled={isSendingVerification}
               >
-                <Text allowFontScaling={false} style={styles.verifyEmailText}>Verify your email</Text>
+                {isSendingVerification ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+                <Text allowFontScaling={false} style={styles.verifyEmailText}>
+                  {isSendingVerification ? 'Sending verification email...' : 'Verify your email'}
+                </Text>
               </TouchableOpacity>
             )}
             <Controller

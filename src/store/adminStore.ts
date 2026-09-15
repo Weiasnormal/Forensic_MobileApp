@@ -1,10 +1,10 @@
-import { create } from 'zustand';
-import { API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from '@/constants/api';
 import { ADMIN_API_ENDPOINTS } from '@/constants/adminApi';
+import { API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from '@/constants/api';
 import { normalizeInviteCode } from '@/utils/validation';
+import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
+import { create } from 'zustand';
 import { getAuthHeader, useAuthStore } from './authStore';
 import { useFeedbackStore } from './feedbackStore';
-import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
 
 let memberRequestConnection: HubConnection | null = null;
 
@@ -91,6 +91,24 @@ function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
 function isProtectedMemberRole(role: string | undefined): boolean {
   const normalizedRole = role?.trim().toLowerCase() ?? '';
   return normalizedRole.includes('owner') || normalizedRole.includes('admin');
+}
+
+function normalizeTeamMemberRole(role: unknown): TeamMemberRole {
+  const normalizedRole = String(role ?? '').trim().toLowerCase();
+  return normalizedRole.includes('admin') || normalizedRole.includes('owner')
+    ? 'Org Admin'
+    : 'Analyst';
+}
+
+function getRecordTenantId(record: any): string | null {
+  const value = record?.tenantId ?? record?.TenantId ?? record?.organizationId ?? record?.OrganizationId;
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function belongsToCurrentTenant(record: any): boolean {
+  const currentTenantId = useAuthStore.getState().user?.tenantId?.trim();
+  const recordTenantId = getRecordTenantId(record);
+  return Boolean(currentTenantId) && (!recordTenantId || recordTenantId === currentTenantId);
 }
 
 //"3 days ago" / "2 months ago" style label from an ISO date string. 
@@ -217,6 +235,13 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   fetchMemberById: async (userId: string) => {
     adminLog.info('AdminStore:MemberDetail', `Fetching member ${userId}`);
+    if (!get().teamMembers.some((member) => member.id === userId)) {
+      set({
+        isLoadingMemberDetail: false,
+        memberDetailError: 'This member is not part of your organization.',
+      });
+      return null;
+    }
     set({ isLoadingMemberDetail: true, memberDetailError: null });
 
     try {
@@ -234,6 +259,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       }
 
       const json = await response.json();
+      if (!belongsToCurrentTenant(json)) {
+        throw new Error('This member is not part of your organization.');
+      }
       const detail = normalizeTenantMemberDetail(json);
 
       if (!detail) {
@@ -269,21 +297,25 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
       const membersJson = await membersRes.json();
       const activeMembers: TeamMember[] = (Array.isArray(membersJson) ? membersJson : [])
+        .filter((m: any) => belongsToCurrentTenant(m))
         .map((m: any) => ({
           id: m.id,
           firstName: m.firstName || 'Unknown',
           lastName: m.lastName || '',
           email: m.email || '—',
-          role: 'Analyst' as const,
+          role: normalizeTeamMemberRole(m.role ?? m.Role ?? m.roles ?? m.Roles),
           status: (m.isSuspended ?? m.IsSuspended) ? 'suspended' as const : 'active' as const,
           casesHandled: Number(m.casesHandled ?? m.CasesHandled ?? 0),
           joinedAt: null, // backend TenantMemberDto has no join date field — genuinely unavailable
-        }));
+        }))
+        .filter((member) => member.role === 'Analyst');
 
       let pendingMembers: TeamMember[] = [];
       if (pendingRes.ok) {
         const pendingJson = await pendingRes.json();
-        pendingMembers = (Array.isArray(pendingJson) ? pendingJson : []).map((r: any) => {
+        pendingMembers = (Array.isArray(pendingJson) ? pendingJson : [])
+          .filter((r: any) => belongsToCurrentTenant(r))
+          .map((r: any) => {
           const [firstName, ...rest] = String(r.name ?? '').trim().split(/\s+/);
           return {
             id: r.requestId,               // approve/reject use the REQUEST id, not a user id
@@ -295,7 +327,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
             casesHandled: 0,
             joinedAt: r.requestedAt ?? null,
           };
-        });
+          });
       }
 
       set({
@@ -341,7 +373,13 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     });
 
     connection.onclose((error) => {
-      if (error) adminLog.warn('AdminStore:SignalR', 'Member request notifications disconnected', error);
+      if (error) {
+        adminLog.warn('AdminStore:SignalR', 'Member request notifications disconnected', error);
+        useFeedbackStore.getState().showToast(
+          'Live member requests are temporarily unavailable. We will try to reconnect.',
+          'infoLight',
+        );
+      }
     });
 
     try {
@@ -364,6 +402,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   },
 
   approveTeamMember: async (requestId) => {
+    if (!get().pendingApprovals.some((member) => member.id === requestId)) {
+      useFeedbackStore.getState().showToast('Member request is outside your organization', 'infoLight');
+      return;
+    }
     set((state) => ({
       teamMembers: state.teamMembers.map((m) => (m.id === requestId ? { ...m, status: 'active' } : m)),
       pendingApprovals: state.pendingApprovals.filter((m) => m.id !== requestId),
@@ -383,6 +425,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   },
 
   rejectTeamMember: async (requestId) => {
+    if (!get().pendingApprovals.some((member) => member.id === requestId)) {
+      useFeedbackStore.getState().showToast('Member request is outside your organization', 'infoLight');
+      return;
+    }
     set((state) => ({
       teamMembers: state.teamMembers.filter((m) => m.id !== requestId),
       pendingApprovals: state.pendingApprovals.filter((m) => m.id !== requestId),
@@ -402,6 +448,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   },
 
   suspendTeamMember: async (id) => {
+    if (!get().teamMembers.some((member) => member.id === id)) {
+      useFeedbackStore.getState().showToast('Member is outside your organization', 'infoLight');
+      return;
+    }
     set((state) => ({
       teamMembers: state.teamMembers.map((member) =>
         member.id === id ? { ...member, status: 'suspended' } : member,
@@ -430,6 +480,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   removeTeamMember: async (userId: string) => {
   const currentUser = useAuthStore.getState().user;
   const targetMember = get().teamMembers.find((member) => member.id === userId);
+  if (!targetMember) {
+    useFeedbackStore.getState().showToast('Member is outside your organization', 'infoLight');
+    return;
+  }
   if (currentUser?.userId === userId || isProtectedMemberRole(targetMember?.role)) {
     useFeedbackStore.getState().showToast('Admins cannot be removed', 'infoLight');
     return;
@@ -494,10 +548,11 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 }));
 
 export function getTeamSummary(members: TeamMember[]) {
-  const totalAnalysts = members.filter((member) => member.role === 'Analyst').length;
-  const activeCount = members.filter((member) => member.status === 'active').length;
-  const pendingCount = members.filter((member) => member.status === 'pending').length;
-  const suspendedCount = members.filter((member) => member.status === 'suspended').length;
+  const analysts = members.filter((member) => member.role === 'Analyst');
+  const totalAnalysts = analysts.length;
+  const activeCount = analysts.filter((member) => member.status === 'active').length;
+  const pendingCount = analysts.filter((member) => member.status === 'pending').length;
+  const suspendedCount = analysts.filter((member) => member.status === 'suspended').length;
 
   return { totalAnalysts, activeCount, pendingCount, suspendedCount };
 }

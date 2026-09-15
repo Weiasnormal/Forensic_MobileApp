@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, buildApiUrl, API_KEY } from '@/constants/api';
+import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
 
 export interface LoginRequest {
   email: string;
@@ -213,10 +213,28 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<void
 }
 
 export async function joinInviteCode(token: string, inviteCode: string): Promise<LoginResponse | null> {
-  const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.joinInviteCode), {
+  const normalizedInviteCode = inviteCode.trim().toUpperCase();
+  const requestBody = JSON.stringify(normalizedInviteCode);
+  const requestUrl = buildApiUrl(API_ENDPOINTS.auth.joinInviteCode);
+  const requestHeaders = authHeaders(token);
+
+  console.log('[AuthApi] Sending organization invite code request', {
     method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ inviteCode: inviteCode.trim().toUpperCase() }),
+    url: requestUrl,
+    headers: Object.fromEntries(
+      Object.entries(requestHeaders).map(([key, value]) => [
+        key,
+        key.toLowerCase() === 'authorization' ? '[REDACTED]' : value,
+      ]),
+    ),
+    inviteCode: normalizedInviteCode,
+    requestBody,
+  });
+
+  const res = await fetch(requestUrl, {
+    method: 'POST',
+    headers: requestHeaders,
+    body: requestBody,
   });
 
   if (!res.ok && res.status !== 201) {

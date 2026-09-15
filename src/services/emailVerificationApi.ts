@@ -1,6 +1,11 @@
 import { buildApiUrl, API_KEY, API_ENDPOINTS } from '@/constants/api';
 import { getAuthHeader } from '@/store/authStore';
 
+interface VerificationRequestResult {
+  ok: boolean;
+  message?: string;
+}
+
 export async function sendVerificationEmail(email: string): Promise<{ ok: boolean }> {
   try {
     const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
@@ -68,7 +73,7 @@ export async function requestEmailChange(newEmail: string, currentPassword: stri
   }
 }
 
-export async function resendVerificationEmail(email: string): Promise<{ ok: boolean }> {
+export async function resendVerificationEmail(email: string): Promise<VerificationRequestResult> {
   try {
     const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
       method: 'POST',
@@ -80,8 +85,18 @@ export async function resendVerificationEmail(email: string): Promise<{ ok: bool
       },
       body: JSON.stringify({ email: email.trim().toLowerCase() }),
     });
-    return { ok: res.ok };
+    if (res.ok) return { ok: true };
+
+    try {
+      const body = await res.json();
+      return {
+        ok: false,
+        message: body?.detail ?? body?.message ?? body?.title,
+      };
+    } catch {
+      return { ok: false, message: `Request failed (${res.status})` };
+    }
   } catch {
-    return { ok: false };
+    return { ok: false, message: 'Unable to reach the verification service.' };
   }
 }

@@ -1,5 +1,5 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
-import { getAuthHeader, handleUnauthorizedResponse } from '@/store/authStore';
+import { getAuthHeader, handleUnauthorizedResponse, useAuthStore } from '@/store/authStore';
 import type { AnalysisPriority, DocumentType } from '@/store/caseStore';
 
 /** Mirrors Avera.Domain/Cases/FinalVerdict.cs — do not reorder, values match backend exactly. */
@@ -174,6 +174,11 @@ export async function fetchCaseForReview(caseId: string): Promise<AdminCaseDetai
   const json = await res.json();
   // GetCaseByIdQueryResult wraps the DTO: { case: {...} } (camelCase) or { Case: {...} }.
   const dto = json?.case ?? json?.Case ?? json;
+  const currentTenantId = useAuthStore.getState().user?.tenantId?.trim();
+  const caseTenantId = dto?.tenantId ?? dto?.TenantId ?? dto?.organizationId ?? dto?.OrganizationId;
+  if (currentTenantId && caseTenantId && String(caseTenantId).trim() !== currentTenantId) {
+    throw new CaseReviewApiError(403, 'WrongTenant', 'This case is outside your organization.');
+  }
   return normalizeCaseDetail(dto);
 }
 

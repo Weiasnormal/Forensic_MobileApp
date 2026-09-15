@@ -1,9 +1,9 @@
+import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
+import type { AppRole } from '@/constants/roles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { AppRole } from '@/constants/roles';
 import { getAuthHeader } from './authStore';
-import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
 
 interface EmailVerificationState {
   pendingEmail: string | null;
@@ -11,12 +11,28 @@ interface EmailVerificationState {
   isVerified: boolean;
   verifiedAt: string | null;
   lastError: string | null;
+  hasHydrated: boolean;
   setPendingVerification: (email: string, role: AppRole) => void;
   markVerified: (email?: string) => void;
   markFailed: (reason: string) => void;
   clearError: () => void;
   reset: () => void;
+  setHasHydrated: (value: boolean) => void;
 
+}
+
+let pendingSignupCredentials: { email: string; password: string } | null = null;
+
+export function setPendingSignupCredentials(email: string, password: string) {
+  pendingSignupCredentials = { email: email.trim().toLowerCase(), password };
+}
+
+export function getPendingSignupCredentials() {
+  return pendingSignupCredentials;
+}
+
+export function clearPendingSignupCredentials() {
+  pendingSignupCredentials = null;
 }
 
 export const useEmailVerificationStore = create<EmailVerificationState>()(
@@ -27,6 +43,7 @@ export const useEmailVerificationStore = create<EmailVerificationState>()(
       isVerified: false,
       verifiedAt: null,
       lastError: null,
+      hasHydrated: false,
 
       // Called right after signup, before navigating to the instruction page.
       setPendingVerification: (email, role) =>
@@ -53,10 +70,14 @@ export const useEmailVerificationStore = create<EmailVerificationState>()(
 
       reset: () =>
         set({ pendingEmail: null, pendingRole: null, isVerified: false, verifiedAt: null, lastError: null }),
+      setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
       name: 'avera_email_verification_store',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     },
   ),
 );

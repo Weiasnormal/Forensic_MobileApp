@@ -1,3 +1,10 @@
+import ErrorBanner from '@/_components/common/ErrorBanner';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import { useResendCooldown } from '@/hooks/useResendCooldown';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
+import { useEmailVerificationStore } from '@/store/emailVerificationStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -5,14 +12,6 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import { resolveRole } from '@/constants/roles';
-import { resendVerificationEmail } from '@/services/emailVerificationApi';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { useEmailVerificationStore } from '@/store/emailVerificationStore';
-import ErrorBanner from '@/_components/common/ErrorBanner';
 
 const envelopeArt = require('../../../../assets/expo.icon/Assets/verify_email_1.webp');
 
@@ -25,35 +24,26 @@ const STEPS = [
 export default function VerifyEmailInstruction() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string; email?: string }>();
-	const activeRole = resolveRole(params.role);
 	const pendingEmail = useEmailVerificationStore((s) => s.pendingEmail);
 	const email = params.email ?? pendingEmail ?? 'your email';
 	const [isResending, setIsResending] = useState(false);
+	const { secondsRemaining, isCoolingDown, startCooldown } = useResendCooldown();
 
-	const isVerified = useEmailVerificationStore((s) => s.isVerified);
 	const verificationError = useEmailVerificationStore((s) => s.lastError);
 
 	const handleResend = async () => {
-		if (!email || email === 'your email') return;
+		if (!email || email === 'your email' || isCoolingDown || isResending) return;
 		setIsResending(true);
+		startCooldown();
 		try {
-			const { ok } = await resendVerificationEmail(email);
+			const { ok, message } = await resendVerificationEmail(email);
 			useFeedbackStore.getState().showToast(
-				ok ? 'Verification email resent' : 'Unable to resend right now',
+				ok ? 'Verification email resent' : message ?? 'Unable to resend right now',
 				ok ? 'successLight' : 'infoLight',
 			);
 		} finally {
 			setIsResending(false);
 		}
-	};
-
-	const handleContinue = () => {
-		if (!isVerified) return;
-
-		router.replace({
-			pathname: '/_login/SignInPage',
-			params: { role: activeRole, verifiedEmail: email },
-		});
 	};
 
 	return (
@@ -79,7 +69,7 @@ export default function VerifyEmailInstruction() {
 				<View style={styles.stepsList}>
 					{STEPS.map((step, index) => (
 						<View key={step} style={styles.stepRow}>
-							<View style={[styles.stepBadge, index === 0 && isVerified && styles.stepBadgeDone]}>
+							<View style={styles.stepBadge}>
 								<Text allowFontScaling={false} style={styles.stepBadgeText}>{index + 1}</Text>
 							</View>
 							<Text allowFontScaling={false} style={styles.stepText}>{step}</Text>
@@ -89,18 +79,11 @@ export default function VerifyEmailInstruction() {
 			</ScrollView>
 
 			<View style={styles.bottomActions}>
-				<PrimaryButton
-					label={isVerified ? 'Continue' : 'Waiting for verification…'}
-					onPress={handleContinue}
-					disabled={!isVerified}
-					size="large"
-				/>
-
 				<View style={styles.resendRow}>
 					<Text allowFontScaling={false} style={styles.resendPrompt}>Didn&apos;t receive the email? </Text>
-					<TouchableOpacity activeOpacity={0.7} onPress={handleResend} disabled={isResending}>
+					<TouchableOpacity activeOpacity={0.7} onPress={handleResend} disabled={isResending || isCoolingDown}>
 						<Text allowFontScaling={false} style={styles.resendAction}>
-							{isResending ? 'Resending…' : 'Resend'}
+							{isResending ? 'Resending…' : isCoolingDown ? `Resend (${secondsRemaining}s)` : 'Resend'}
 						</Text>
 					</TouchableOpacity>
 				</View>

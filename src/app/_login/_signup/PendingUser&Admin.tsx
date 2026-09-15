@@ -1,18 +1,98 @@
-import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
-import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
+import { NOTIFICATION_HUB_URL } from '@/constants/api';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import { fetchNotifications } from '@/services/notificationsApi';
+import { useAuthStore } from '@/store/authStore';
+import { clearPendingSignupCredentials, getPendingSignupCredentials } from '@/store/emailVerificationStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
+import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { AppState, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 
 export default function PendingUserAndAdminPage() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].pendingApproval;
+	const email = useAuthStore((state) => state.user?.email ?? '');
+	const login = useAuthStore((state) => state.login);
+	const approvalHandled = useRef(false);
+
+	useEffect(() => {
+		if (activeRole !== 'user') return;
+
+		const handleApproved = async () => {
+			if (approvalHandled.current) return;
+			approvalHandled.current = true;
+			const credentials = getPendingSignupCredentials();
+
+			if (!credentials) {
+				useFeedbackStore.getState().showToast('Your organization request was approved. Please sign in.', 'success');
+				router.replace({ pathname: '/_login/SignInPage', params: { role: 'user', verifiedEmail: email } });
+				return;
+			}
+
+			try {
+				await login(credentials.email, credentials.password);
+				clearPendingSignupCredentials();
+				useFeedbackStore.getState().showToast('Your organization request was approved.', 'success');
+				router.replace('/User/user_dashboard');
+			} catch {
+				approvalHandled.current = false;
+				useFeedbackStore.getState().showToast('Your request was approved. Please sign in.', 'success');
+				router.replace({ pathname: '/_login/SignInPage', params: { role: 'user', verifiedEmail: credentials.email } });
+			}
+		};
+
+		const checkStoredApproval = async () => {
+			try {
+				const notifications = await fetchNotifications();
+				const approval = notifications.find((notification) =>
+					/approved|accepted/i.test(`${notification.type} ${notification.title} ${notification.message}`),
+				);
+				if (approval) await handleApproved();
+			} catch (error) {
+				console.warn('[PendingUserAndAdmin] Unable to check approval notification:', error);
+			}
+		};
+
+		void checkStoredApproval();
+		const appStateSubscription = AppState.addEventListener('change', (state) => {
+			if (state === 'active') void checkStoredApproval();
+		});
+
+		const tenantId = useAuthStore.getState().user?.tenantId?.trim();
+		const accessToken = useAuthStore.getState().accessToken;
+		if (!accessToken || !tenantId) {
+			return () => appStateSubscription.remove();
+		}
+
+		const connection = new HubConnectionBuilder()
+			.withUrl(NOTIFICATION_HUB_URL, {
+				accessTokenFactory: () => useAuthStore.getState().accessToken ?? '',
+			})
+			.withAutomaticReconnect()
+			.configureLogging(LogLevel.Warning)
+			.build();
+
+		connection.on('MemberRequestApproved', handleApproved);
+		void connection.start().catch((error) => {
+			console.warn('[PendingUserAndAdmin] Unable to connect to approval notifications:', error);
+		});
+
+		return () => {
+			appStateSubscription.remove();
+			connection.off('MemberRequestApproved', handleApproved);
+			if (connection.state !== HubConnectionState.Disconnected) {
+				void connection.stop().catch(() => {});
+			}
+		};
+	}, [activeRole, email, router]);
 	const handleWelcomePage = () => {
 		router.push('/_login/GetStarted');
 	};

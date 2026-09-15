@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
 				token: params.code ?? '',
 				password: values.password,
 			});
-			router.push({ pathname: '/_login/forgot_password/success', params: { role: activeRole } });
+			router.push({ pathname: '/_login/forgot_password/success', params: { role: activeRole, type: 'passwordReset' } });
 		} catch (error) {
 			setResetError(error instanceof Error ? error.message : 'Unable to reset your password. Please try again.');
 		} finally {

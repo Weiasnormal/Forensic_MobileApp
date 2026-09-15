@@ -1,16 +1,16 @@
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import { useAuthStore } from '@/store/authStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {useAuthStore} from '@/store/authStore';
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type InviteCodeFormValues, inviteCodeSchema } from '../../../utils/validation';
-import { useFeedbackStore } from '@/store/feedbackStore';
 
 export default function UserAndAdminCodePage() {
 	const router = useRouter();
@@ -72,14 +72,13 @@ export default function UserAndAdminCodePage() {
 		try {
 			await joinInviteCode(formattedCode);
 			useFeedbackStore.getState().showToast('Invite code submitted', 'success');
-			router.push({
-			pathname: '/_login/_signup/PendingUser&Admin',
-			params: { role: activeRole },
+			router.replace({
+				pathname: '/_login/_signup/PendingUser&Admin',
+				params: { role: activeRole },
 			});
 		} catch (error) {
-			setSubmitError(
-			error instanceof Error ? error.message : 'Invalid invite code. Please check and try again.',
-			);
+			setSubmitError(null);
+			useFeedbackStore.getState().showToast('Organization not found', 'infoLight');
 		} finally {
 			setIsSubmitting(false);
 		}

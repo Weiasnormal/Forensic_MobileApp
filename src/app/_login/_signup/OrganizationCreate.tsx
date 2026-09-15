@@ -1,18 +1,18 @@
+import ErrorBanner from '@/_components/common/ErrorBanner';
+import FormField from '@/_components/common/FormField';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import { useAdminStore } from '@/store/adminStore';
+import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import FormField from '@/_components/common/FormField';
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import { useAdminStore } from '@/store/adminStore';
-import { useEmailVerificationStore } from '@/store/emailVerificationStore';
+import { z } from 'zod';
 
 const organizationSchema = z.object({
   organizationName: z.string().trim().min(1, 'Organization name is required.'),
@@ -21,6 +21,7 @@ const organizationSchema = z.object({
 export default function SignUpPage() {
   const router = useRouter();
   const createTenant = useAdminStore((state) => state.createTenant);
+  const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
   const isCreatingTenant = useAdminStore((state) => state.isCreatingTenant);
   const createTenantError = useAdminStore((state) => state.createTenantError);
   const [organizationError, setOrganizationError] = useState<string | null>(null);
@@ -51,12 +52,13 @@ const handleContinue = async (values: { organizationName: string }) => {
       return;
     }
 
+    await fetchTenantProfile();
     useEmailVerificationStore.getState().reset();
     router.replace('/Admin/admin_dashboard');
   } catch (error) {
     setOrganizationError(error instanceof Error ? error.message : 'Unable to create organization.');
   }
-};
+  };
 
   return (
     <View style={styles.container}>
