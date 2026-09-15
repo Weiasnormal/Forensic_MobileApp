@@ -1,35 +1,38 @@
-import GroupedCard from '@/_components/common/GroupedCard';
+import DangerRow from '@/_components/admin/DangerRow';
 import Avatar from '@/_components/common/Avatar';
+import Divider from '@/_components/common/Divider';
+import GroupedCard from '@/_components/common/GroupedCard';
+import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import SecondaryButton from '@/_components/common/SecondaryButton';
 import SectionLabel from '@/_components/common/SectionLabel';
 import SettingsRow from '@/_components/common/SettingsRow';
-import ToggleRow from '@/_components/common/ToggleRow';
-import Divider from '@/_components/common/Divider';
 import SignOutButton from '@/_components/common/SignOutButton';
-import SecondaryButton from '@/_components/common/SecondaryButton';
+import ToggleRow from '@/_components/common/ToggleRow';
+import DefaultResultViewModal from '@/_components/modals/default_result_view';
+import ErrorModal from '@/_components/modals/error_modal';
 import LogoutModal from '@/_components/modals/logout';
-import { ScreenStatusBar } from '@/_components/common/ScreenStatusBar';
+import TypeToConfirmModal from '@/_components/modals/type_to_confirm';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
-import { useUser } from '@/store/userStore';
+import { getNotificationsEnabledPreference, setNotificationsEnabledPreference } from '@/services/processingNotifications';
+import { useAdminStore } from '@/store/adminStore';
+import { useAuthStore } from '@/store/authStore';
 import { getCaseSummary, useCaseStore } from '@/store/caseStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
+import { useUser } from '@/store/userStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Bell, Eye, EyeOff, FileText, Grid, Info, Lock, Upload, User, UserX } from 'lucide-react-native';
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
-import DangerRow from '@/_components/admin/DangerRow';
-import { useAuthStore } from '@/store/authStore';
-import ErrorModal from '@/_components/modals/error_modal';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import TypeToConfirmModal from '@/_components/modals/type_to_confirm';
-import DefaultResultViewModal from '@/_components/modals/default_result_view';
-import { getNotificationsEnabledPreference, setNotificationsEnabledPreference } from '@/services/processingNotifications';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function UserProfileScreen() {
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
 	const { user, load, setUser } = useUser();
+	const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
+	const tenantProfile = useAdminStore((state) => state.tenantProfile);
 	const logout = useAuthStore((state) => state.logout);
 	const cases = useCaseStore((state) => state.cases);
 	const allowUploadSourceChoice = useCaseStore((state) => state.allowUploadSourceChoice);
@@ -39,7 +42,8 @@ export default function UserProfileScreen() {
 	useFocusEffect(
 		useCallback(() => {
 			load();
-		}, [load]),
+			fetchTenantProfile();
+		}, [fetchTenantProfile, load]),
 	);
 	const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 	const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -55,6 +59,13 @@ export default function UserProfileScreen() {
 	const initials = getInitials(user.firstName, user.lastName);
 
 	const [deleteError, setDeleteError] = useState(false);
+
+	useEffect(() => {
+		const organizationName = tenantProfile?.name?.trim();
+		if (organizationName && organizationName !== user.organization) {
+			void setUser({ organization: organizationName });
+		}
+	}, [setUser, tenantProfile?.name, user.organization]);
 
 	useEffect(() => {
 	getNotificationsEnabledPreference().then(setNotificationsEnabled);

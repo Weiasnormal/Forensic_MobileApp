@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, View, Text, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Folder, MinusCircle, UserX } from 'lucide-react-native';
-import ScreenHeader from '@/_components/common/ScreenHeader';
+import DangerRow from '@/_components/admin/DangerRow';
 import Avatar from '@/_components/common/Avatar';
+import Divider from '@/_components/common/Divider';
+import ScreenHeader from '@/_components/common/ScreenHeader';
 import SectionLabel from '@/_components/common/SectionLabel';
 import SettingsRow from '@/_components/common/SettingsRow';
-import DangerRow from '@/_components/admin/DangerRow';
-import Divider from '@/_components/common/Divider';
 import ToggleRow from '@/_components/common/ToggleRow';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useAdminStore } from '@/store/adminStore';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Folder, MinusCircle, UserX } from 'lucide-react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MemberDetailsScreen: React.FC = () => {
   const { memberId } = useLocalSearchParams<{ memberId?: string }>();
@@ -39,6 +39,19 @@ const MemberDetailsScreen: React.FC = () => {
           <ActivityIndicator color={colors.primary} />
           <Text allowFontScaling={false} style={styles.stateText}>
             {memberDetailError ?? 'Loading member details...'}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isProtectedMember) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ScreenHeader title="Member Details" onBackPress={() => router.back()} />
+        <View style={styles.centeredState}>
+          <Text allowFontScaling={false} style={styles.stateText}>
+            Organization administrators do not have analyst member details.
           </Text>
         </View>
       </SafeAreaView>

@@ -1,23 +1,24 @@
+import ErrorBanner from '@/_components/common/ErrorBanner';
 import FormField from '@/_components/common/FormField';
 import ScreenHeader from '@/_components/common/ScreenHeader';
+import ChangeEmailModal from '@/_components/modals/change_email';
+import ChangeEmailSuccessModal from '@/_components/modals/change_email_success';
+import ErrorModal from '@/_components/modals/error_modal';
+import ProfileSaveModal from '@/_components/modals/profile_save';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
-import { Ionicons } from '@expo/vector-icons';
+import { useResendCooldown } from '@/hooks/useResendCooldown';
+import { resendVerificationEmail } from '@/services/emailVerificationApi';
+import { useAuthStore } from '@/store/authStore';
+import { useFeedbackStore } from '@/store/feedbackStore';
 import { useUser } from '@/store/userStore';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import ErrorModal from '@/_components/modals/error_modal';
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { useAuthStore } from '@/store/authStore';
-import ProfileSaveModal from '@/_components/modals/profile_save';
-import ChangeEmailModal from '@/_components/modals/change_email';
-import ChangeEmailSuccessModal from '@/_components/modals/change_email_success';
-import { resendVerificationEmail } from '@/services/emailVerificationApi';
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -32,6 +33,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 }) => {
   const router = useRouter();
   const { user, setUser } = useUser();
+  const { secondsRemaining, isCoolingDown, startCooldown } = useResendCooldown();
   const insets = useSafeAreaInsets();
   const [firstName, setFirstName] = useState(user.firstName ?? '');
   const [lastName, setLastName] = useState(user.lastName ?? '');
@@ -174,7 +176,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 Link sent to {pendingNewEmail}. Current email stays active.
               </Text>
               <Pressable
+                disabled={isCoolingDown}
                 onPress={async () => {
+                  if (isCoolingDown) return;
+                  startCooldown();
                   const { ok } = await resendVerificationEmail(pendingNewEmail);
                   useFeedbackStore.getState().showToast(
                     ok ? 'Email resent' : 'Unable to resend right now',
@@ -182,7 +187,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                   );
                 }}
               >
-                <Text style={verifyStyles.pendingResend}>Resend</Text>
+                <Text style={verifyStyles.pendingResend}>
+                  {isCoolingDown ? `Resend (${secondsRemaining}s)` : 'Resend'}
+                </Text>
               </Pressable>
             </View>
           ) : null}

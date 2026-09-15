@@ -1,27 +1,31 @@
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
+import ErrorModal from '@/_components/modals/error_modal';
+import KeyFindingsModal from '@/_components/modals/key_findingsmodal';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import {
+    findOverlayImage,
+    getSignatureAnalysisCaseStatus, getSignatureAnalysisVerdictLabel,
+    REFERENCE_SLOTS,
+    resolveCaseVerdict,
+    type OverlayVariant,
+    type SignatureAnalysisResult,
+    type SignatureAnalysisViewMode,
+} from '@/services/signatureAnalysis';
+import { getAuthHeader, useAuthStore } from '@/store/authStore';
+import { useUser } from '@/store/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as FileSystem from 'expo-file-system/legacy';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import SecondaryButton from '@/_components/common/SecondaryButton';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import KeyFindingsModal from '@/_components/modals/key_findingsmodal';
-import { findOverlayImage, REFERENCE_SLOTS, getSignatureAnalysisCaseStatus, getSignatureAnalysisVerdictLabel, resolveCaseVerdict,
-    type SignatureAnalysisResult,
-    type SignatureAnalysisViewMode,
-    type OverlayVariant,
-} from '@/services/signatureAnalysis';
-import { API_ENDPOINTS, buildApiUrl, API_KEY, NOTIFICATION_HUB_URL } from '../../../constants/api';
+import { API_ENDPOINTS, API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from '../../../constants/api';
 import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
-import { type CaseStatus, useCaseStore } from '../../../store/caseStore';
-import { getAuthHeader, useAuthStore} from '@/store/authStore';
-import ErrorModal from '@/_components/modals/error_modal';
-import { useUser } from '@/store/userStore';
+import { useCaseStore, type CaseStatus } from '../../../store/caseStore';
 
 import VerdictCard from '@/_components/common/VerdIctCard';
 import { fetchCaseForReview, FinalVerdict, type AdminCaseDetail } from '@/services/caseReviewApi';
@@ -145,6 +149,12 @@ export function SignatureResultsScreen() {
 
     connection.onreconnected(() => {
       void loadReviewDetail();
+    });
+
+    connection.onclose((error) => {
+      if (error) {
+        console.warn('[SignatureResults] Review notification connection closed:', error.message);
+      }
     });
 
     void connection.start().catch((error) => {
