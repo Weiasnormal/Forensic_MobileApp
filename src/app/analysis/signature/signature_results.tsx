@@ -1,94 +1,202 @@
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import SecondaryButton from '@/_components/common/SecondaryButton';
-import ErrorModal from '@/_components/modals/error_modal';
-import KeyFindingsModal from '@/_components/modals/key_findingsmodal';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import SecondaryButton from "@/_components/common/SecondaryButton";
+import ErrorModal from "@/_components/modals/error_modal";
+import KeyFindingsModal from "@/_components/modals/key_findingsmodal";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
 import {
-    findOverlayImage,
-    getSignatureAnalysisCaseStatus, getSignatureAnalysisVerdictLabel,
-    REFERENCE_SLOTS,
-    resolveCaseVerdict,
-    type OverlayVariant,
-    type SignatureAnalysisResult,
-    type SignatureAnalysisViewMode,
-} from '@/services/signatureAnalysis';
-import { getAuthHeader, useAuthStore } from '@/store/authStore';
-import { useUser } from '@/store/userStore';
-import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Image as ExpoImage } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Sharing from 'expo-sharing';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { API_ENDPOINTS, API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from '../../../constants/api';
-import { useAnalysisFlowStore } from '../../../store/analysisFlowStore';
-import { useCaseStore, type CaseStatus } from '../../../store/caseStore';
+  findOverlayImage,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisVerdictLabel,
+  REFERENCE_SLOTS,
+  resolveCaseVerdict,
+  type OverlayVariant,
+  type SignatureAnalysisResult,
+  type SignatureAnalysisViewMode,
+} from "@/services/signatureAnalysis";
+import { getAuthHeader, useAuthStore } from "@/store/authStore";
+import { useUser } from "@/store/userStore";
+import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
+import { Image as ExpoImage } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import {
+  API_ENDPOINTS,
+  API_KEY,
+  buildApiUrl,
+  NOTIFICATION_HUB_URL,
+} from "../../../constants/api";
+import { useAnalysisFlowStore } from "../../../store/analysisFlowStore";
+import { useCaseStore, type CaseStatus } from "../../../store/caseStore";
 
-import VerdictCard from '@/_components/common/VerdIctCard';
-import { fetchCaseForReview, FinalVerdict, type AdminCaseDetail } from '@/services/caseReviewApi';
-import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
+import VerdictCard from "@/_components/common/VerdIctCard";
+import {
+  fetchCaseForReview,
+  FinalVerdict,
+  type AdminCaseDetail,
+} from "@/services/caseReviewApi";
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  HubConnectionState,
+  LogLevel,
+} from "@microsoft/signalr";
 
 const getAuthImageSource = (uri?: string | null) => {
   if (!uri) return undefined;
 
-  if (uri.startsWith('file://') || uri.startsWith('data:')) {
+  if (uri.startsWith("file://") || uri.startsWith("data:")) {
     return { uri };
   }
-  
+
   return {
     uri,
     headers: {
-      'X-Api-Key': API_KEY || '',
+      "X-Api-Key": API_KEY || "",
       ...getAuthHeader(),
     },
   };
 };
-const viewModes = ['Heatmap', 'Bounding Box', 'Stroke Diff'] as const;
+const viewModes = ["Heatmap", "Bounding Box", "Stroke Diff"] as const;
 
 const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
-  'Heatmap': 'Overlay',
-  'Bounding Box': 'BoundingBox',
-  'Stroke Diff': 'StrokeDiff',
+  Heatmap: "Overlay",
+  "Bounding Box": "BoundingBox",
+  "Stroke Diff": "StrokeDiff",
 };
 
 type ViewMode = SignatureAnalysisViewMode;
 
-const VIEW_MODE_THEME: Record<ViewMode, { bg: string; edge: string; badge: string }> = {
-  'Heatmap': { bg: '#DBEAFE', edge: '#60A5FA', badge: '#1D4ED8' },
-  'Bounding Box': { bg: '#E0F2FE', edge: '#38BDF8', badge: '#0369A1' },
-  'Stroke Diff': { bg: colors.inputBorder, edge: colors.label, badge: colors.statsTextPrimary },
+const VIEW_MODE_THEME: Record<
+  ViewMode,
+  { bg: string; edge: string; badge: string }
+> = {
+  Heatmap: { bg: "#DBEAFE", edge: "#60A5FA", badge: "#1D4ED8" },
+  "Bounding Box": { bg: "#E0F2FE", edge: "#38BDF8", badge: "#0369A1" },
+  "Stroke Diff": {
+    bg: colors.inputBorder,
+    edge: colors.label,
+    badge: colors.statsTextPrimary,
+  },
 };
 
-function buildPayloadRows(result: SignatureAnalysisResult, verdictLabel: string, currentCase: any) {
+function buildRemoteSignatureResult(
+  detail: AdminCaseDetail,
+): SignatureAnalysisResult | null {
+  const mlResponse = detail.mlResponse;
+  if (!mlResponse) return null;
+
+  const verdict = mlResponse.verdict.toUpperCase();
+  const overlayImages = mlResponse.gradCamResults.flatMap((item) => {
+    const slot =
+      item.slot as SignatureAnalysisResult["overlay_images"][number]["slot"];
+    const variant = item.variant as OverlayVariant;
+    const validSlots = [
+      "Reference1",
+      "Reference2",
+      "Reference3",
+      "Reference4",
+      "Suspected",
+    ];
+    const validVariants = [
+      "Original",
+      "Heatmap",
+      "Overlay",
+      "BoundingBox",
+      "StrokeDiff",
+    ];
+
+    if (
+      !validSlots.includes(slot) ||
+      !validVariants.includes(variant) ||
+      !item.imageId
+    ) {
+      return [];
+    }
+
+    return [{ id: item.imageId, slot, variant }];
+  });
+
+  return {
+    case_name: detail.caseCode || detail.subjectName,
+    confidence_forged: mlResponse.confidenceForged,
+    confidence_genuine: mlResponse.confidenceGenuine,
+    distance: mlResponse.distance,
+    threshold: mlResponse.threshold,
+    verdict:
+      verdict === "FORGED" || verdict === "GENUINE" ? verdict : undefined,
+    overlay_images: overlayImages,
+  };
+}
+
+function buildPayloadRows(
+  result: SignatureAnalysisResult,
+  verdictLabel: string,
+  currentCase: any,
+) {
   const { isSuspected } = resolveCaseVerdict(currentCase, result);
   const isForged = isSuspected;
 
   return [
-    { metric: 'General information',
-      value: result.case_name || 'N/A',
-      detail: 'Cross-referenced with internal database.' },
+    {
+      metric: "General information",
+      value: result.case_name || "N/A",
+      detail: "Cross-referenced with internal database.",
+    },
 
-    { metric: 'Relation to Baseline',
-      value: isForged ? 'Inconsistent (High Deviation)' : 'Consistent with Baseline',
-      detail: `Distance metric computed at ${(result.distance || 0).toFixed(4)}.` },
+    {
+      metric: "Relation to Baseline",
+      value: isForged
+        ? "Inconsistent (High Deviation)"
+        : "Consistent with Baseline",
+      detail: `Distance metric computed at ${(result.distance || 0).toFixed(4)}.`,
+    },
 
-    { metric: 'Line Quality',
-      value: isForged ? 'Tremor / Hesitation detected' : 'Smooth, fluid strokes',
-      detail: 'Analysis of stroke velocity, pressure points, and fluidity.' },
-    { metric: 'Proportion & Spacing',
-      value: isForged ? 'Irregular (x4 discrepancies)' : 'Matches baseline proportions',
-      detail: 'Height-to-width ratios and intra-character spacing evaluated.' },
+    {
+      metric: "Line Quality",
+      value: isForged
+        ? "Tremor / Hesitation detected"
+        : "Smooth, fluid strokes",
+      detail: "Analysis of stroke velocity, pressure points, and fluidity.",
+    },
+    {
+      metric: "Proportion & Spacing",
+      value: isForged
+        ? "Irregular (x4 discrepancies)"
+        : "Matches baseline proportions",
+      detail: "Height-to-width ratios and intra-character spacing evaluated.",
+    },
 
-    { metric: 'Connecting Strokes',
-      value: isForged ? 'Blunt endings / unnatural lifts' : 'Natural flow and continuous',
-      detail: 'Micro-lifts and terminal stroke tapering analyzed.' },
+    {
+      metric: "Connecting Strokes",
+      value: isForged
+        ? "Blunt endings / unnatural lifts"
+        : "Natural flow and continuous",
+      detail: "Micro-lifts and terminal stroke tapering analyzed.",
+    },
 
-    { metric: 'Pattern Variation',
-      value: isForged ? 'Beyond controlling pattern' : 'Within natural variation bounds',
-      detail: 'Compared against the provided reference samples.' },
+    {
+      metric: "Pattern Variation",
+      value: isForged
+        ? "Beyond controlling pattern"
+        : "Within natural variation bounds",
+      detail: "Compared against the provided reference samples.",
+    },
   ];
 }
 
@@ -97,7 +205,9 @@ export function SignatureResultsScreen() {
   const nav = router as any;
 
   const params = useLocalSearchParams<{ caseId?: string }>();
-  const setActiveSignatureCaseId = useCaseStore((state) => state.setActiveSignatureCaseId);
+  const setActiveSignatureCaseId = useCaseStore(
+    (state) => state.setActiveSignatureCaseId,
+  );
   const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,18 +222,59 @@ export function SignatureResultsScreen() {
 
   const currentCaseId = useCaseStore((state) => state.activeSignatureCaseId);
   const updateCaseStatus = useCaseStore((state) => state.updateCaseStatus);
-  const [reviewDetail, setReviewDetail] = useState<AdminCaseDetail | null>(null);
+  const hydrateSignatureAnalysisResult = useCaseStore(
+    (state) => state.hydrateSignatureAnalysisResult,
+  );
+  const safeCaseId = String(currentCaseId).trim();
+  const analysisResult = useCaseStore((state) =>
+    safeCaseId ? state.signatureAnalysisResults[safeCaseId] : undefined,
+  );
+  const currentCase = useCaseStore((state) =>
+    safeCaseId
+      ? state.cases.find((c) => String(c.caseId) === safeCaseId)
+      : undefined,
+  );
+  const [reviewDetail, setReviewDetail] = useState<AdminCaseDetail | null>(
+    null,
+  );
+  const [isLoadingRemoteResult, setIsLoadingRemoteResult] = useState(false);
+  const [remoteResultError, setRemoteResultError] = useState<string | null>(
+    null,
+  );
 
   const loadReviewDetail = useCallback(async () => {
     if (!currentCaseId) return;
+    const shouldHydrateResult = !analysisResult;
+    if (shouldHydrateResult) {
+      setIsLoadingRemoteResult(true);
+      setRemoteResultError(null);
+    }
     try {
       const detail = await fetchCaseForReview(currentCaseId);
       setReviewDetail(detail);
+      if (shouldHydrateResult) {
+        const remoteResult = buildRemoteSignatureResult(detail);
+        if (!remoteResult) {
+          setRemoteResultError("No analysis results found from the server.");
+        } else {
+          hydrateSignatureAnalysisResult(
+            currentCaseId,
+            remoteResult,
+            detail.caseStatus,
+          );
+        }
+      }
     } catch (error) {
-      // Non-fatal - the screen still works fine without supervisor review data.
-      console.warn('Unable to load supervisor review status:', error);
+      console.warn("Unable to load supervisor review status:", error);
+      if (shouldHydrateResult) {
+        setRemoteResultError(
+          "Unable to load analysis results from the server.",
+        );
+      }
+    } finally {
+      if (shouldHydrateResult) setIsLoadingRemoteResult(false);
     }
-  }, [currentCaseId]);
+  }, [analysisResult, currentCaseId, hydrateSignatureAnalysisResult]);
 
   useEffect(() => {
     loadReviewDetail();
@@ -134,18 +285,25 @@ export function SignatureResultsScreen() {
 
     const connection: HubConnection = new HubConnectionBuilder()
       .withUrl(NOTIFICATION_HUB_URL, {
-        accessTokenFactory: () => useAuthStore.getState().accessToken ?? '',
+        accessTokenFactory: () => useAuthStore.getState().accessToken ?? "",
       })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();
 
-    connection.on('CaseReviewCompleted', (notification: { caseId?: string; CaseId?: string }) => {
-      const notificationCaseId = notification?.caseId ?? notification?.CaseId;
-      if (notificationCaseId && String(notificationCaseId).toLowerCase() === String(currentCaseId).toLowerCase()) {
-        loadReviewDetail();
-      }
-    });
+    connection.on(
+      "CaseReviewCompleted",
+      (notification: { caseId?: string; CaseId?: string }) => {
+        const notificationCaseId = notification?.caseId ?? notification?.CaseId;
+        if (
+          notificationCaseId &&
+          String(notificationCaseId).toLowerCase() ===
+            String(currentCaseId).toLowerCase()
+        ) {
+          loadReviewDetail();
+        }
+      },
+    );
 
     connection.onreconnected(() => {
       void loadReviewDetail();
@@ -153,12 +311,15 @@ export function SignatureResultsScreen() {
 
     connection.onclose((error) => {
       if (error) {
-        console.warn('[SignatureResults] Review notification connection closed:', error.message);
+        console.warn(
+          "[SignatureResults] Review notification connection closed:",
+          error.message,
+        );
       }
     });
 
     void connection.start().catch((error) => {
-      console.warn('Unable to connect to notification hub:', error);
+      console.warn("Unable to connect to notification hub:", error);
     });
 
     return () => {
@@ -168,34 +329,39 @@ export function SignatureResultsScreen() {
     };
   }, [currentCaseId, loadReviewDetail]);
 
-  const safeCaseId = String(currentCaseId).trim();
-  const analysisResult = useCaseStore((state) =>
-    safeCaseId ? state.signatureAnalysisResults[safeCaseId] : undefined,
-  );
-  const currentCase = useCaseStore((state) =>
-    safeCaseId ? state.cases.find((c) => String(c.caseId) === safeCaseId) : undefined,
-  );
-
   const { user: profile } = useUser();
-  const [activeView, setActiveView] = useState<ViewMode>(profile.defaultResultView ?? 'Heatmap');
+  const [activeView, setActiveView] = useState<ViewMode>(
+    profile.defaultResultView ?? "Heatmap",
+  );
   const insets = useSafeAreaInsets();
-  const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(null);
-  const [previewLabel, setPreviewLabel] = useState('');
-  const [selectedFinding, setSelectedFinding] = useState<{ metric: string; value: string; detail?: string } | null>(null);
+  const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(
+    null,
+  );
+  const [previewLabel, setPreviewLabel] = useState("");
+  const [selectedFinding, setSelectedFinding] = useState<{
+    metric: string;
+    value: string;
+    detail?: string;
+  } | null>(null);
 
   const activeTone = useMemo(() => VIEW_MODE_THEME[activeView], [activeView]);
 
   const payloadRows = useMemo(() => {
     if (!analysisResult) return [];
-    const finalVerdict = currentCase?.verdict || currentCase?.Verdict || 'UNKNOWN';
+    const finalVerdict =
+      currentCase?.verdict || currentCase?.Verdict || "UNKNOWN";
     const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
     return buildPayloadRows(analysisResult, verdictLabel, currentCase);
   }, [analysisResult, currentCase]);
 
   const referenceOverlayUris = useMemo(() => {
-  const variant = VIEW_MODE_TO_VARIANT[activeView];
+    const variant = VIEW_MODE_TO_VARIANT[activeView];
     return REFERENCE_SLOTS.map((slot) => {
-      const ref = findOverlayImage(analysisResult?.overlay_images, slot, variant);
+      const ref = findOverlayImage(
+        analysisResult?.overlay_images,
+        slot,
+        variant,
+      );
       return currentCaseId && ref
         ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.id))
         : null;
@@ -203,29 +369,43 @@ export function SignatureResultsScreen() {
   }, [currentCaseId, analysisResult, activeView]);
 
   const suspectOverlayUri = useMemo(() => {
-    const ref = findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]);
+    const ref = findOverlayImage(
+      analysisResult?.overlay_images,
+      "Suspected",
+      VIEW_MODE_TO_VARIANT[activeView],
+    );
     return currentCaseId && ref
       ? buildApiUrl(API_ENDPOINTS.ml.getBlobImage(currentCaseId, ref.id))
       : null;
   }, [currentCaseId, analysisResult, activeView]);
 
   const referenceImageUris = useMemo(
-    () => REFERENCE_SLOTS.map((_, index) =>
-      currentCaseId ? buildApiUrl(API_ENDPOINTS.signatures.getReference(currentCaseId, index + 1)) : null,
-    ),
+    () =>
+      REFERENCE_SLOTS.map((_, index) =>
+        currentCaseId
+          ? buildApiUrl(
+              API_ENDPOINTS.signatures.getReference(currentCaseId, index + 1),
+            )
+          : null,
+      ),
     [currentCaseId],
   );
 
   const suspectedImageUri = useMemo(
-    () => currentCaseId ? buildApiUrl(API_ENDPOINTS.signatures.getSuspected(currentCaseId, 1)) : null,
+    () =>
+      currentCaseId
+        ? buildApiUrl(API_ENDPOINTS.signatures.getSuspected(currentCaseId, 1))
+        : null,
     [currentCaseId],
   );
 
   // Prefetch all overlay images to reduce flicker when switching views
   useEffect(() => {
     const refs = currentCase?.uploads.references ?? [];
-    const localUris = refs.filter(Boolean).map((uri) => uri!.split('?')[0]);
-    const backendUris = [suspectOverlayUri, ...referenceOverlayUris].filter(Boolean) as string[];
+    const localUris = refs.filter(Boolean).map((uri) => uri!.split("?")[0]);
+    const backendUris = [suspectOverlayUri, ...referenceOverlayUris].filter(
+      Boolean,
+    ) as string[];
 
     if (localUris.length > 0) {
       ExpoImage.prefetch(localUris);
@@ -233,7 +413,7 @@ export function SignatureResultsScreen() {
     if (backendUris.length > 0) {
       ExpoImage.prefetch(backendUris, {
         headers: {
-          'X-Api-Key': API_KEY || '',
+          "X-Api-Key": API_KEY || "",
           ...getAuthHeader(),
         },
       });
@@ -241,12 +421,15 @@ export function SignatureResultsScreen() {
   }, [currentCase, suspectOverlayUri, referenceOverlayUris]);
 
   useEffect(() => {
-    if (currentCase?.workflowStatus === 'Processing') {
-      nav.replace({ pathname: '/analysis/signature/processing', params: { caseId: currentCaseId ?? undefined } });
+    if (currentCase?.workflowStatus === "Processing") {
+      nav.replace({
+        pathname: "/analysis/signature/processing",
+        params: { caseId: currentCaseId ?? undefined },
+      });
     }
   }, [currentCase?.workflowStatus, currentCaseId, nav]);
 
-  if (currentCase?.workflowStatus === 'Processing') return null;
+  if (currentCase?.workflowStatus === "Processing") return null;
 
   // SAFETY CHECK
   if (!analysisResult) {
@@ -254,9 +437,22 @@ export function SignatureResultsScreen() {
       <SafeAreaView style={styles.screen}>
         <TopBar title="Analysis Error" step="" onBackPress={() => nav.back()} />
         <View style={styles.centerFill}>
-          <Ionicons name="warning-outline" size={48} color={colors.danger} style={styles.errorIcon} />
-          <Text style={styles.errorTitle}>Data Missing</Text>
-          <Text style={styles.errorSubtitle}>No analysis results found from the server.</Text>
+          {isLoadingRemoteResult ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <Ionicons
+              name="warning-outline"
+              size={48}
+              color={colors.danger}
+              style={styles.errorIcon}
+            />
+          )}
+          <Text style={styles.errorTitle}>
+            {isLoadingRemoteResult ? "Loading Results" : "Data Missing"}
+          </Text>
+          <Text style={styles.errorSubtitle}>
+            {remoteResultError ?? "No analysis results found from the server."}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -268,8 +464,11 @@ export function SignatureResultsScreen() {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const { verdictLabel, isSuspected, confidence: confidenceValue } =
-    resolveCaseVerdict(currentCase, activeResult);
+  const {
+    verdictLabel,
+    isSuspected,
+    confidence: confidenceValue,
+  } = resolveCaseVerdict(currentCase, activeResult);
 
   const isCaseReviewed =
     reviewDetail?.finalVerdict !== null &&
@@ -278,13 +477,17 @@ export function SignatureResultsScreen() {
 
   const mlVerdictRaw = reviewDetail?.mlResponse?.verdict?.toUpperCase();
   const originalVerdictLabel =
-    mlVerdictRaw === 'FORGED' ? 'SUSPECTED' : mlVerdictRaw === 'GENUINE' ? 'GENUINE' : verdictLabel;
+    mlVerdictRaw === "FORGED"
+      ? "SUSPECTED"
+      : mlVerdictRaw === "GENUINE"
+        ? "GENUINE"
+        : verdictLabel;
 
   const newVerdictLabel =
     reviewDetail?.finalVerdict === FinalVerdict.Genuine
-      ? 'GENUINE'
+      ? "GENUINE"
       : reviewDetail?.finalVerdict === FinalVerdict.Forged
-        ? 'SUSPECTED'
+        ? "SUSPECTED"
         : undefined;
 
   const resultCardTheme = isSuspected
@@ -293,7 +496,7 @@ export function SignatureResultsScreen() {
         iconBg: colors.danger,
         text: colors.danger,
         subtleText: colors.textSecondary,
-        iconName: 'alert-circle' as const,
+        iconName: "alert-circle" as const,
         iconColor: colors.primaryText,
       }
     : {
@@ -301,7 +504,7 @@ export function SignatureResultsScreen() {
         iconBg: colors.statusGenuine,
         text: colors.statusGenuine,
         subtleText: colors.textSecondary,
-        iconName: 'checkmark-circle' as const,
+        iconName: "checkmark-circle" as const,
         iconColor: colors.primaryText,
       };
 
@@ -316,41 +519,41 @@ export function SignatureResultsScreen() {
   const handleBackToDashboard = () => {
     setSignatureStatus(getSignatureAnalysisCaseStatus(activeResult));
     useAnalysisFlowStore.setState({ currentAnalysisType: null });
-    nav.replace({ pathname: '/User/user_dashboard', params: { tab: 'home' } });
+    nav.replace({ pathname: "/User/user_dashboard", params: { tab: "home" } });
   };
 
   const handleExportPdf = async () => {
-  if (!currentCaseId) {
-    setExportError('Case ID is missing.');
-    return;
-  }
-  try {
+    if (!currentCaseId) {
+      setExportError("Case ID is missing.");
+      return;
+    }
+    try {
       const reportPdfUrl = buildApiUrl(`/cases/${currentCaseId}/results`);
-      const localUri = FileSystem.documentDirectory + `AVERA_Forensic_Report_${currentCaseId}.pdf`;
+      const localUri =
+        FileSystem.documentDirectory +
+        `AVERA_Forensic_Report_${currentCaseId}.pdf`;
 
-      const { uri } = await FileSystem.downloadAsync(
-        reportPdfUrl,
-        localUri,
-        {
-          headers: {
-            'X-Api-Key': API_KEY || '',
-            ...getAuthHeader(),
-          },
+      const { uri } = await FileSystem.downloadAsync(reportPdfUrl, localUri, {
+        headers: {
+          "X-Api-Key": API_KEY || "",
+          ...getAuthHeader(),
         },
-      );
+      });
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Export Forensic PDF Report',
-          UTI: 'com.adobe.pdf',
+          mimeType: "application/pdf",
+          dialogTitle: "Export Forensic PDF Report",
+          UTI: "com.adobe.pdf",
         });
       } else {
         setExportError(`File saved to: ${uri}`);
       }
     } catch (error) {
-      console.warn('Failed to download PDF:', error);
-      setExportError('The PDF report is either still generating or unavailable.');
+      console.warn("Failed to download PDF:", error);
+      setExportError(
+        "The PDF report is either still generating or unavailable.",
+      );
     }
   };
 
@@ -359,7 +562,11 @@ export function SignatureResultsScreen() {
     setPreviewLabel(label);
   };
 
-  const openFinding = (item: { metric: string; value: string; detail?: string }) => {
+  const openFinding = (item: {
+    metric: string;
+    value: string;
+    detail?: string;
+  }) => {
     setSelectedFinding(item);
   };
 
@@ -369,7 +576,7 @@ export function SignatureResultsScreen() {
 
   const closePreview = () => {
     setPreviewSource(null);
-    setPreviewLabel('');
+    setPreviewLabel("");
   };
 
   const referenceSlots = [0, 1, 2, 3] as const;
@@ -380,20 +587,48 @@ export function SignatureResultsScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <TopBar title="Upload Signatures" step={''} onBackPress={() => nav.back()} />
+      <TopBar
+        title="Upload Signatures"
+        step={""}
+        onBackPress={() => nav.back()}
+      />
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(160, insets.bottom + 120) }]} showsVerticalScrollIndicator={false}>
-        <View style={[styles.heroResultWrap, { backgroundColor: resultCardTheme.cardBg }]}>
-          <View style={[styles.heroBadge, { backgroundColor: resultCardTheme.iconBg }]}>
-            <Ionicons name={resultCardTheme.iconName} size={28} color={resultCardTheme.iconColor} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(160, insets.bottom + 120) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={[
+            styles.heroResultWrap,
+            { backgroundColor: resultCardTheme.cardBg },
+          ]}
+        >
+          <View
+            style={[
+              styles.heroBadge,
+              { backgroundColor: resultCardTheme.iconBg },
+            ]}
+          >
+            <Ionicons
+              name={resultCardTheme.iconName}
+              size={28}
+              color={resultCardTheme.iconColor}
+            />
           </View>
           <View style={styles.heroTextWrap}>
             <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>
-              {(confidenceValue || 0).toFixed(1) + '%'}{' '}
-              <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>{verdictLabel}</Text>
+              {(confidenceValue || 0).toFixed(1) + "%"}{" "}
+              <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>
+                {verdictLabel}
+              </Text>
             </Text>
 
-            <Text style={[styles.heroCase, { color: resultCardTheme.subtleText }]}>
+            <Text
+              style={[styles.heroCase, { color: resultCardTheme.subtleText }]}
+            >
               VERDICT · {activeResult.case_name}
             </Text>
 
@@ -408,18 +643,20 @@ export function SignatureResultsScreen() {
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Document Type</Text>
-            <Text style={styles.infoValue}>{currentCase?.documentType ?? '—'}</Text>
+            <Text style={styles.infoValue}>
+              {currentCase?.documentType ?? "—"}
+            </Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Date</Text>
             <Text style={styles.infoValue}>
               {currentCase?.createdAt
-                ? new Date(currentCase.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
+                ? new Date(currentCase.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
                   })
-                : '—'}
+                : "—"}
             </Text>
           </View>
         </View>
@@ -428,8 +665,19 @@ export function SignatureResultsScreen() {
           {viewModes.map((mode) => {
             const selected = mode === activeView;
             return (
-              <Pressable key={mode} onPress={() => setActiveView(mode)} style={[styles.viewTab, selected && styles.viewTabActive]}>
-                <Text style={[styles.viewTabText, selected && styles.viewTabTextActive]}>{mode}</Text>
+              <Pressable
+                key={mode}
+                onPress={() => setActiveView(mode)}
+                style={[styles.viewTab, selected && styles.viewTabActive]}
+              >
+                <Text
+                  style={[
+                    styles.viewTabText,
+                    selected && styles.viewTabTextActive,
+                  ]}
+                >
+                  {mode}
+                </Text>
               </Pressable>
             );
           })}
@@ -439,24 +687,26 @@ export function SignatureResultsScreen() {
           <View style={styles.smallThumbsGrid}>
             {referenceSlots.map((i) => {
               const uri = uploadedReferences[i] ?? referenceImageUris[i];
-              const referenceLabel = `SIG ${String(i + 1).padStart(2, '0')}`;
+              const referenceLabel = `SIG ${String(i + 1).padStart(2, "0")}`;
 
               if (uri) {
                 const overlayUri = referenceOverlayUris[i];
-                const displayUri = overlayUri ?? uri.split('?')[0];
+                const displayUri = overlayUri ?? uri.split("?")[0];
                 const previewTitle = overlayUri
                   ? `${referenceLabel} — ${activeView}`
-                  : `Uploaded Reference ${String(i + 1).padStart(2, '0')}`;
+                  : `Uploaded Reference ${String(i + 1).padStart(2, "0")}`;
 
                 return (
                   <Pressable
                     key={`r-${i}`}
                     style={styles.thumbCardSmall}
-                    onPress={() => openPreview({ uri: displayUri }, previewTitle)}
+                    onPress={() =>
+                      openPreview({ uri: displayUri }, previewTitle)
+                    }
                   >
                     <View style={styles.thumbImageWrap}>
                       <ExpoImage
-                        source={ getAuthImageSource(displayUri)}
+                        source={getAuthImageSource(displayUri)}
                         style={StyleSheet.absoluteFill}
                         contentFit="cover"
                       />
@@ -467,9 +717,28 @@ export function SignatureResultsScreen() {
                 );
               }
               return (
-                <View key={`r-${i}`} style={[styles.thumbCardSmall, styles.thumbPlaceholderCard, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
-                  <View style={[styles.thumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
-                    <Ionicons name="image-outline" size={24} color={activeTone.badge} />
+                <View
+                  key={`r-${i}`}
+                  style={[
+                    styles.thumbCardSmall,
+                    styles.thumbPlaceholderCard,
+                    {
+                      borderColor: activeTone.edge,
+                      backgroundColor: activeTone.bg,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.thumbPlaceholderIconWrap,
+                      { borderColor: activeTone.edge },
+                    ]}
+                  >
+                    <Ionicons
+                      name="image-outline"
+                      size={24}
+                      color={activeTone.badge}
+                    />
                   </View>
                   <Text style={styles.thumbLabel}>{referenceLabel}</Text>
                   <Text style={styles.thumbTag}>Upload pending</Text>
@@ -482,38 +751,78 @@ export function SignatureResultsScreen() {
             <Pressable
               style={styles.largeThumbWrap}
               onPress={() => {
-                const hasOverlay = Boolean(findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]));
+                const hasOverlay = Boolean(
+                  findOverlayImage(
+                    analysisResult?.overlay_images,
+                    "Suspected",
+                    VIEW_MODE_TO_VARIANT[activeView],
+                  ),
+                );
                 openPreview(
-                  { uri: hasOverlay ? suspectOverlayUri! : (uploadedSuspect ?? suspectedImageUri)!.split('?')[0] },
-                  hasOverlay ? `Suspected Signature — ${activeView}` : 'Uploaded Suspected Signature'
+                  {
+                    uri: hasOverlay
+                      ? suspectOverlayUri!
+                      : (uploadedSuspect ?? suspectedImageUri)!.split("?")[0],
+                  },
+                  hasOverlay
+                    ? `Suspected Signature — ${activeView}`
+                    : "Uploaded Suspected Signature",
                 );
               }}
             >
               <View style={styles.largeThumbImageWrap}>
-                {findOverlayImage(analysisResult?.overlay_images, 'Suspected', VIEW_MODE_TO_VARIANT[activeView]) ? (
-                <ExpoImage
-                  source={getAuthImageSource(suspectOverlayUri)}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="contain"
-                />
-              ) : (
-                <ExpoImage
-                  source={getAuthImageSource(uploadedSuspect ?? suspectedImageUri)}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="contain"
-                />
-              )}
+                {findOverlayImage(
+                  analysisResult?.overlay_images,
+                  "Suspected",
+                  VIEW_MODE_TO_VARIANT[activeView],
+                ) ? (
+                  <ExpoImage
+                    source={getAuthImageSource(suspectOverlayUri)}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="contain"
+                  />
+                ) : (
+                  <ExpoImage
+                    source={getAuthImageSource(
+                      uploadedSuspect ?? suspectedImageUri,
+                    )}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="contain"
+                  />
+                )}
               </View>
 
               <Text style={styles.suspectLabel}>UPLOADED SUSPECT</Text>
             </Pressable>
           ) : (
-            <View style={[styles.largeThumbWrap, styles.largeThumbPlaceholder, { borderColor: activeTone.edge, backgroundColor: activeTone.bg }]}>
-              <View style={[styles.largeThumbPlaceholderIconWrap, { borderColor: activeTone.edge }]}>
-                <Ionicons name="scan-outline" size={28} color={activeTone.badge} />
+            <View
+              style={[
+                styles.largeThumbWrap,
+                styles.largeThumbPlaceholder,
+                {
+                  borderColor: activeTone.edge,
+                  backgroundColor: activeTone.bg,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.largeThumbPlaceholderIconWrap,
+                  { borderColor: activeTone.edge },
+                ]}
+              >
+                <Ionicons
+                  name="scan-outline"
+                  size={28}
+                  color={activeTone.badge}
+                />
               </View>
-              <Text style={styles.suspectLabel}>{activeView.toUpperCase()}</Text>
-              <Text style={styles.suspectHint}>Upload the suspect image to preview it here.</Text>
+              <Text style={styles.suspectLabel}>
+                {activeView.toUpperCase()}
+              </Text>
+              <Text style={styles.suspectHint}>
+                Upload the suspect image to preview it here.
+              </Text>
             </View>
           )}
         </View>
@@ -530,13 +839,30 @@ export function SignatureResultsScreen() {
                 : { line: colors.statusGenuine, text: colors.statusGenuine };
 
               return (
-                <Pressable key={item.metric} style={styles.findingItem} onPress={() => openFinding(item)}>
-                  <View style={[styles.findingIndicator, { backgroundColor: findingTone.line }]} />
+                <Pressable
+                  key={item.metric}
+                  style={styles.findingItem}
+                  onPress={() => openFinding(item)}
+                >
+                  <View
+                    style={[
+                      styles.findingIndicator,
+                      { backgroundColor: findingTone.line },
+                    ]}
+                  />
                   <View style={styles.findingTextCol}>
                     <Text style={styles.findingMain}>{item.metric}</Text>
-                    <Text style={[styles.findingSub, { color: findingTone.text }]}>{item.value}</Text>
+                    <Text
+                      style={[styles.findingSub, { color: findingTone.text }]}
+                    >
+                      {item.value}
+                    </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.label} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.label}
+                  />
                 </Pressable>
               );
             })}
@@ -548,11 +874,15 @@ export function SignatureResultsScreen() {
             <Text style={styles.findingsTitle}>Supervisor Review</Text>
             <View style={{ marginTop: 8 }}>
               <VerdictCard
-                status={isCaseReviewed ? 'updated' : 'pending'}
+                status={isCaseReviewed ? "updated" : "pending"}
                 supervisorName="Supervisor"
                 originalVerdict={originalVerdictLabel}
                 newVerdict={newVerdictLabel}
-                date={reviewDetail.reviewedAt ? new Date(reviewDetail.reviewedAt).toLocaleDateString() : undefined}
+                date={
+                  reviewDetail.reviewedAt
+                    ? new Date(reviewDetail.reviewedAt).toLocaleDateString()
+                    : undefined
+                }
                 reviewNote={reviewDetail.reviewNote ?? undefined}
               />
             </View>
@@ -560,143 +890,154 @@ export function SignatureResultsScreen() {
         ) : null}
       </ScrollView>
 
-        <KeyFindingsModal
-          visible={selectedFinding !== null}
-          onClose={closeFinding}
-          title={selectedFinding?.metric ?? 'Finding'}
-          badgeLabel={selectedFinding?.value ?? ''}
-          observation={selectedFinding?.detail}
-          isSuspected={isSuspected}
-          {...(() => {
-            const metric = selectedFinding?.metric ?? '';
-            const dist = activeResult?.distance ?? 0;
+      <KeyFindingsModal
+        visible={selectedFinding !== null}
+        onClose={closeFinding}
+        title={selectedFinding?.metric ?? "Finding"}
+        badgeLabel={selectedFinding?.value ?? ""}
+        observation={selectedFinding?.detail}
+        isSuspected={isSuspected}
+        {...(() => {
+          const metric = selectedFinding?.metric ?? "";
+          const dist = activeResult?.distance ?? 0;
 
-            const byMetric = (m: string) => {
-              switch (m) {
-                case 'Relation to Baseline':
-                  return {
-                    standard: {
-                      label: 'STANDARD',
-                      values: [
-                        { label: 'Distance', value: (dist * 0.1).toFixed(4) },
-                        { label: 'Match %', value: '98%' },
-                        { label: 'Variation', value: 'Low' },
-                      ],
-                    },
-                    questioned: {
-                      label: 'QUESTIONED',
-                      values: [
-                        { label: 'Distance', value: (dist || 0.12).toFixed(4) },
-                        { label: 'Match %', value: '62%' },
-                        { label: 'Variation', value: 'High' },
-                      ],
-                    },
-                  };
+          const byMetric = (m: string) => {
+            switch (m) {
+              case "Relation to Baseline":
+                return {
+                  standard: {
+                    label: "STANDARD",
+                    values: [
+                      { label: "Distance", value: (dist * 0.1).toFixed(4) },
+                      { label: "Match %", value: "98%" },
+                      { label: "Variation", value: "Low" },
+                    ],
+                  },
+                  questioned: {
+                    label: "QUESTIONED",
+                    values: [
+                      { label: "Distance", value: (dist || 0.12).toFixed(4) },
+                      { label: "Match %", value: "62%" },
+                      { label: "Variation", value: "High" },
+                    ],
+                  },
+                };
 
-                case 'Line Quality':
-                  return {
-                    standard: {
-                      label: 'STANDARD',
-                      values: [
-                        { label: 'Tremor', value: 'None' },
-                        { label: 'Smoothness', value: 'High' },
-                        { label: 'Velocity variance', value: 'Low' },
-                      ],
-                    },
-                    questioned: {
-                      label: 'QUESTIONED',
-                      values: [
-                        { label: 'Tremor', value: 'Detected' },
-                        { label: 'Smoothness', value: 'Low' },
-                        { label: 'Velocity variance', value: 'High' },
-                      ],
-                    },
-                  };
+              case "Line Quality":
+                return {
+                  standard: {
+                    label: "STANDARD",
+                    values: [
+                      { label: "Tremor", value: "None" },
+                      { label: "Smoothness", value: "High" },
+                      { label: "Velocity variance", value: "Low" },
+                    ],
+                  },
+                  questioned: {
+                    label: "QUESTIONED",
+                    values: [
+                      { label: "Tremor", value: "Detected" },
+                      { label: "Smoothness", value: "Low" },
+                      { label: "Velocity variance", value: "High" },
+                    ],
+                  },
+                };
 
-                case 'Proportion & Spacing':
-                  return {
-                    standard: {
-                      label: 'STANDARD',
-                      values: [
-                        { label: 'Ratio diff', value: '0.02' },
-                        { label: 'Kerning', value: 'Regular' },
-                        { label: 'Baseline drift', value: 'None' },
-                      ],
-                    },
-                    questioned: {
-                      label: 'QUESTIONED',
-                      values: [
-                        { label: 'Ratio diff', value: '0.15' },
-                        { label: 'Kerning', value: 'Irregular' },
-                        { label: 'Baseline drift', value: 'Present' },
-                      ],
-                    },
-                  };
+              case "Proportion & Spacing":
+                return {
+                  standard: {
+                    label: "STANDARD",
+                    values: [
+                      { label: "Ratio diff", value: "0.02" },
+                      { label: "Kerning", value: "Regular" },
+                      { label: "Baseline drift", value: "None" },
+                    ],
+                  },
+                  questioned: {
+                    label: "QUESTIONED",
+                    values: [
+                      { label: "Ratio diff", value: "0.15" },
+                      { label: "Kerning", value: "Irregular" },
+                      { label: "Baseline drift", value: "Present" },
+                    ],
+                  },
+                };
 
-                case 'Connecting Strokes':
-                  return {
-                    standard: {
-                      label: 'STANDARD',
-                      values: [
-                        { label: 'Pen lifts', value: 0 },
-                        { label: 'Terminal taper', value: 'Natural' },
-                        { label: 'Stroke continuity', value: 'Continuous' },
-                      ],
-                    },
-                    questioned: {
-                      label: 'QUESTIONED',
-                      values: [
-                        { label: 'Pen lifts', value: 3 },
-                        { label: 'Terminal taper', value: 'Blunt' },
-                        { label: 'Stroke continuity', value: 'Interrupted' },
-                      ],
-                    },
-                  };
+              case "Connecting Strokes":
+                return {
+                  standard: {
+                    label: "STANDARD",
+                    values: [
+                      { label: "Pen lifts", value: 0 },
+                      { label: "Terminal taper", value: "Natural" },
+                      { label: "Stroke continuity", value: "Continuous" },
+                    ],
+                  },
+                  questioned: {
+                    label: "QUESTIONED",
+                    values: [
+                      { label: "Pen lifts", value: 3 },
+                      { label: "Terminal taper", value: "Blunt" },
+                      { label: "Stroke continuity", value: "Interrupted" },
+                    ],
+                  },
+                };
 
-                case 'Pattern Variation':
-                default:
-                  return {
-                    standard: {
-                      label: 'STANDARD',
-                      values: [
-                        { label: 'Variation score', value: '0.08' },
-                        { label: 'Consistency', value: 'High' },
-                        { label: 'Pattern matches', value: 'Within bounds' },
-                      ],
-                    },
-                    questioned: {
-                      label: 'QUESTIONED',
-                      values: [
-                        { label: 'Variation score', value: '0.45' },
-                        { label: 'Consistency', value: 'Low' },
-                        { label: 'Pattern matches', value: 'Beyond bounds' },
-                      ],
-                    },
-                  };
-              }
-            };
+              case "Pattern Variation":
+              default:
+                return {
+                  standard: {
+                    label: "STANDARD",
+                    values: [
+                      { label: "Variation score", value: "0.08" },
+                      { label: "Consistency", value: "High" },
+                      { label: "Pattern matches", value: "Within bounds" },
+                    ],
+                  },
+                  questioned: {
+                    label: "QUESTIONED",
+                    values: [
+                      { label: "Variation score", value: "0.45" },
+                      { label: "Consistency", value: "Low" },
+                      { label: "Pattern matches", value: "Beyond bounds" },
+                    ],
+                  },
+                };
+            }
+          };
 
-            const picked = byMetric(metric);
-            return {
-              measuredStandard: picked.standard,
-              measuredQuestioned: picked.questioned,
-            };
-          })()}
-        />
+          const picked = byMetric(metric);
+          return {
+            measuredStandard: picked.standard,
+            measuredQuestioned: picked.questioned,
+          };
+        })()}
+      />
 
-      <Modal visible={previewSource !== null} transparent animationType="fade" onRequestClose={closePreview}>
-        
+      <Modal
+        visible={previewSource !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={closePreview}
+      >
         <Pressable style={styles.previewBackdrop} onPress={closePreview}>
           <Pressable style={styles.previewSheet} onPress={() => {}}>
             <View style={styles.previewHeader}>
               <Text style={styles.previewTitle}>{previewLabel}</Text>
-              <Pressable onPress={closePreview} style={styles.previewCloseButton}>
+              <Pressable
+                onPress={closePreview}
+                style={styles.previewCloseButton}
+              >
                 <Ionicons name="close" size={22} color={colors.textPrimary} />
               </Pressable>
             </View>
             {previewSource !== null ? (
-              <View style={[styles.previewImage, { overflow: 'hidden' }]}>
-                <ExpoImage source={getAuthImageSource(previewSource.uri)} style={StyleSheet.absoluteFill} contentFit="contain" />
+              <View style={[styles.previewImage, { overflow: "hidden" }]}>
+                <ExpoImage
+                  source={getAuthImageSource(previewSource.uri)}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="contain"
+                />
               </View>
             ) : null}
           </Pressable>
@@ -706,13 +1047,22 @@ export function SignatureResultsScreen() {
       <ErrorModal
         visible={!!exportError}
         title="Export Failed"
-        message={exportError ?? ''}
+        message={exportError ?? ""}
         onPrimaryPress={() => setExportError(null)}
       />
 
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
-        <PrimaryButton label="Export as PDF" onPress={handleExportPdf} size="medium" />
-        <SecondaryButton label="Back to Dashboard" onPress={handleBackToDashboard} size="medium" style={styles.secondaryButtonSpacing} />
+        <PrimaryButton
+          label="Export as PDF"
+          onPress={handleExportPdf}
+          size="medium"
+        />
+        <SecondaryButton
+          label="Back to Dashboard"
+          onPress={handleBackToDashboard}
+          size="medium"
+          style={styles.secondaryButtonSpacing}
+        />
       </View>
     </SafeAreaView>
   );
@@ -720,13 +1070,25 @@ export function SignatureResultsScreen() {
 
 export default SignatureResultsScreen;
 
-function TopBar({ title, step, onBackPress }: { title: string; step: string; onBackPress: () => void }) {
+function TopBar({
+  title,
+  step,
+  onBackPress,
+}: {
+  title: string;
+  step: string;
+  onBackPress: () => void;
+}) {
   return (
     <View style={styles.topBarWrapper}>
       <View style={styles.topBar}>
         <Pressable onPress={onBackPress} style={styles.backButton}>
           <View style={styles.backButtonBox}>
-            <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={colors.textPrimary}
+            />
           </View>
         </Pressable>
         <Text style={styles.topBarTitle}>{title}</Text>
@@ -749,30 +1111,30 @@ const styles = StyleSheet.create({
   },
   centerFill: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorIcon: {
     marginBottom: 12,
   },
   errorTitle: {
-    ...getTypographyStyle('headline'),
+    ...getTypographyStyle("headline"),
     color: colors.danger,
   },
   errorSubtitle: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
     marginTop: 4,
   },
   heroResultWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     borderRadius: 22,
     paddingVertical: 16,
     paddingHorizontal: 18,
     marginBottom: 8,
-    shadowColor: '#000000', 
+    shadowColor: "#000000",
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -782,32 +1144,32 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroTextWrap: { flex: 1 },
   heroPercent: {
-    ...getTypographyStyle('t2Title'),
+    ...getTypographyStyle("t2Title"),
     letterSpacing: -0.3,
   },
   heroLabel: {
-    ...getTypographyStyle('t2Title'),
+    ...getTypographyStyle("t2Title"),
     letterSpacing: -0.3,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   heroCase: {
-    ...getTypographyStyle('l2List'),
+    ...getTypographyStyle("l2List"),
     marginTop: 6,
     letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   heroProcessingTime: {
-    ...getTypographyStyle('c2Caption', 'regular'),
+    ...getTypographyStyle("c2Caption", "regular"),
     color: colors.textSecondary,
     marginTop: 6,
   },
   infoGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   infoCard: {
@@ -819,40 +1181,56 @@ const styles = StyleSheet.create({
     borderColor: colors.dividerLight,
   },
   infoLabel: {
-    ...getTypographyStyle('c2Caption', 'regular'),
+    ...getTypographyStyle("c2Caption", "regular"),
     color: colors.label,
   },
   infoValue: {
-    ...getTypographyStyle('l1List'),
+    ...getTypographyStyle("l1List"),
     color: colors.textPrimary,
     marginTop: 6,
   },
-  viewTabsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  viewTabsRow: { flexDirection: "row", gap: 8, marginTop: 8 },
   viewTab: {
     flex: 1,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.dividerLight,
     backgroundColor: colors.cardBackground,
   },
-  viewTabActive: { backgroundColor: colors.cardBackground, borderColor: colors.statsBackground },
-  viewTabText: { ...getTypographyStyle('b3Button'), color: colors.textSecondary },
+  viewTabActive: {
+    backgroundColor: colors.cardBackground,
+    borderColor: colors.statsBackground,
+  },
+  viewTabText: {
+    ...getTypographyStyle("b3Button"),
+    color: colors.textSecondary,
+  },
   viewTabTextActive: { color: colors.textPrimary },
 
-  thumbsGrid: { flexDirection: 'column', gap: 12, marginTop: 12 },
-  smallThumbsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  thumbsGrid: { flexDirection: "column", gap: 12, marginTop: 12 },
+  smallThumbsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    justifyContent: "space-between",
+  },
   thumbCardSmall: {
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.dividerLight,
     padding: 10,
     backgroundColor: colors.cardBackground,
-    width: '48%',
+    width: "48%",
     marginBottom: 8,
   },
-  thumbPlaceholderCard: { alignItems: 'center', justifyContent: 'center', minHeight: 118, gap: 6 },
+  thumbPlaceholderCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 118,
+    gap: 6,
+  },
   // rgba(255,255,255,0.65) doesn't match either iconBadgeBackground token
   // (0.88/0.90 opacity) closely enough to swap silently — flagging, left as-is.
   thumbPlaceholderIconWrap: {
@@ -860,37 +1238,41 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 18,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.65)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.65)",
   },
   thumbImageWrap: {
-    width: '100%',
+    width: "100%",
     height: 56,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 8,
     backgroundColor: colors.background,
   },
-  thumbLabel: { ...getTypographyStyle('b3Button'), color: colors.textPrimary },
-  thumbTag: { ...getTypographyStyle('l2List'), color: colors.statusGenuine, marginTop: 4 },
+  thumbLabel: { ...getTypographyStyle("b3Button"), color: colors.textPrimary },
+  thumbTag: {
+    ...getTypographyStyle("l2List"),
+    color: colors.statusGenuine,
+    marginTop: 4,
+  },
 
   largeThumbImageWrap: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 8,
     backgroundColor: colors.background,
   },
   largeThumbWrap: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.statsBackground, 
+    borderColor: colors.statsBackground,
     backgroundColor: colors.cardBackground,
     padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   largeThumbPlaceholder: {
     minHeight: 166,
@@ -901,16 +1283,16 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 22,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)', // same translucent-white flag as thumbPlaceholderIconWrap
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.7)", // same translucent-white flag as thumbPlaceholderIconWrap
   },
   suspectLabel: {
-    ...getTypographyStyle('b3Button'),
+    ...getTypographyStyle("b3Button"),
     color: colors.danger, // #EF4444 approximated to danger #DC2626, not exact
   },
   suspectHint: {
-    ...getTypographyStyle('b3Button'),
+    ...getTypographyStyle("b3Button"),
     color: colors.suspectAccent, // exact semantic fit — this is literally the "suspect" amber family
     marginTop: 4,
   },
@@ -919,24 +1301,24 @@ const styles = StyleSheet.create({
     // Same base color as colors.overlay (rgb(15,23,42)) but heavier opacity
     // (0.82 vs colors.overlay's 0.56) — flagging rather than silently
     // lightening this modal backdrop.
-    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    backgroundColor: "rgba(15, 23, 42, 0.82)",
     padding: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   previewSheet: {
     backgroundColor: colors.cardBackground,
     borderRadius: 18,
     padding: 10,
-    maxHeight: '72%',
+    maxHeight: "72%",
   },
   previewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
   previewTitle: {
-    ...getTypographyStyle('l1List'),
+    ...getTypographyStyle("l1List"),
     flex: 1,
     color: colors.textPrimary,
     paddingRight: 10,
@@ -945,12 +1327,12 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.statsBackground, // same #F1F5F9 approximation as above
   },
   previewImage: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 2,
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
@@ -959,9 +1341,9 @@ const styles = StyleSheet.create({
   /* Findings detail modal styles */
   findingsModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     padding: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   findingsModalSheet: {
     backgroundColor: colors.cardBackground,
@@ -969,12 +1351,32 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 8,
   },
-  findingsModalHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  findingsModalAccent: { width: 6, height: 40, borderRadius: 3, marginRight: 12 },
-  findingsModalTitle: { ...getTypographyStyle('headline'), color: colors.textPrimary, flex: 1 },
+  findingsModalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  findingsModalAccent: {
+    width: 6,
+    height: 40,
+    borderRadius: 3,
+    marginRight: 12,
+  },
+  findingsModalTitle: {
+    ...getTypographyStyle("headline"),
+    color: colors.textPrimary,
+    flex: 1,
+  },
   findingsModalClose: { padding: 6 },
-  findingsModalValue: { ...getTypographyStyle('l1List'), marginTop: 4, marginBottom: 8 },
-  findingsModalDetail: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary },
+  findingsModalValue: {
+    ...getTypographyStyle("l1List"),
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  findingsModalDetail: {
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.textSecondary,
+  },
 
   findingsContainer: {
     marginTop: 12,
@@ -984,13 +1386,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     padding: 12,
   },
-  findingsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  findingsTitle: { ...getTypographyStyle('t3Title'), color: colors.textPrimary },
-  findingsTap: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.label },
+  findingsHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  findingsTitle: {
+    ...getTypographyStyle("t3Title"),
+    color: colors.textPrimary,
+  },
+  findingsTap: {
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.label,
+  },
   findingsList: { gap: 6 },
   findingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingVertical: 14,
     borderTopWidth: 1,
@@ -998,11 +1411,11 @@ const styles = StyleSheet.create({
   },
   findingIndicator: { width: 4, height: 40, borderRadius: 3 },
   findingTextCol: { flex: 1 },
-  findingMain: { ...getTypographyStyle('b3Button'), color: colors.textPrimary },
-  findingSub: { ...getTypographyStyle('c2Caption', 'regular'), marginTop: 6 },
+  findingMain: { ...getTypographyStyle("b3Button"), color: colors.textPrimary },
+  findingSub: { ...getTypographyStyle("c2Caption", "regular"), marginTop: 6 },
 
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     backgroundColor: colors.background2,
@@ -1021,9 +1434,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.inputBorder,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: colors.background2,
@@ -1035,9 +1448,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  topBarTitle: { flex: 1, ...getTypographyStyle('t3Title'), color: colors.textPrimary, textAlign: 'center' },
-  stepCounter: { width: 36, ...getTypographyStyle('l1List'), color: colors.label, textAlign: 'center' },
+  topBarTitle: {
+    flex: 1,
+    ...getTypographyStyle("t3Title"),
+    color: colors.textPrimary,
+    textAlign: "center",
+  },
+  stepCounter: {
+    width: 36,
+    ...getTypographyStyle("l1List"),
+    color: colors.label,
+    textAlign: "center",
+  },
 });

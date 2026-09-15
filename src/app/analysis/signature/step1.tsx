@@ -1,38 +1,61 @@
-import { type AnalysisPriority, type DocumentType, useCaseStore } from '@/store/caseStore';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  type AnalysisPriority,
+  type DocumentType,
+  useCaseStore,
+} from "@/store/caseStore";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
+import {
+  BackHandler,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-import DraftSavedModal from '@/_components/modals/draft_saved';
-import FormField from '@/_components/common/FormField';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import ErrorBanner from '@/_components/common/ErrorBanner';
+import ErrorBanner from "@/_components/common/ErrorBanner";
+import FormField from "@/_components/common/FormField";
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import DraftSavedModal from "@/_components/modals/draft_saved";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
 
-const documentOptions: DocumentType[] = ['Bank cheque', 'Property deed', 'Last will', 'Contract', 'Affidavit', 'Other'];
-const priorities: AnalysisPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
+const documentOptions: DocumentType[] = [
+  "Bank cheque",
+  "Property deed",
+  "Last will",
+  "Contract",
+  "Affidavit",
+  "Other",
+];
+const priorities: AnalysisPriority[] = ["Low", "Medium", "High", "Urgent"];
 
 export default function SignatureStep1Route() {
   const router = useRouter();
   const nav = router as any;
   const draftCase = useCaseStore((state) => state.draftSignatureCase);
   const updateDraftCase = useCaseStore((state) => state.updateDraftCase);
-  const discardSignatureDraft = useCaseStore((state) => state.discardSignatureDraft);
+  const discardSignatureDraft = useCaseStore(
+    (state) => state.discardSignatureDraft,
+  );
   const [showDocumentDropdown, setShowDocumentDropdown] = useState(false);
   const [showDraftSavedModal, setShowDraftSavedModal] = useState(false);
-  const canContinue = draftCase.subjectName.trim().length > 1 && draftCase.examiner.trim().length > 1 &&
-    (draftCase.documentType !== 'Other' || draftCase.otherDocumentType.trim().length > 0);
-  const caseIdParts = draftCase.caseId.split('-');
+  const canContinue =
+    draftCase.subjectName.trim().length > 1 &&
+    (draftCase.documentType !== "Other" ||
+      draftCase.otherDocumentType.trim().length > 0);
+  const caseIdParts = draftCase.caseId.split("-");
   const month = caseIdParts[0];
   const day = caseIdParts[1];
   const year = caseIdParts[2];
   const caseNo = caseIdParts[3];
-
-  
 
   const submissionError = useCaseStore((state) => state.submissionError);
 
@@ -44,27 +67,43 @@ export default function SignatureStep1Route() {
 
   useFocusEffect(
     useCallback(() => {
-      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        confirmSaveDraft();
-        return true;
-      });
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          confirmSaveDraft();
+          return true;
+        },
+      );
 
       return () => subscription.remove();
-    }, [confirmSaveDraft])
+    }, [confirmSaveDraft]),
   );
 
   return (
     <SafeAreaView style={styles.screen}>
-      <TopBar title="New Analysis" step="1 / 2" onBackPress={confirmSaveDraft} />
+      <TopBar
+        title="New Analysis"
+        step="1 / 2"
+        onBackPress={confirmSaveDraft}
+      />
       <View style={styles.progressWrap}>
         <View style={styles.progressBar} />
-        <View style={[styles.progressFill, { width: '50%' }]} />
+        <View style={[styles.progressFill, { width: "50%" }]} />
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 96) }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(120, insets.bottom + 96) },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <ErrorBanner message={submissionError} title="Upload issue" />
         <View style={styles.headerSection}>
           <Text style={styles.sectionHeading}>Case Details</Text>
-          <Text style={styles.sectionSubheading}>Basic information for this forensic case</Text>
+          <Text style={styles.sectionSubheading}>
+            Basic information for this forensic case
+          </Text>
         </View>
         <View style={styles.formGroup}>
           <FieldLabel label="Case ID" />
@@ -72,50 +111,65 @@ export default function SignatureStep1Route() {
             <Text style={styles.caseIdDisplay}>{draftCase.caseId}</Text>
           </View>
           <View style={styles.caseIdHelper}>
-            <Ionicons name="information-circle" size={14} color={colors.label} />
-            <Text style={styles.helperText}>{month} · Month  {day} · Day  {year} · Year  {caseNo} · Case no.</Text>
+            <Ionicons
+              name="information-circle"
+              size={14}
+              color={colors.label}
+            />
+            <Text style={styles.helperText}>
+              {month} · Month {day} · Day {year} · Year {caseNo} · Case no.
+            </Text>
           </View>
         </View>
 
         <FormField
           label="Subject name"
           value={draftCase.subjectName}
-          onChangeText={(value) => updateDraftCase('subjectName', value)}
+          onChangeText={(value) => updateDraftCase("subjectName", value)}
           placeholder="Enter subject name"
-        />
-
-        <FormField
-          label="Examiner"
-          value={draftCase.examiner}
-          onChangeText={(value) => updateDraftCase('examiner', value)}
-          placeholder="Enter examiner name"
         />
 
         <View style={styles.formGroup}>
           <FieldLabel label="Document Type" />
-          <Pressable onPress={() => setShowDocumentDropdown(!showDocumentDropdown)} style={styles.dropdownButton}>
-            <Text style={styles.dropdownText}>{draftCase.documentType || 'Bank cheque'}</Text>
-            <Ionicons name={showDocumentDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textPrimary} />
+          <Pressable
+            onPress={() => setShowDocumentDropdown(!showDocumentDropdown)}
+            style={styles.dropdownButton}
+          >
+            <Text style={styles.dropdownText}>
+              {draftCase.documentType || "Bank cheque"}
+            </Text>
+            <Ionicons
+              name={showDocumentDropdown ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.textPrimary}
+            />
           </Pressable>
           {showDocumentDropdown && (
             <View style={styles.dropdownMenu}>
               {documentOptions.map((option) => (
-                <Pressable key={option} onPress={() => {
-                  updateDraftCase('documentType', option);
-                  if (option !== 'Other') updateDraftCase('otherDocumentType', '');
-                  setShowDocumentDropdown(false);
-                }} style={styles.dropdownItem}>
+                <Pressable
+                  key={option}
+                  onPress={() => {
+                    updateDraftCase("documentType", option);
+                    if (option !== "Other")
+                      updateDraftCase("otherDocumentType", "");
+                    setShowDocumentDropdown(false);
+                  }}
+                  style={styles.dropdownItem}
+                >
                   <Text style={styles.dropdownItemText}>{option}</Text>
                 </Pressable>
               ))}
             </View>
           )}
         </View>
-        {draftCase.documentType === 'Other' ? (
+        {draftCase.documentType === "Other" ? (
           <FormField
             label="Document type details"
             value={draftCase.otherDocumentType}
-            onChangeText={(value) => updateDraftCase('otherDocumentType', value)}
+            onChangeText={(value) =>
+              updateDraftCase("otherDocumentType", value)
+            }
             placeholder="Enter document type"
           />
         ) : null}
@@ -124,20 +178,26 @@ export default function SignatureStep1Route() {
           <View style={styles.priorityRow}>
             {priorities.map((priority) => {
               const selected = draftCase.priority === priority;
-              const isUrgent = priority === 'Urgent';
+              const isUrgent = priority === "Urgent";
               return (
                 <Pressable
                   key={priority}
-                  onPress={() => updateDraftCase('priority', priority)}
+                  onPress={() => updateDraftCase("priority", priority)}
                   style={[
                     styles.priorityChip,
-                    selected && (isUrgent ? styles.priorityChipSelectedDanger : styles.priorityChipSelected),
+                    selected &&
+                      (isUrgent
+                        ? styles.priorityChipSelectedDanger
+                        : styles.priorityChipSelected),
                   ]}
                 >
                   <Text
                     style={[
                       styles.priorityText,
-                      selected && (isUrgent ? styles.priorityTextSelectedDanger : styles.priorityTextSelected),
+                      selected &&
+                        (isUrgent
+                          ? styles.priorityTextSelectedDanger
+                          : styles.priorityTextSelected),
                     ]}
                   >
                     {priority}
@@ -148,10 +208,12 @@ export default function SignatureStep1Route() {
           </View>
         </View>
       </ScrollView>
-      <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}>
+      <View
+        style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}
+      >
         <PrimaryButton
           label="Continue"
-          onPress={() => nav.push('/analysis/signature/uploads')}
+          onPress={() => nav.push("/analysis/signature/uploads")}
           disabled={!canContinue}
           size="medium"
         />
@@ -176,13 +238,25 @@ export default function SignatureStep1Route() {
   );
 }
 
-function TopBar({ title, step, onBackPress }: { title: string; step: string; onBackPress: () => void }) {
+function TopBar({
+  title,
+  step,
+  onBackPress,
+}: {
+  title: string;
+  step: string;
+  onBackPress: () => void;
+}) {
   return (
     <View style={styles.topBarWrapper}>
       <View style={styles.topBar}>
         <Pressable onPress={onBackPress} style={styles.backButton}>
           <View style={styles.backButtonBox}>
-            <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={colors.textPrimary}
+            />
           </View>
         </Pressable>
         <Text style={styles.topBarTitle}>{title}</Text>
@@ -207,9 +281,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.inputBorder,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: colors.background2,
@@ -223,31 +297,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   topBarTitle: {
     flex: 1,
-    ...getTypographyStyle('t3Title'),
+    ...getTypographyStyle("t3Title"),
     color: colors.textPrimary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   stepCounter: {
-    ...getTypographyStyle('l1List'),
+    ...getTypographyStyle("l1List"),
     color: colors.label,
   },
   progressBar: {
     height: 3,
     backgroundColor: colors.border,
-    width: '100%',
+    width: "100%",
   },
   progressWrap: {
-    position: 'relative',
+    position: "relative",
   },
   progressFill: {
     height: 3,
     backgroundColor: colors.primary,
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
   },
@@ -261,12 +335,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionHeading: {
-    ...getTypographyStyle('t2Title'),
+    ...getTypographyStyle("t2Title"),
     color: colors.textPrimary,
     letterSpacing: -0.3,
   },
   sectionSubheading: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -274,7 +348,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fieldLabel: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.textSecondary,
     letterSpacing: 0.4,
   },
@@ -287,23 +361,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
   },
   caseIdDisplay: {
-    ...getTypographyStyle('body', 'semiBold'),
+    ...getTypographyStyle("body", "semiBold"),
     color: colors.textPrimary,
   },
   caseIdHelper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 4,
   },
   helperText: {
-    ...getTypographyStyle('l2List', 'regular'),
+    ...getTypographyStyle("l2List", "regular"),
     color: colors.label,
   },
   dropdownButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderWidth: 1,
     borderColor: colors.uploadSlotBorder,
     borderRadius: 12,
@@ -312,7 +386,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
   },
   dropdownText: {
-    ...getTypographyStyle('body'),
+    ...getTypographyStyle("body"),
     color: colors.textPrimary,
   },
   dropdownMenu: {
@@ -321,7 +395,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.cardBackground,
     marginTop: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   dropdownItem: {
     paddingHorizontal: 14,
@@ -330,12 +404,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   dropdownItemText: {
-    ...getTypographyStyle('body'),
+    ...getTypographyStyle("body"),
     color: colors.textPrimary,
   },
   priorityRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   priorityChip: {
@@ -355,7 +429,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryDisabled,
   },
   priorityText: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.chipTextInactive,
   },
   priorityTextSelectedDanger: {
@@ -365,7 +439,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
