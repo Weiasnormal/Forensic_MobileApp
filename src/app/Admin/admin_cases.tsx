@@ -280,7 +280,10 @@ export default function AdminCasesScreen() {
                 if (item.analysisType === "HW") {
                   nav.push("/analysis/handwriting/results");
                 } else {
-                  nav.push(`/analysis/signature/signature_results`);
+                  nav.push({
+                    pathname: "/Admin/CaseResultAdmin",
+                    params: { caseId: item.caseId },
+                  });
                 }
               }}
             />
