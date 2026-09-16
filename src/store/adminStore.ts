@@ -75,6 +75,7 @@ interface AdminStore {
   isCreatingTenant: boolean;
   createTenantError: string | null;
   createTenant: (name: string) => Promise<string | null>;
+  renameTenant: (newName: string) => Promise<boolean>;
 
   tenantProfile: {
     name: string;
@@ -236,6 +237,37 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
             : "Unable to create organization",
       });
       return null;
+    }
+  },
+
+  renameTenant: async (newName: string) => {
+    const normalizedName = newName.trim();
+    if (!normalizedName) return false;
+
+    try {
+      const response = await fetch(
+        buildApiUrl(ADMIN_API_ENDPOINTS.tenant.rename),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-Api-Key": API_KEY || "",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify({ newName: normalizedName }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Rename tenant failed (${response.status})`);
+      }
+
+      await get().fetchTenantProfile();
+      return true;
+    } catch (error) {
+      adminLog.warn("AdminStore:Tenant", "Unable to rename tenant", error);
+      return false;
     }
   },
 

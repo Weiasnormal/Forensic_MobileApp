@@ -1,15 +1,15 @@
-import * as Clipboard from 'expo-clipboard';
-import { Copy, ChevronRight, X } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import ScreenHeader from '@/_components/common/ScreenHeader';
 import InfoRow from '@/_components/admin/InfoRow';
+import ScreenHeader from '@/_components/common/ScreenHeader';
 import Toast from '@/_components/toast';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import { useAdminStore } from '@/store/adminStore';
 import { useUser } from '@/store/userStore';
-import {useAdminStore} from '@/store/adminStore';
+import * as Clipboard from 'expo-clipboard';
+import { ChevronRight, Copy, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface OrganizationScreenProps {
   organizationName?: string;
@@ -33,6 +33,7 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   const { user, setUser } = useUser();
   const tenantProfile = useAdminStore((state) => state.tenantProfile);
   const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
+  const renameTenant = useAdminStore((state) => state.renameTenant);
 
   useEffect(() => {
     fetchTenantProfile();
@@ -76,25 +77,23 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     setIsEditingOrganizationName(false);
   }, [resolvedOrganizationName]);
 
-  const createTenant = useAdminStore((state) => state.createTenant);
-
   const handleSaveOrganizationName = useCallback(async () => {
     if (!canSaveOrganizationName) {
       setIsEditingOrganizationName(false);
       return;
     }
 
-    const tenantId = await createTenant(trimmedOrganizationName);
+    const renamed = await renameTenant(trimmedOrganizationName);
 
-    if (!tenantId) {
-      showToast('Unable to create organization on the server');
+    if (!renamed) {
+      showToast('Unable to rename organization on the server');
       return;
     }
 
-      await setUser({ organization: trimmedOrganizationName });
-      setIsEditingOrganizationName(false);
-      showToast('Organization created');
-    }, [canSaveOrganizationName, createTenant, setUser, showToast, trimmedOrganizationName]);
+    await setUser({ organization: trimmedOrganizationName });
+    setIsEditingOrganizationName(false);
+    showToast('Organization renamed');
+  }, [canSaveOrganizationName, renameTenant, setUser, showToast, trimmedOrganizationName]);
 
   const handleCopyCode = useCallback(async () => {
     try {

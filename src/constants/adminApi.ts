@@ -16,6 +16,7 @@ export const ADMIN_API_ENDPOINTS = {
     getMemberById: (id: string) => `/tenant/members/${id}`,
     getAllMembers: '/tenant/members',
     create: '/tenants',
+    rename: '/tenants/rename',
     suspendUser: '/admin/suspend-user',
     inviteCode: '/tenant/invite-code',  
     profile: '/tenant/profile', 
