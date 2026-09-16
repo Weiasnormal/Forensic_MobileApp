@@ -490,6 +490,8 @@ export function SignatureResultsScreen() {
         ? "SUSPECTED"
         : undefined;
 
+  const isPdfExportAllowed = reviewDetail?.isPdfExportAllowed === true;
+
   const resultCardTheme = isSuspected
     ? {
         cardBg: colors.dangerLight,
@@ -525,6 +527,10 @@ export function SignatureResultsScreen() {
   const handleExportPdf = async () => {
     if (!currentCaseId) {
       setExportError("Case ID is missing.");
+      return;
+    }
+    if (!isPdfExportAllowed) {
+      setExportError("PDF export has not been enabled by an administrator.");
       return;
     }
     try {
@@ -639,6 +645,21 @@ export function SignatureResultsScreen() {
             )}
           </View>
         </View>
+
+        {reviewDetail ? (
+          <VerdictCard
+            status={isCaseReviewed ? "updated" : "pending"}
+            supervisorName="Supervisor"
+            originalVerdict={originalVerdictLabel}
+            newVerdict={newVerdictLabel}
+            date={
+              reviewDetail.reviewedAt
+                ? new Date(reviewDetail.reviewedAt).toLocaleDateString()
+                : undefined
+            }
+            reviewNote={reviewDetail.reviewNote ?? undefined}
+          />
+        ) : null}
 
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
@@ -868,26 +889,6 @@ export function SignatureResultsScreen() {
             })}
           </View>
         </View>
-
-        {reviewDetail ? (
-          <View>
-            <Text style={styles.findingsTitle}>Supervisor Review</Text>
-            <View style={{ marginTop: 8 }}>
-              <VerdictCard
-                status={isCaseReviewed ? "updated" : "pending"}
-                supervisorName="Supervisor"
-                originalVerdict={originalVerdictLabel}
-                newVerdict={newVerdictLabel}
-                date={
-                  reviewDetail.reviewedAt
-                    ? new Date(reviewDetail.reviewedAt).toLocaleDateString()
-                    : undefined
-                }
-                reviewNote={reviewDetail.reviewNote ?? undefined}
-              />
-            </View>
-          </View>
-        ) : null}
       </ScrollView>
 
       <KeyFindingsModal
@@ -1053,8 +1054,9 @@ export function SignatureResultsScreen() {
 
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
         <PrimaryButton
-          label="Export as PDF"
+          label={isPdfExportAllowed ? "Export as PDF" : "PDF Export Disabled"}
           onPress={handleExportPdf}
+          disabled={!isPdfExportAllowed}
           size="medium"
         />
         <SecondaryButton
@@ -1101,7 +1103,7 @@ function TopBar({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background2,
+    backgroundColor: colors.resultBackground,
   },
   content: {
     paddingHorizontal: 16,
@@ -1134,11 +1136,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 18,
     marginBottom: 8,
-    shadowColor: "#000000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
   },
   heroBadge: {
     width: 56,
@@ -1298,9 +1295,6 @@ const styles = StyleSheet.create({
   },
   previewBackdrop: {
     flex: 1,
-    // Same base color as colors.overlay (rgb(15,23,42)) but heavier opacity
-    // (0.82 vs colors.overlay's 0.56) — flagging rather than silently
-    // lightening this modal backdrop.
     backgroundColor: "rgba(15, 23, 42, 0.82)",
     padding: 10,
     justifyContent: "center",

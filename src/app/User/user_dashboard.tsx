@@ -6,7 +6,6 @@ import CasesScreen from "@/app/User/user_cases";
 import StatsScreen from "@/app/User/user_stats";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
-import { useAdminStore } from "@/store/adminStore";
 import { useAuthStore } from "@/store/authStore";
 import { useUser } from "@/store/userStore";
 import * as NavigationBar from "expo-navigation-bar";
@@ -14,21 +13,21 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CaseCard from "../../_components/caseCards";
 import PendingCard from "../../_components/pendingCards";
 import {
-    getPendingCards,
-    type SavedCase,
-    useCaseStore,
+  getPendingCards,
+  type SavedCase,
+  useCaseStore,
 } from "../../store/caseStore";
 import Navbar, { type TabKey } from "../_navbar/nav_bar";
 import ProfileScreen from "./user_profile";
@@ -59,10 +58,8 @@ export default function UserDashboardScreen() {
     (state) => state.refreshCasesFromBackend,
   );
   const loadAllCases = useCaseStore((state) => state.loadAllCases);
-  const { user, load, setUser } = useUser();
+  const { user, load } = useUser();
   const authUser = useAuthStore((state) => state.user);
-  const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
-  const tenantProfile = useAdminStore((state) => state.tenantProfile);
   const hasTenant = Boolean(authUser?.tenantId?.trim());
 
   useEffect(() => {
@@ -82,21 +79,7 @@ export default function UserDashboardScreen() {
     void (async () => {
       if (await refreshCasesFromBackend()) await loadAllCases();
     })();
-    fetchTenantProfile();
-  }, [
-    fetchTenantProfile,
-    hasTenant,
-    load,
-    loadAllCases,
-    refreshCasesFromBackend,
-  ]);
-
-  useEffect(() => {
-    if (!hasTenant) return;
-    if (tenantProfile?.name && tenantProfile.name !== user.organization) {
-      setUser({ organization: tenantProfile.name });
-    }
-  }, [hasTenant, setUser, tenantProfile?.name, user.organization]);
+  }, [hasTenant, load, loadAllCases, refreshCasesFromBackend]);
 
   useEffect(() => {
     if (!hasTenant) return;
@@ -316,7 +299,7 @@ function HomeTab({
                 createdAt={item.createdAt}
                 type={`${item.documentType} • `}
                 priority={item.priority}
-                name={`${item.examiner} · ${item.documentType}`}
+                name={`${item.subjectName} · ${item.documentType}`}
                 status={item.status}
                 onPress={() => goToCaseDestination(item)}
               />
