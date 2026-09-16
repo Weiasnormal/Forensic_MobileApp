@@ -85,6 +85,7 @@ interface AdminStore {
   } | null;
   isLoadingTenantProfile: boolean;
   fetchTenantProfile: () => Promise<void>;
+  clearAdminState: () => void;
 }
 
 function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
@@ -173,6 +174,27 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   tenantProfile: null,
   isLoadingTenantProfile: false,
+
+  clearAdminState: () => {
+    void get().stopMemberRequestNotifications();
+    set({
+      teamMembers: [],
+      pendingApprovals: [],
+      isLoadingTeam: false,
+      teamLoadError: null,
+      isUsingMockTeam: false,
+      isGeneratingInvite: false,
+      inviteCode: null,
+      isUsingMockInvite: false,
+      memberDetail: null,
+      isLoadingMemberDetail: false,
+      memberDetailError: null,
+      isCreatingTenant: false,
+      createTenantError: null,
+      tenantProfile: null,
+      isLoadingTenantProfile: false,
+    });
+  },
 
   createTenant: async (name: string) => {
     adminLog.info("AdminStore:Tenant", `Creating tenant "${name}"`);

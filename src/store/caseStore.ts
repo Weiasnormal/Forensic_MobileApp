@@ -159,11 +159,11 @@ interface CaseStore {
   nextCaseNumber: number;
   activeSignatureCaseId: string | null;
   hiddenSavedCases: SavedCase[] | null;
-  allowUploadSourceChoice: boolean;
   signatureAnalysisResults: Record<string, SignatureAnalysisResult>;
   processingJobs: Record<string, ProcessingJob>;
   getProcessingJob: (caseId: string) => ProcessingJob | undefined;
   clearProcessingJob: (caseId: string) => void;
+  clearUserScopedState: () => void;
   retryAnalysis: (caseId: string) => Promise<void>;
   markCaseResultViewed: (caseId: string) => void;
   updateCaseStatus: (caseId: string, status: CaseStatus) => void;
@@ -182,7 +182,6 @@ interface CaseStore {
   loadAllCases: () => Promise<boolean>;
   stashSavedCases: () => void;
   restoreSavedCases: () => void;
-  setAllowUploadSourceChoice: (value: boolean) => void;
   startNewSignatureDraft: () => void;
   discardSignatureDraft: () => void;
   updateDraftCase: <K extends DraftEditableField>(
@@ -323,13 +322,32 @@ export const useCaseStore = create<CaseStore>()(
         nextCaseNumber: 2,
         activeSignatureCaseId: null,
         hiddenSavedCases: null,
-        allowUploadSourceChoice: false,
         signatureAnalysisResults: {},
         processingJobs: {},
         submissionStatus: "idle",
         submissionStep: "",
         submissionProgress: 0,
         submissionError: null,
+
+        clearUserScopedState: () => {
+          set({
+            cases: [],
+            totalCaseCount: 0,
+            hasMoreCases: false,
+            isLoadingMoreCases: false,
+            draftSignatureCase: createInitialDraft(1),
+            nextCaseNumber: 2,
+            activeSignatureCaseId: null,
+            hiddenSavedCases: null,
+            signatureAnalysisResults: {},
+            processingJobs: {},
+            isSubmitting: false,
+            submissionStatus: "idle",
+            submissionStep: "",
+            submissionProgress: 0,
+            submissionError: null,
+          });
+        },
 
         resetSubmissionState: () => {
           set({
@@ -533,15 +551,6 @@ export const useCaseStore = create<CaseStore>()(
               hiddenSavedCases: null,
             } as Partial<CaseStore> as CaseStore;
           });
-        },
-
-        setAllowUploadSourceChoice: (value) => {
-          caseLog.info(
-            "CaseStore:Action",
-            "Setting upload source choice preference",
-            { value },
-          );
-          set({ allowUploadSourceChoice: value });
         },
 
         startNewSignatureDraft: () => {
@@ -1339,7 +1348,6 @@ export const useCaseStore = create<CaseStore>()(
         nextCaseNumber: state.nextCaseNumber,
         activeSignatureCaseId: state.activeSignatureCaseId,
         hiddenSavedCases: state.hiddenSavedCases,
-        allowUploadSourceChoice: state.allowUploadSourceChoice,
         signatureAnalysisResults: state.signatureAnalysisResults,
         processingJobs: state.processingJobs,
       }),

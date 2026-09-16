@@ -1,9 +1,16 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system/legacy';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useAuthStore } from './authStore';
-import { fetchCurrentUser } from '@/services/authApi';
-import type { SignatureAnalysisViewMode } from '@/services/signatureAnalysis';
+import { fetchCurrentUser } from "@/services/authApi";
+import type { SignatureAnalysisViewMode } from "@/services/signatureAnalysis";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useAuthStore } from "./authStore";
 
 type UserProfile = {
   firstName: string;
@@ -23,25 +30,33 @@ type UserStore = {
 };
 
 const DEFAULT_USER: UserProfile = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  role: '',
-  organization: '',
+  firstName: "",
+  lastName: "",
+  email: "",
+  role: "",
+  organization: "",
   avatarUri: null,
 };
 
-const KEY = 'avera_user_profile_metadata';
+const KEY = "avera_user_profile_metadata";
+
+function getStorageKey(email?: string) {
+  const normalizedEmail = email?.trim().toLowerCase();
+  return normalizedEmail ? `${KEY}:${normalizedEmail}` : KEY;
+}
 
 const log = {
   info: (_tag: string, _message: string, _data?: any) => {},
   error: (tag: string, message: string, error?: any) => {
     const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ${tag} | ❌ ${message}`, error ? { error: error.message, stack: error.stack } : '');
+    console.error(
+      `[${timestamp}] ${tag} | ❌ ${message}`,
+      error ? { error: error.message, stack: error.stack } : "",
+    );
   },
   warn: (tag: string, message: string, data?: any) => {
     const timestamp = new Date().toISOString();
-    console.warn(`[${timestamp}] ${tag} | ⚠️  ${message}`, data ? data : '');
+    console.warn(`[${timestamp}] ${tag} | ⚠️  ${message}`, data ? data : "");
   },
 };
 
@@ -56,69 +71,102 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const load = useCallback(async () => {
     const startTime = performance.now();
     try {
-      log.info('UserStore', 'Starting load operation', { storageKey: KEY });
+      const storageKey = getStorageKey(authEmail);
+      log.info("UserStore", "Starting load operation", { storageKey });
 
       if (!AsyncStorage) {
-        throw new Error('AsyncStorage is null - native module not properly linked');
+        throw new Error(
+          "AsyncStorage is null - native module not properly linked",
+        );
       }
 
-      const raw = await AsyncStorage.getItem(KEY);
+      const raw = await AsyncStorage.getItem(storageKey);
       const loadTime = (performance.now() - startTime).toFixed(2);
 
-      log.info('UserStore', `Retrieved raw data from storage (${loadTime}ms)`, {
+      log.info("UserStore", `Retrieved raw data from storage (${loadTime}ms)`, {
         rawLength: raw?.length,
         hasData: !!raw,
       });
 
-      let localAvatarUri: string | null | undefined;
+      let localProfile: Partial<UserProfile> = {};
       if (raw) {
         try {
-          localAvatarUri = JSON.parse(raw).avatarUri;
+          localProfile = JSON.parse(raw) as Partial<UserProfile>;
         } catch (parseError) {
-          log.error('UserStore', 'Failed to parse stored profile metadata', parseError);
+          log.error(
+            "UserStore",
+            "Failed to parse stored profile metadata",
+            parseError,
+          );
         }
       }
 
       if (!accessToken || isTokenExpired()) {
-        setUserState({ ...DEFAULT_USER, avatarUri: localAvatarUri ?? null });
+        setUserState({
+          ...DEFAULT_USER,
+          ...localProfile,
+          avatarUri: localProfile.avatarUri ?? null,
+        });
         return;
       }
 
       const remoteProfile = await fetchCurrentUser(accessToken);
       setUserState({
-        firstName: remoteProfile.firstName?.trim() ?? '',
-        lastName: remoteProfile.lastName?.trim() ?? '',
-        email: remoteProfile.email?.trim() || authEmail || '',
-        role: remoteProfile.role?.trim() ?? '',
-        organization: remoteProfile.organization?.trim() ?? '',
-        avatarUri: remoteProfile.avatarUri ?? localAvatarUri ?? null,
+        firstName:
+          localProfile.firstName?.trim() ||
+          remoteProfile.firstName?.trim() ||
+          "",
+        lastName:
+          localProfile.lastName?.trim() || remoteProfile.lastName?.trim() || "",
+        email: remoteProfile.email?.trim() || authEmail || "",
+        role: remoteProfile.role?.trim() || localProfile.role?.trim() || "",
+        organization:
+          remoteProfile.organization?.trim() ||
+          localProfile.organization?.trim() ||
+          "",
+        avatarUri: localProfile.avatarUri ?? remoteProfile.avatarUri ?? null,
+        defaultResultView: localProfile.defaultResultView,
       });
     } catch (e) {
       const error = e as Error;
-      log.error('UserStore', 'Failed to load user profile', error);
-      setUserState((prev) => ({ ...DEFAULT_USER, email: authEmail || '', avatarUri: prev.avatarUri }));
+      log.error("UserStore", "Failed to load user profile", error);
+      setUserState((prev) => ({
+        ...DEFAULT_USER,
+        email: authEmail || "",
+        avatarUri: prev.avatarUri,
+      }));
     }
   }, [accessToken, authEmail, isTokenExpired]);
 
-  const persist = useCallback(async (next: UserProfile) => {
-    const startTime = performance.now();
-    try {
-      log.info('UserStore', 'Starting persist operation', { user: next });
+  const persist = useCallback(
+    async (next: UserProfile) => {
+      const startTime = performance.now();
+      try {
+        log.info("UserStore", "Starting persist operation", { user: next });
 
-      if (!AsyncStorage) {
-        throw new Error('AsyncStorage is null - cannot persist data');
+        if (!AsyncStorage) {
+          throw new Error("AsyncStorage is null - cannot persist data");
+        }
+
+        const jsonString = JSON.stringify(next);
+        await AsyncStorage.setItem(
+          getStorageKey(next.email || authEmail),
+          jsonString,
+        );
+
+        const persistTime = (performance.now() - startTime).toFixed(2);
+        log.info(
+          "UserStore",
+          `✓ Profile persisted successfully (${persistTime}ms)`,
+          { dataSize: jsonString.length },
+        );
+      } catch (e) {
+        const error = e as Error;
+        log.error("UserStore", "Failed to persist user profile", error);
       }
-
-      const jsonString = JSON.stringify(next);
-      await AsyncStorage.setItem(KEY, jsonString);
-
-      const persistTime = (performance.now() - startTime).toFixed(2);
-      log.info('UserStore', `✓ Profile persisted successfully (${persistTime}ms)`, { dataSize: jsonString.length });
-    } catch (e) {
-      const error = e as Error;
-      log.error('UserStore', 'Failed to persist user profile', error);
-    }
-  }, []);
+    },
+    [authEmail],
+  );
 
   useEffect(() => {
     if (!authEmail) {
@@ -134,77 +182,117 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [authEmail, persist]);
 
- const copyImageToDocuments = useCallback(async (uri: string): Promise<string> => {
-    const startTime = performance.now();
-    log.info('UserStore:Image', 'Starting image copy operation', { sourceUri: uri });
+  const copyImageToDocuments = useCallback(
+    async (uri: string): Promise<string> => {
+      const startTime = performance.now();
+      log.info("UserStore:Image", "Starting image copy operation", {
+        sourceUri: uri,
+      });
 
-    const documentsRoot = FileSystem.documentDirectory;
+      const documentsRoot = FileSystem.documentDirectory;
 
-    if (!documentsRoot) {
-      log.warn('UserStore:Image', 'Document directory not available - using original URI', { uri });
-      return uri;
-    }
-
-    if (uri.startsWith(documentsRoot)) {
-      log.info('UserStore:Image', 'Image already in documents, skipping copy', { uri });
-      return uri;
-    }
-
-    const avatarDirectory = `${documentsRoot}avatars/`;
-    const extension = getFileExtension(uri) || 'jpg';
-    const fileName = `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-    const targetUri = `${avatarDirectory}${fileName}`;
-
-    log.info('UserStore:Image', 'Prepared copy target', { avatarDirectory, fileName, targetUri });
-
-    try {
-      await FileSystem.makeDirectoryAsync(avatarDirectory, { intermediates: true });
-
-      if (uri.startsWith('content://')) {
-        log.info('UserStore:Image', 'Using downloadAsync for content:// URI (Android)');
-        await FileSystem.downloadAsync(uri, targetUri);
-      } else {
-        log.info('UserStore:Image', 'Using copyAsync for file URI');
-        await FileSystem.copyAsync({ from: uri, to: targetUri });
+      if (!documentsRoot) {
+        log.warn(
+          "UserStore:Image",
+          "Document directory not available - using original URI",
+          { uri },
+        );
+        return uri;
       }
 
-      const copyTime = (performance.now() - startTime).toFixed(2);
-      log.info('UserStore:Image', `✓ Image copied successfully (${copyTime}ms)`, { targetUri });
-      return targetUri;
-    } catch (e) {
-      const error = e as Error;
-      log.error('UserStore:Image', 'Failed to copy image', error);
-      log.warn('UserStore:Image', 'Returning original URI as fallback');
-      return uri;
-    }
-  }, []);
+      if (uri.startsWith(documentsRoot)) {
+        log.info(
+          "UserStore:Image",
+          "Image already in documents, skipping copy",
+          { uri },
+        );
+        return uri;
+      }
 
-   const setUser = useCallback(
+      const avatarDirectory = `${documentsRoot}avatars/`;
+      const extension = getFileExtension(uri) || "jpg";
+      const fileName = `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+      const targetUri = `${avatarDirectory}${fileName}`;
+
+      log.info("UserStore:Image", "Prepared copy target", {
+        avatarDirectory,
+        fileName,
+        targetUri,
+      });
+
+      try {
+        await FileSystem.makeDirectoryAsync(avatarDirectory, {
+          intermediates: true,
+        });
+
+        if (uri.startsWith("content://")) {
+          log.info(
+            "UserStore:Image",
+            "Using downloadAsync for content:// URI (Android)",
+          );
+          await FileSystem.downloadAsync(uri, targetUri);
+        } else {
+          log.info("UserStore:Image", "Using copyAsync for file URI");
+          await FileSystem.copyAsync({ from: uri, to: targetUri });
+        }
+
+        const copyTime = (performance.now() - startTime).toFixed(2);
+        log.info(
+          "UserStore:Image",
+          `✓ Image copied successfully (${copyTime}ms)`,
+          { targetUri },
+        );
+        return targetUri;
+      } catch (e) {
+        const error = e as Error;
+        log.error("UserStore:Image", "Failed to copy image", error);
+        log.warn("UserStore:Image", "Returning original URI as fallback");
+        return uri;
+      }
+    },
+    [],
+  );
+
+  const setUser = useCallback(
     async (u: Partial<UserProfile>) => {
-      log.info('UserStore:SetUser', 'Setting user with partial data', { update: u });
+      log.info("UserStore:SetUser", "Setting user with partial data", {
+        update: u,
+      });
 
-      const normalizedAvatarUri = u.avatarUri ? await copyImageToDocuments(u.avatarUri) : u.avatarUri;
-      const next = { ...user, ...u, avatarUri: normalizedAvatarUri ?? null } as UserProfile;
+      const normalizedAvatarUri = u.avatarUri
+        ? await copyImageToDocuments(u.avatarUri)
+        : u.avatarUri;
+      const next = {
+        ...user,
+        ...u,
+        avatarUri: normalizedAvatarUri ?? null,
+      } as UserProfile;
       setUserState(next);
-      log.info('UserStore:SetUser', 'State updated, persisting to storage');
+      log.info("UserStore:SetUser", "State updated, persisting to storage");
       await persist(next);
     },
     [copyImageToDocuments, persist, user],
   );
 
-    useEffect(() => {
-    log.info('UserProvider', '🚀 Provider mounted, checking AsyncStorage availability');
+  useEffect(() => {
+    log.info(
+      "UserProvider",
+      "🚀 Provider mounted, checking AsyncStorage availability",
+    );
 
     if (!AsyncStorage) {
-      log.error('UserProvider', 'AsyncStorage is not available - native module may not be linked');
+      log.error(
+        "UserProvider",
+        "AsyncStorage is not available - native module may not be linked",
+      );
       return;
     }
 
-    log.info('UserProvider', '✓ AsyncStorage available, loading user profile');
+    log.info("UserProvider", "✓ AsyncStorage available, loading user profile");
     load();
   }, [load]);
 
-    const value = useMemo<UserStore>(
+  const value = useMemo<UserStore>(
     () => ({ user, setUser, load, copyImageToDocuments }),
     [user, setUser, load, copyImageToDocuments],
   );
@@ -212,13 +300,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
-
-
 export const useUser = () => {
   const ctx = useContext(UserContext);
   if (!ctx) {
-    log.error('UserStore:Hook', 'useUser called outside UserProvider');
-    throw new Error('useUser must be used within UserProvider');
+    log.error("UserStore:Hook", "useUser called outside UserProvider");
+    throw new Error("useUser must be used within UserProvider");
   }
   return ctx;
 };
@@ -226,9 +312,9 @@ export const useUser = () => {
 export default UserProvider;
 
 function getFileExtension(uri: string) {
-  const sanitizedUri = uri.split('?')[0].split('#')[0];
-  const lastSegment = sanitizedUri.split('/').pop() || '';
-  const dotIndex = lastSegment.lastIndexOf('.');
-  if (dotIndex === -1) return '';
+  const sanitizedUri = uri.split("?")[0].split("#")[0];
+  const lastSegment = sanitizedUri.split("/").pop() || "";
+  const dotIndex = lastSegment.lastIndexOf(".");
+  if (dotIndex === -1) return "";
   return lastSegment.slice(dotIndex + 1).toLowerCase();
 }

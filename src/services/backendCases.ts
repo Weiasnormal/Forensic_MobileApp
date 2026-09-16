@@ -1,5 +1,9 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
-import { getAuthHeader, handleUnauthorizedResponse } from "@/store/authStore";
+import {
+  getAuthHeader,
+  handleUnauthorizedResponse,
+  useAuthStore,
+} from "@/store/authStore";
 
 import type {
   AnalysisPriority,
@@ -13,6 +17,8 @@ import type {
 type BackendCaseRecord = {
   id?: string;
   caseCode?: string;
+  createdByUserId?: string;
+  CreatedByUserId?: string;
   subjectName?: string;
   createdByUser?: unknown;
   CreatedByUser?: unknown;
@@ -229,6 +235,14 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
   };
 }
 
+function isAdminSession(): boolean {
+  return (
+    useAuthStore
+      .getState()
+      .user?.roles.some((role) => role.toLowerCase().includes("admin")) ?? false
+  );
+}
+
 export async function fetchBackendCases({
   page = 1,
   pageSize = CASES_PAGE_SIZE,
@@ -289,12 +303,23 @@ export async function fetchBackendCases({
     responseObject?.totalCount ?? responseObject?.TotalCount;
   const totalCount =
     typeof rawTotalCount === "number" ? rawTotalCount : records.length;
+  const currentUserId = useAuthStore.getState().user?.userId?.toLowerCase();
+  const canViewAllCases = isAdminSession();
+  const scopedRecords =
+    canViewAllCases || !currentUserId
+      ? records
+      : records.filter((record) => {
+          const creatorId = (
+            record.createdByUserId ?? record.CreatedByUserId
+          )?.toLowerCase();
+          return !creatorId || creatorId === currentUserId;
+        });
 
   return {
-    cases: records
+    cases: scopedRecords
       .map(normalizeCaseRecord)
       .filter((item): item is SavedCase => Boolean(item)),
-    totalCount,
+    totalCount: canViewAllCases ? totalCount : scopedRecords.length,
     page,
     pageSize,
   };
