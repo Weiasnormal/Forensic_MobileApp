@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export interface VerdictCardProps {
   /** The current review state of the card */
-  status: 'pending' | 'updated';
+  status: "pending" | "updated";
   /** Name of the supervisor who made the change (required if status is 'updated') */
   supervisorName?: string;
   /** The original ML verdict (e.g., 'Suspected' or 'Genuine') */
@@ -20,14 +20,13 @@ export interface VerdictCardProps {
 
 export default function VerdictCard({
   status,
-  supervisorName = 'Admin',
+  supervisorName = "Admin",
   originalVerdict,
   newVerdict,
   date,
   reviewNote,
 }: VerdictCardProps) {
-  
-  if (status === 'pending') {
+  if (status === "pending") {
     return (
       <View style={styles.container}>
         <View style={styles.headerRow}>
@@ -35,14 +34,15 @@ export default function VerdictCard({
           <Text style={styles.title}>Pending Supervisor Review</Text>
         </View>
         <Text style={styles.description}>
-          This result is awaiting review. The final verdict may be updated by your supervisor.
+          This result is awaiting review. The final verdict may be updated by
+          your supervisor.
         </Text>
       </View>
     );
   }
 
   // Determine dot color based on the updated verdict
-  const isGenuine = newVerdict?.toLowerCase() === 'genuine';
+  const isGenuine = newVerdict?.toLowerCase() === "genuine";
   const dotColor = isGenuine ? colors.statusGenuine : colors.danger;
 
   return (
@@ -51,10 +51,10 @@ export default function VerdictCard({
         <View style={[styles.dot, { backgroundColor: dotColor }]} />
         <Text style={styles.title}>Verdict Updated by Supervisor</Text>
       </View>
-      
+
       <Text style={styles.description}>
-        Supervisor {supervisorName} changed this verdict from{' '}
-        <Text style={styles.boldText}>{originalVerdict}</Text> to{' '}
+        Supervisor {supervisorName} changed this verdict from{" "}
+        <Text style={styles.boldText}>{originalVerdict}</Text> to{" "}
         <Text style={styles.boldText}>{newVerdict}</Text> on {date}.
       </Text>
 
@@ -74,11 +74,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.dividerLight,
     padding: 16,
-    width: '100%',
+    width: "100%",
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   dot: {
@@ -88,16 +88,16 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   title: {
-    ...getTypographyStyle('t3Title'),
+    ...getTypographyStyle("l1List"),
     color: colors.textPrimary,
   },
   description: {
-    ...getTypographyStyle('b3Button'),
-    color: colors.textSecondary,
-    lineHeight: 20,
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.label,
+    lineHeight: 18,
   },
   boldText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.textSecondary, // Match description color but bolder
   },
   quoteContainer: {
@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   quoteText: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     lineHeight: 20,
   },
 });

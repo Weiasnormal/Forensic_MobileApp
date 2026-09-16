@@ -1,8 +1,8 @@
-import React from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import SecondaryButton from '@/_components/common/SecondaryButton';
-import { getTypographyStyle } from '@/constants/typography';
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import SecondaryButton from "@/_components/common/SecondaryButton";
+import { getTypographyStyle } from "@/constants/typography";
+import React from "react";
+import { Modal, StyleSheet, Text, View } from "react-native";
 
 interface LogoutModalProps {
   visible: boolean;
@@ -25,14 +25,14 @@ export default function LogoutModal({
     >
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Logout Confirmation</Text>
+          <Text style={styles.title}>Sign out Confirmation</Text>
 
           <Text style={styles.message}>
-            Are you sure you want to logout your account?
+            Are you sure you want to sign out of your account?
           </Text>
 
           <PrimaryButton
-            label="Log out"
+            label="Sign out"
             onPress={onLogout}
             backgroundColor="#E54848"
             textColor="#FFFFFF"
@@ -57,38 +57,38 @@ export default function LogoutModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.48)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(15, 23, 42, 0.48)",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
     paddingHorizontal: 28,
     paddingVertical: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
-    ...getTypographyStyle('t3Title'),
-    color: '#0F172A',
-    textAlign: 'center',
+    ...getTypographyStyle("t3Title"),
+    color: "#0F172A",
+    textAlign: "center",
     marginBottom: 12,
   },
   message: {
-    ...getTypographyStyle('headline', 'regular'),
-    color: '#64748B',
-    textAlign: 'center',
+    ...getTypographyStyle("headline", "regular"),
+    color: "#64748B",
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
   },
   primaryButton: {
-    width: '100%',
+    width: "100%",
   },
   secondaryButton: {
-    width: '100%',
+    width: "100%",
     marginTop: 12,
   },
 });
