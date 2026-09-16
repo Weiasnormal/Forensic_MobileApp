@@ -1,9 +1,9 @@
 import ErrorBanner from "@/_components/common/ErrorBanner";
+import PermissionDisclosure from "@/_components/common/PermissionDisclosure";
 import PrimaryButton from "@/_components/common/PrimaryButton";
-import CameraDisclosureModal from "@/_components/modals/camera_disclosure";
 import ErrorModal from "@/_components/modals/error_modal";
 import MediaSourcePicker, {
-    scanForensicDocument,
+  scanForensicDocument,
 } from "@/_components/modals/media_source_picker";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
@@ -14,20 +14,20 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    BackHandler,
-    Image,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  BackHandler,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 const UPLOAD_DIRECTORY = `${FileSystem.documentDirectory ?? ""}case-uploads/`;
@@ -94,9 +94,6 @@ export default function SignatureUploadsRoute() {
   const router = useRouter();
   const nav = router as any;
   const insets = useSafeAreaInsets();
-  const allowUploadSourceChoice = useCaseStore(
-    (state) => state.allowUploadSourceChoice,
-  );
   const [currentUploadTarget, setCurrentUploadTarget] = useState<
     "reference" | "suspect" | null
   >(null);
@@ -106,6 +103,8 @@ export default function SignatureUploadsRoute() {
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState("");
+  const [showPermissionModal, setShowPermissionModal] = useState(true);
+  const [permissionSeconds, setPermissionSeconds] = useState(3);
   const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
@@ -116,12 +115,6 @@ export default function SignatureUploadsRoute() {
   const resetSubmissionState = useCaseStore(
     (state) => state.resetSubmissionState,
   );
-  const [showCameraDisclosure, setShowCameraDisclosure] = useState(false);
-  const [pendingUploadTarget, setPendingUploadTarget] = useState<{
-    target: "reference" | "suspect";
-    refIndex?: number;
-  } | null>(null);
-
   const submissionError = useCaseStore((state) => state.submissionError);
   const [errorModal, setErrorModal] = useState<{
     title: string;
@@ -131,6 +124,24 @@ export default function SignatureUploadsRoute() {
     target: "reference" | "suspect";
     index?: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (!showPermissionModal) return;
+
+    setPermissionSeconds(3);
+    const timer = setInterval(() => {
+      setPermissionSeconds((seconds) => {
+        if (seconds <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+
+        return seconds - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [showPermissionModal]);
 
   const handleCameraPress = (
     target: "reference" | "suspect",
@@ -148,15 +159,6 @@ export default function SignatureUploadsRoute() {
       }
     }
 
-    setPendingUploadTarget({ target, refIndex });
-    setShowCameraDisclosure(true);
-  };
-
-  const confirmCameraDisclosure = () => {
-    setShowCameraDisclosure(false);
-    if (!pendingUploadTarget) return;
-
-    const { target, refIndex } = pendingUploadTarget;
     scanForensicDocument(
       async (scannedUri) => {
         const persistedUri = await persistUploadUri(
@@ -173,7 +175,15 @@ export default function SignatureUploadsRoute() {
       },
       (title, message) => setErrorModal({ title, message }),
     );
-    setPendingUploadTarget(null);
+  };
+
+  const handleUploadPress = (
+    target: "reference" | "suspect",
+    refIndex?: number,
+  ) => {
+    setCurrentUploadTarget(target);
+    setCurrentReferenceIndex(refIndex ?? null);
+    setShowSourcePicker(true);
   };
 
   useFocusEffect(
@@ -189,20 +199,6 @@ export default function SignatureUploadsRoute() {
       return () => subscription.remove();
     }, [nav]),
   );
-
-  const handleUploadPress = (
-    target: "reference" | "suspect",
-    refIndex?: number,
-  ) => {
-    if (allowUploadSourceChoice) {
-      setCurrentUploadTarget(target);
-      setCurrentReferenceIndex(refIndex ?? null);
-      setShowSourcePicker(true);
-      return;
-    }
-
-    handleCameraPress(target, refIndex);
-  };
 
   const handleSubmit = async () => {
     if (!canRun || isSubmitting) return;
@@ -241,7 +237,6 @@ export default function SignatureUploadsRoute() {
         showsVerticalScrollIndicator={false}
       >
         <ErrorBanner message={submissionError} title="Upload issue" />
-
         <View style={styles.headerSection}>
           <Text style={styles.sectionHeading}>Reference Signatures</Text>
           <Text style={styles.sectionSubheading}>
@@ -365,6 +360,30 @@ export default function SignatureUploadsRoute() {
           )}
         </Pressable>
       </ScrollView>
+      <Modal
+        visible={showPermissionModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => undefined}
+      >
+        <View style={styles.permissionOverlay}>
+          <View style={styles.permissionCard}>
+            <Text style={styles.permissionTitle}>Camera Access</Text>
+            <PermissionDisclosure />
+            <PrimaryButton
+              label={
+                permissionSeconds > 0
+                  ? `Please read (${permissionSeconds})`
+                  : "I Understand"
+              }
+              disabled={permissionSeconds > 0}
+              onPress={() => setShowPermissionModal(false)}
+              style={styles.permissionButton}
+            />
+          </View>
+        </View>
+      </Modal>
       <View
         style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}
       >
@@ -509,15 +528,6 @@ export default function SignatureUploadsRoute() {
               message: "Unable to pick image from gallery.",
             });
           }
-        }}
-      />
-
-      <CameraDisclosureModal
-        visible={showCameraDisclosure}
-        onConfirm={confirmCameraDisclosure}
-        onCancel={() => {
-          setShowCameraDisclosure(false);
-          setPendingUploadTarget(null);
         }}
       />
 
@@ -822,6 +832,31 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  permissionOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  permissionCard: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: colors.background2,
+    borderRadius: 24,
+    paddingHorizontal: 28,
+    paddingVertical: 30,
+  },
+  permissionTitle: {
+    ...getTypographyStyle("t3Title"),
+    color: colors.textPrimary,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  permissionButton: {
+    width: "100%",
+    marginTop: 2,
   },
   previewBackdrop: {
     flex: 1,
