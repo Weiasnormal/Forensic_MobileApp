@@ -4,22 +4,22 @@ import { type SavedCase, useCaseStore } from "@/store/caseStore";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-	Animated,
-	Dimensions,
-	Modal,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
+    Animated,
+    Dimensions,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Polyline } from "react-native-svg";
 import {
-	AdminStatCard,
-	TeamOverviewCard,
-	type TeamOverviewData,
+    AdminStatCard,
+    TeamOverviewCard,
+    type TeamOverviewData,
 } from "./cards";
 
 const TIME_RANGE_OPTIONS = [
@@ -162,7 +162,7 @@ export default function AdminStatsScreen() {
       if (await refreshCasesFromBackend()) await loadAllCases();
     })();
     fetchTeamMembers();
-  });
+  }, [fetchTeamMembers, loadAllCases, refreshCasesFromBackend]);
 
   const filteredCases = useMemo(
     () => filterCasesByRange(cases, timeRange),

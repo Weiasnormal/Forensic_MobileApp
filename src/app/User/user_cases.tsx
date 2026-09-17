@@ -9,26 +9,26 @@ import { useRouter } from "expo-router";
 import { FileText, Search } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-	ActivityIndicator,
-	FlatList,
-	SectionList,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
+  ActivityIndicator,
+  FlatList,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import CaseCard from "../../_components/caseCards";
 import FilterCasesModal from "../../_components/modals/filtercases";
 import {
-	formatCaseDateLabel,
-	getCaseSummary,
-	type SavedCase,
-	useCaseStore,
+  formatCaseDateLabel,
+  getCaseSummary,
+  type SavedCase,
+  useCaseStore,
 } from "../../store/caseStore";
 import {
-	caseMatchesSearch,
-	normalizeCaseSearchQuery,
+  caseMatchesSearch,
+  normalizeCaseSearchQuery,
 } from "../../utils/caseSearch";
 
 const quickFilters = ["All", "Genuine", "Suspected", "Processing"];
@@ -292,7 +292,10 @@ export default function UserCasesScreen() {
                 if (item.analysisType === "HW") {
                   nav.push("/analysis/handwriting/results");
                 } else {
-                  nav.push(`/analysis/signature/results/${item.caseId}`);
+                  nav.push({
+                    pathname: "/analysis/signature/signature_results",
+                    params: { caseId: item.caseId },
+                  });
                 }
               }}
             />

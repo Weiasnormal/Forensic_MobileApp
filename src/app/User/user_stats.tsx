@@ -5,15 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 
-const monthlyBars = [
-  { month: "Nov", genuine: 36, suspected: 18 },
-  { month: "Dec", genuine: 56, suspected: 12 },
-  { month: "Jan", genuine: 52, suspected: 11 },
-  { month: "Feb", genuine: 55, suspected: 13 },
-  { month: "Mar", genuine: 71, suspected: 16 },
-  { month: "Apr", genuine: 82, suspected: 24 },
-];
-
 export default function UserStatsScreen() {
   const cases = useCaseStore((state) => state.cases);
   const refreshCasesFromBackend = useCaseStore(
@@ -70,6 +61,67 @@ export default function UserStatsScreen() {
           ? Math.round((totals.genuine / totals.total) * 100)
           : 0,
     };
+  }, [cases]);
+
+  const monthlyBars = useMemo(() => {
+    const now = new Date();
+    const buckets = Array.from({ length: 6 }, (_, index) => {
+      const monthDate = new Date(
+        now.getFullYear(),
+        now.getMonth() - (5 - index),
+        1,
+      );
+      return {
+        month: monthDate.toLocaleDateString("en-US", { month: "short" }),
+        year: monthDate.getFullYear(),
+        monthIndex: monthDate.getMonth(),
+        genuine: 0,
+        suspected: 0,
+      };
+    });
+
+    cases.forEach((item) => {
+      const createdAt = new Date(item.createdAt);
+      const bucket = buckets.find(
+        (entry) =>
+          entry.year === createdAt.getFullYear() &&
+          entry.monthIndex === createdAt.getMonth(),
+      );
+      if (!bucket) return;
+      if (item.status === "Genuine") bucket.genuine += 1;
+      if (item.status === "Suspected") bucket.suspected += 1;
+    });
+
+    const largestCount = Math.max(
+      ...buckets.map((bucket) => bucket.genuine + bucket.suspected),
+      1,
+    );
+
+    return buckets.map(({ month, genuine, suspected }) => ({
+      month,
+      genuine: (genuine / largestCount) * 100,
+      suspected: (suspected / largestCount) * 100,
+    }));
+  }, [cases]);
+
+  const monthlyTrendLabel = useMemo(() => {
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const countForMonth = (month: Date) =>
+      cases.filter((item) => {
+        const createdAt = new Date(item.createdAt);
+        return (
+          createdAt.getFullYear() === month.getFullYear() &&
+          createdAt.getMonth() === month.getMonth()
+        );
+      }).length;
+    const previous = countForMonth(previousMonth);
+    const current = countForMonth(currentMonth);
+    if (previous === 0) return current > 0 ? "New this month" : "No change";
+
+    const change = Math.round(((current - previous) / previous) * 100);
+    return `${change >= 0 ? "↑" : "↓"} ${Math.abs(change)}% vs last month`;
   }, [cases]);
 
   useEffect(() => {
@@ -265,7 +317,7 @@ export default function UserStatsScreen() {
             </Text>
             <View style={styles.trendBadge}>
               <Text allowFontScaling={false} style={styles.trendBadgeText}>
-                18% vs last month
+                {monthlyTrendLabel}
               </Text>
             </View>
           </View>

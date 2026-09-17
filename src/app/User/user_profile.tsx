@@ -3,7 +3,6 @@ import Avatar from "@/_components/common/Avatar";
 import Divider from "@/_components/common/Divider";
 import GroupedCard from "@/_components/common/GroupedCard";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
-import SecondaryButton from "@/_components/common/SecondaryButton";
 import SectionLabel from "@/_components/common/SectionLabel";
 import SettingsRow from "@/_components/common/SettingsRow";
 import SignOutButton from "@/_components/common/SignOutButton";
@@ -15,8 +14,8 @@ import TypeToConfirmModal from "@/_components/modals/type_to_confirm";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-	getNotificationsEnabledPreference,
-	setNotificationsEnabledPreference,
+  getNotificationsEnabledPreference,
+  setNotificationsEnabledPreference,
 } from "@/services/processingNotifications";
 import { useAuthStore } from "@/store/authStore";
 import { getCaseSummary, useCaseStore } from "@/store/caseStore";
@@ -25,26 +24,20 @@ import { useUser } from "@/store/userStore";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import {
-	Bell,
-	Eye,
-	EyeOff,
-	FileText,
-	Grid,
-	Info,
-	Lock,
-	User,
-	UserX,
+  Bell,
+  FileText,
+  Grid,
+  Info,
+  Lock,
+  User,
+  UserX,
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-	SafeAreaView,
-	useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UserProfileScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { user, load, setUser } = useUser();
   const logout = useAuthStore((state) => state.logout);
   const cases = useCaseStore((state) => state.cases);
@@ -62,10 +55,6 @@ export default function UserProfileScreen() {
     useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
-
-  const hiddenSavedCases = useCaseStore((s) => s.hiddenSavedCases);
-  const stashSavedCases = useCaseStore((s) => s.stashSavedCases);
-  const restoreSavedCases = useCaseStore((s) => s.restoreSavedCases);
 
   const initials = getInitials(user.firstName, user.lastName);
 
@@ -107,7 +96,7 @@ export default function UserProfileScreen() {
     <SafeAreaView edges={["left", "right"]} style={styles.safeArea}>
       <ScreenStatusBar variant="onBrand" />
 
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
         <View style={styles.headerGlow} />
 
         <View style={styles.headerTopRow}>
@@ -192,53 +181,6 @@ export default function UserProfileScreen() {
             showChevron={false}
           />
         </GroupedCard>
-
-        <SectionLabel label="Data" />
-        <GroupedCard>
-          <ToggleRow
-            icon={hiddenSavedCases ? EyeOff : Eye}
-            title={hiddenSavedCases ? "Saved Cases Hidden" : "Hide Saved Cases"}
-            subtitle={
-              hiddenSavedCases
-                ? "Tap to restore them to your dashboard"
-                : "Temporarily hide saved cases from the dashboard"
-            }
-            value={!!hiddenSavedCases}
-            onValueChange={() => {
-              if (!hiddenSavedCases) {
-                Alert.alert(
-                  "Hide saved cases",
-                  "This will temporarily hide saved cases from the dashboard. Continue?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Hide",
-                      style: "destructive",
-                      onPress: () => stashSavedCases(),
-                    },
-                  ],
-                );
-              } else {
-                restoreSavedCases();
-              }
-            }}
-          />
-        </GroupedCard>
-
-        <SecondaryButton
-          label="Reset Test Data"
-          onPress={() => {
-            Alert.alert(
-              "Reset test data",
-              "This will remove the mock cases and drafts from the app. Continue?",
-              [{ text: "Cancel", style: "cancel" }],
-            );
-          }}
-          backgroundColor={colors.dangerLight}
-          borderColor={colors.dangerBorder}
-          textColor={colors.danger}
-          style={styles.resetSpacing}
-        />
 
         <SignOutButton
           style={styles.signOutSpacing}
@@ -341,6 +283,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     paddingHorizontal: 24,
     paddingBottom: 20,
+    paddingTop: 40,
   },
   headerGlow: {
     position: "absolute",
@@ -404,9 +347,6 @@ const styles = StyleSheet.create({
     paddingTop: 25,
     paddingBottom: 18,
     backgroundColor: colors.background,
-  },
-  resetSpacing: {
-    marginTop: 4,
   },
   signOutSpacing: {
     marginTop: 12,
