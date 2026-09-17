@@ -8,6 +8,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useAuthStore } from "./authStore";
@@ -40,9 +41,9 @@ const DEFAULT_USER: UserProfile = {
 
 const KEY = "avera_user_profile_metadata";
 
-function getStorageKey(email?: string) {
-  const normalizedEmail = email?.trim().toLowerCase();
-  return normalizedEmail ? `${KEY}:${normalizedEmail}` : KEY;
+function getStorageKey(userId?: string, email?: string) {
+  const identity = userId?.trim() || email?.trim().toLowerCase();
+  return identity ? `${KEY}:${identity}` : KEY;
 }
 
 const log = {
@@ -64,14 +65,18 @@ const UserContext = createContext<UserStore | null>(null);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<UserProfile>(DEFAULT_USER);
+  const previousAuthUserId = useRef<string | null>(null);
+  const authUserId = useAuthStore((state) => state.user?.userId);
   const authEmail = useAuthStore((state) => state.user?.email);
   const accessToken = useAuthStore((state) => state.accessToken);
   const isTokenExpired = useAuthStore((state) => state.isTokenExpired);
 
   const load = useCallback(async () => {
     const startTime = performance.now();
+    const loadUserId = authUserId?.trim();
+    const loadEmail = authEmail?.trim().toLowerCase();
     try {
-      const storageKey = getStorageKey(authEmail);
+      const storageKey = getStorageKey(loadUserId, loadEmail);
       log.info("UserStore", "Starting load operation", { storageKey });
 
       if (!AsyncStorage) {
@@ -102,6 +107,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (!accessToken || isTokenExpired()) {
+        const currentAuthUser = useAuthStore.getState().user;
+        if (
+          currentAuthUser?.userId?.trim() !== loadUserId ||
+          currentAuthUser?.email?.trim().toLowerCase() !== loadEmail
+        ) {
+          return;
+        }
         setUserState({
           ...DEFAULT_USER,
           ...localProfile,
@@ -111,6 +123,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const remoteProfile = await fetchCurrentUser(accessToken);
+      const currentAuthUser = useAuthStore.getState().user;
+      if (
+        currentAuthUser?.userId?.trim() !== loadUserId ||
+        currentAuthUser?.email?.trim().toLowerCase() !== loadEmail
+      ) {
+        return;
+      }
       setUserState({
         firstName:
           localProfile.firstName?.trim() ||
@@ -130,13 +149,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       const error = e as Error;
       log.error("UserStore", "Failed to load user profile", error);
+      const currentAuthUser = useAuthStore.getState().user;
+      if (
+        currentAuthUser?.userId?.trim() !== loadUserId ||
+        currentAuthUser?.email?.trim().toLowerCase() !== loadEmail
+      ) {
+        return;
+      }
       setUserState((prev) => ({
         ...DEFAULT_USER,
         email: authEmail || "",
-        avatarUri: prev.avatarUri,
       }));
     }
-  }, [accessToken, authEmail, isTokenExpired]);
+  }, [accessToken, authEmail, authUserId, isTokenExpired]);
 
   const persist = useCallback(
     async (next: UserProfile) => {
@@ -150,7 +175,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
         const jsonString = JSON.stringify(next);
         await AsyncStorage.setItem(
-          getStorageKey(next.email || authEmail),
+          getStorageKey(authUserId, next.email || authEmail),
           jsonString,
         );
 
@@ -165,22 +190,23 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         log.error("UserStore", "Failed to persist user profile", error);
       }
     },
-    [authEmail],
+    [authEmail, authUserId],
   );
 
   useEffect(() => {
-    if (!authEmail) {
-      setUserState((prev) => ({ ...DEFAULT_USER, avatarUri: prev.avatarUri }));
+    const nextAuthUserId = authUserId?.trim() || null;
+
+    if (!nextAuthUserId) {
+      previousAuthUserId.current = null;
+      setUserState(DEFAULT_USER);
       return;
     }
 
-    setUserState((prev) => {
-      if (prev.email === authEmail) return prev;
-      const next = { ...prev, email: authEmail };
-      persist(next);
-      return next;
-    });
-  }, [authEmail, persist]);
+    if (previousAuthUserId.current !== nextAuthUserId) {
+      previousAuthUserId.current = nextAuthUserId;
+      setUserState({ ...DEFAULT_USER, email: authEmail || "" });
+    }
+  }, [authEmail, authUserId]);
 
   const copyImageToDocuments = useCallback(
     async (uri: string): Promise<string> => {

@@ -1,11 +1,11 @@
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-	CheckCircle2,
-	ChevronRight,
-	FileText,
-	LucideIcon,
-	RefreshCw,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
+  LucideIcon,
+  RefreshCw,
 } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -82,7 +82,7 @@ export default function PendingCard({
           {style.statusText}
         </Text>
         <Text allowFontScaling={false} style={styles.id}>
-          {caseCode}
+          {formatCaseCode(caseCode)}
         </Text>
         <Text allowFontScaling={false} style={styles.nameType}>
           {name} {type ? `• ${type}` : ""}
@@ -135,3 +135,16 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 });
+
+function formatCaseCode(value: string) {
+  const withoutPrefix = value
+    .replace(/^case(?:\s*[-_:#]\s*|\s+|(?=\d))/i, "")
+    .trim();
+  const compact = withoutPrefix.replace(/\D/g, "");
+
+  if (/^\d{11}$/.test(compact)) {
+    return `${compact.slice(0, 2)}-${compact.slice(2, 4)}-${compact.slice(4, 8)}-${compact.slice(8)}`;
+  }
+
+  return withoutPrefix;
+}

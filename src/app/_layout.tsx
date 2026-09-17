@@ -43,9 +43,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const sessionKey = user?.userId?.trim() || null;
     if (
-      (previousSessionKey.current === undefined && sessionKey === null) ||
-      (previousSessionKey.current !== undefined &&
-        previousSessionKey.current !== sessionKey)
+      previousSessionKey.current !== undefined &&
+      previousSessionKey.current !== null &&
+      previousSessionKey.current !== sessionKey
     ) {
       clearUserScopedCaseState();
     }

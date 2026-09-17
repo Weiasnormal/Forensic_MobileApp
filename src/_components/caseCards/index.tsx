@@ -11,6 +11,10 @@ interface CaseCardProps {
   status: CaseStatus;
   priority: string;
   createdAt: string;
+  variant?: "user" | "admin";
+  examiner?: string;
+  confidence?: number;
+  adminStatus?: string;
   onPress?: () => void;
 }
 
@@ -57,9 +61,15 @@ export default function CaseCard({
   status,
   priority,
   createdAt,
+  variant = "user",
+  examiner,
+  confidence,
+  adminStatus,
   onPress,
 }: CaseCardProps) {
   const style = statusStyles[status] ?? statusStyles.Processing;
+  const isAdminCard = variant === "admin";
+  const adminBadgeStyle = getAdminBadgeStyle(adminStatus);
 
   return (
     <TouchableOpacity
@@ -73,33 +83,59 @@ export default function CaseCard({
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text allowFontScaling={false} style={styles.id}>
-            {caseCode}
+            {formatCaseCode(caseCode)}
           </Text>
-          <Text allowFontScaling={false} style={styles.typeLabel}>
-            {type}
-            {priority && (
-              <Text
-                style={{
-                  color: priorityColors[priority] || colors.textSecondary,
-                }}
-              >
-                {""} {priority}
-              </Text>
-            )}
-          </Text>
+          {isAdminCard ? (
+            <Text allowFontScaling={false} style={styles.typeLabel}>
+              {examiner || "Unknown"} · {formatDate(createdAt)}
+            </Text>
+          ) : (
+            <Text allowFontScaling={false} style={styles.typeLabel}>
+              {type}
+              {priority && (
+                <Text
+                  style={{
+                    color: priorityColors[priority] || colors.textSecondary,
+                  }}
+                >
+                  {""} {priority}
+                </Text>
+              )}
+            </Text>
+          )}
         </View>
-        <View style={[styles.badge, { backgroundColor: style.badgeBgColor }]}>
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor: isAdminCard
+                ? adminBadgeStyle.backgroundColor
+                : style.badgeBgColor,
+            },
+          ]}
+        >
           <Text
             allowFontScaling={false}
-            style={[styles.badgeText, { color: style.badgeColor }]}
+            style={[
+              styles.badgeText,
+              {
+                color: isAdminCard ? adminBadgeStyle.color : style.badgeColor,
+              },
+            ]}
           >
-            {style.badgeText}
+            {isAdminCard ? adminStatus || "Review" : style.badgeText}
           </Text>
         </View>
       </View>
-      <Text allowFontScaling={false} style={styles.nameLabel}>
-        {name}
-      </Text>
+      {isAdminCard ? (
+        <Text allowFontScaling={false} style={styles.nameLabel}>
+          {status} · {`${(confidence ?? 0).toFixed(1)}%`}
+        </Text>
+      ) : (
+        <Text allowFontScaling={false} style={styles.nameLabel}>
+          {name}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -159,3 +195,44 @@ const styles = StyleSheet.create({
     left: 6,
   },
 });
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatCaseCode(value: string) {
+  const withoutPrefix = value
+    .replace(/^case(?:\s*[-_:#]\s*|\s+|(?=\d))/i, "")
+    .trim();
+  const compact = withoutPrefix.replace(/\D/g, "");
+
+  if (/^\d{11}$/.test(compact)) {
+    return `${compact.slice(0, 2)}-${compact.slice(2, 4)}-${compact.slice(4, 8)}-${compact.slice(8)}`;
+  }
+
+  return withoutPrefix;
+}
+
+function getAdminBadgeStyle(status?: string) {
+  if (status === "Suspected") {
+    return {
+      color: colors.statusSuspected,
+      backgroundColor: colors.statusSuspectedBg,
+    };
+  }
+
+  if (status === "Genuine") {
+    return {
+      color: colors.statusGenuine,
+      backgroundColor: colors.statusGenuineBg,
+    };
+  }
+
+  return {
+    color: colors.statusProcessing,
+    backgroundColor: colors.statusProcessingBg,
+  };
+}

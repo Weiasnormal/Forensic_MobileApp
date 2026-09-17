@@ -1,11 +1,11 @@
-import { Platform } from 'react-native';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import type * as ExpoNotifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants, { ExecutionEnvironment } from "expo-constants";
+import type * as ExpoNotifications from "expo-notifications";
+import { Platform } from "react-native";
 
-
-const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const NOTIFICATIONS_ENABLED_KEY = 'avera_notifications_enabled';
+const IS_EXPO_GO =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const NOTIFICATIONS_ENABLED_KEY = "avera_notifications_enabled";
 
 let notificationsModule: typeof ExpoNotifications | null = null;
 let loadAttempted = false;
@@ -18,10 +18,13 @@ async function getNotifications(): Promise<typeof ExpoNotifications | null> {
 
   loadAttempted = true;
   try {
-    notificationsModule = await import('expo-notifications');
+    notificationsModule = await import("expo-notifications");
     return notificationsModule;
   } catch (error) {
-    console.warn('[processingNotifications] expo-notifications native module unavailable', error);
+    console.warn(
+      "[processingNotifications] expo-notifications native module unavailable",
+      error,
+    );
     return null;
   }
 }
@@ -30,17 +33,25 @@ export async function getNotificationsEnabledPreference(): Promise<boolean> {
   try {
     const raw = await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
     if (raw === null) return true; // default ON
-    return raw === 'true';
+    return raw === "true";
   } catch {
     return true;
   }
 }
 
-export async function setNotificationsEnabledPreference(value: boolean): Promise<boolean> {
+export async function setNotificationsEnabledPreference(
+  value: boolean,
+): Promise<boolean> {
   try {
-    await AsyncStorage.setItem(NOTIFICATIONS_ENABLED_KEY, value ? 'true' : 'false');
+    await AsyncStorage.setItem(
+      NOTIFICATIONS_ENABLED_KEY,
+      value ? "true" : "false",
+    );
   } catch (error) {
-    console.warn('[processingNotifications] Unable to persist notification preference', error);
+    console.warn(
+      "[processingNotifications] Unable to persist notification preference",
+      error,
+    );
   }
 
   if (value) {
@@ -58,7 +69,6 @@ export async function configureProcessingNotifications() {
   try {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldPlaySound: false,
         shouldSetBadge: false,
         shouldShowBanner: true,
@@ -66,16 +76,16 @@ export async function configureProcessingNotifications() {
       }),
     });
 
-    if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "default",
         importance: Notifications.AndroidImportance.DEFAULT,
       }).catch(() => {});
     }
 
     isConfigured = true;
   } catch (error) {
-    console.warn('[processingNotifications] Setup failed', error);
+    console.warn("[processingNotifications] Setup failed", error);
   }
 }
 
@@ -93,12 +103,18 @@ async function ensurePermission(): Promise<boolean> {
     const requested = await Notifications.requestPermissionsAsync();
     return requested.granted;
   } catch (error) {
-    console.warn('[processingNotifications] Unable to check/request permission', error);
+    console.warn(
+      "[processingNotifications] Unable to check/request permission",
+      error,
+    );
     return false;
   }
 }
 
-export async function notifyProcessingComplete(caseCode: string, isSuspected: boolean): Promise<void> {
+export async function notifyProcessingComplete(
+  caseCode: string,
+  isSuspected: boolean,
+): Promise<void> {
   const enabled = await getNotificationsEnabledPreference();
   if (!enabled) return;
 
@@ -111,7 +127,7 @@ export async function notifyProcessingComplete(caseCode: string, isSuspected: bo
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Case analysis complete',
+        title: "Case analysis complete",
         body: isSuspected
           ? `Case ${caseCode} finished processing — signature flagged as Suspected.`
           : `Case ${caseCode} finished processing — signature marked Genuine.`,
@@ -119,7 +135,10 @@ export async function notifyProcessingComplete(caseCode: string, isSuspected: bo
       trigger: null,
     });
   } catch (error) {
-    console.warn('[processingNotifications] Unable to schedule completion notification', error);
+    console.warn(
+      "[processingNotifications] Unable to schedule completion notification",
+      error,
+    );
   }
 }
 
@@ -136,12 +155,15 @@ export async function notifyProcessingFailed(caseCode: string): Promise<void> {
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Case analysis failed',
+        title: "Case analysis failed",
         body: `Case ${caseCode} could not be processed. Open the app to retry.`,
       },
       trigger: null,
     });
   } catch (error) {
-    console.warn('[processingNotifications] Unable to schedule failure notification', error);
+    console.warn(
+      "[processingNotifications] Unable to schedule failure notification",
+      error,
+    );
   }
 }

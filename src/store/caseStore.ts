@@ -17,7 +17,11 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { getAuthHeader, handleUnauthorizedResponse } from "./authStore";
+import {
+  getAuthHeader,
+  handleUnauthorizedResponse,
+  useAuthStore,
+} from "./authStore";
 import { useFeedbackStore } from "./feedbackStore";
 
 const VALID_SLOTS: OverlaySlot[] = [
@@ -46,14 +50,66 @@ function parseOverlayImages(raw: unknown): OverlayImageRef[] {
       (entry as any).image_id ??
       (entry as any).imageId ??
       (entry as any).ImageId ??
+      (entry as any).blobId ??
+      (entry as any).BlobId ??
       (entry as any).id ??
       (entry as any).Id;
-    const slot = (entry as any).slot ?? (entry as any).Slot;
-    const variant = (entry as any).variant ?? (entry as any).Variant;
+    const slotValue =
+      (entry as any).slot ??
+      (entry as any).Slot ??
+      (entry as any).overlaySlot ??
+      (entry as any).OverlaySlot ??
+      "";
+    const variantValue =
+      (entry as any).variant ??
+      (entry as any).Variant ??
+      (entry as any).overlayVariant ??
+      (entry as any).OverlayVariant ??
+      "";
+    const rawSlot = String(
+      typeof slotValue === "number" || /^\d+$/.test(String(slotValue))
+        ? ([
+            "reference1",
+            "reference2",
+            "reference3",
+            "reference4",
+            "suspected",
+          ][Number(slotValue)] ?? "")
+        : slotValue,
+    )
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
+    const rawVariant = String(
+      typeof variantValue === "number" || /^\d+$/.test(String(variantValue))
+        ? (["original", "heatmap", "overlay", "boundingbox", "strokediff"][
+            Number(variantValue)
+          ] ?? "")
+        : variantValue,
+    )
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
+    const referenceMatch = rawSlot.match(/^reference([1-4])$/);
+    const slot: OverlaySlot | "" = referenceMatch
+      ? (`Reference${referenceMatch[1]}` as OverlaySlot)
+      : rawSlot === "suspect" || rawSlot === "suspected"
+        ? "Suspected"
+        : "";
+    const variant: OverlayVariant | "" =
+      rawVariant === "original"
+        ? "Original"
+        : rawVariant === "heatmap"
+          ? "Heatmap"
+          : rawVariant === "overlay"
+            ? "Overlay"
+            : rawVariant === "boundingbox"
+              ? "BoundingBox"
+              : rawVariant === "strokediff" || rawVariant === "strokedifference"
+                ? "StrokeDiff"
+                : "";
 
     if (typeof id !== "string" || !id.trim()) continue;
-    if (!VALID_SLOTS.includes(slot)) continue;
-    if (!VALID_VARIANTS.includes(variant)) continue;
+    if (!slot || !VALID_SLOTS.includes(slot)) continue;
+    if (!variant || !VALID_VARIANTS.includes(variant)) continue;
 
     result.push({ id, slot, variant });
   }
@@ -132,6 +188,8 @@ export interface DraftCase {
 export interface SavedCase extends DraftCase {
   createdAt: string;
   examiner: string;
+  ownerUserId?: string;
+  tenantId?: string;
   status: CaseStatus;
   workflowStatus: CaseWorkflowStatus;
   analysisType: AnalysisType;
@@ -155,6 +213,7 @@ interface CaseStore {
   hasMoreCases: boolean;
   isLoadingMoreCases: boolean;
   draftSignatureCase: DraftCase;
+  savedDrafts: DraftCase[];
   isSubmitting: boolean;
   nextCaseNumber: number;
   activeSignatureCaseId: string | null;
@@ -175,6 +234,7 @@ interface CaseStore {
     caseId: string,
     result: SignatureAnalysisResult,
     workflowStatus: CaseWorkflowStatus,
+    finalStatus?: CaseStatus,
   ) => void;
   setActiveSignatureCaseId: (caseId: string | null) => void;
   refreshCasesFromBackend: () => Promise<boolean>;
@@ -183,6 +243,7 @@ interface CaseStore {
   stashSavedCases: () => void;
   restoreSavedCases: () => void;
   startNewSignatureDraft: () => void;
+  activateDraft: (caseId: string) => void;
   discardSignatureDraft: () => void;
   updateDraftCase: <K extends DraftEditableField>(
     field: K,
@@ -318,6 +379,7 @@ export const useCaseStore = create<CaseStore>()(
         hasMoreCases: false,
         isLoadingMoreCases: false,
         draftSignatureCase: createInitialDraft(1),
+        savedDrafts: [],
         isSubmitting: false,
         nextCaseNumber: 2,
         activeSignatureCaseId: null,
@@ -336,6 +398,7 @@ export const useCaseStore = create<CaseStore>()(
             hasMoreCases: false,
             isLoadingMoreCases: false,
             draftSignatureCase: createInitialDraft(1),
+            savedDrafts: [],
             nextCaseNumber: 2,
             activeSignatureCaseId: null,
             hiddenSavedCases: null,
@@ -401,7 +464,12 @@ export const useCaseStore = create<CaseStore>()(
           }));
         },
 
-        hydrateSignatureAnalysisResult: (caseId, result, workflowStatus) => {
+        hydrateSignatureAnalysisResult: (
+          caseId,
+          result,
+          workflowStatus,
+          finalStatus,
+        ) => {
           set((state) => ({
             signatureAnalysisResults: {
               ...state.signatureAnalysisResults,
@@ -411,7 +479,8 @@ export const useCaseStore = create<CaseStore>()(
               item.caseId === caseId
                 ? {
                     ...item,
-                    status: getSignatureAnalysisCaseStatus(result),
+                    status:
+                      finalStatus ?? getSignatureAnalysisCaseStatus(result),
                     workflowStatus,
                     verdict: result.verdict,
                     Verdict: result.Verdict,
@@ -561,7 +630,17 @@ export const useCaseStore = create<CaseStore>()(
               caseId: buildCaseId(nextCaseNumber),
             });
 
+            const savedDrafts = hasDraftProgress(state.draftSignatureCase)
+              ? [
+                  ...state.savedDrafts.filter(
+                    (draft) => draft.caseId !== state.draftSignatureCase.caseId,
+                  ),
+                  state.draftSignatureCase,
+                ]
+              : state.savedDrafts;
+
             return {
+              savedDrafts,
               draftSignatureCase: createInitialDraft(nextCaseNumber),
               nextCaseNumber: nextCaseNumber + 1,
               submissionStatus: "idle",
@@ -572,12 +651,36 @@ export const useCaseStore = create<CaseStore>()(
           });
         },
 
+        activateDraft: (caseId) => {
+          set((state) => {
+            const draft = state.savedDrafts.find(
+              (item) => item.caseId === caseId,
+            );
+            if (!draft) return state;
+
+            const currentDraft = hasDraftProgress(state.draftSignatureCase)
+              ? state.draftSignatureCase
+              : null;
+            const nextSavedDrafts = state.savedDrafts
+              .filter((item) => item.caseId !== caseId)
+              .concat(currentDraft ? [currentDraft] : []);
+
+            return {
+              draftSignatureCase: draft,
+              savedDrafts: nextSavedDrafts,
+            };
+          });
+        },
+
         discardSignatureDraft: () => {
           caseLog.info(
             "CaseStore:Action",
             "Discarding current signature draft",
           );
           set((state) => ({
+            savedDrafts: state.savedDrafts.filter(
+              (draft) => draft.caseId !== state.draftSignatureCase.caseId,
+            ),
             draftSignatureCase: createDraftCase(
               state.draftSignatureCase.caseId,
             ),
@@ -593,6 +696,11 @@ export const useCaseStore = create<CaseStore>()(
               ...state.draftSignatureCase,
               [field]: value,
             },
+            savedDrafts: state.savedDrafts.map((draft) =>
+              draft.caseId === state.draftSignatureCase.caseId
+                ? { ...draft, [field]: value }
+                : draft,
+            ),
           }));
         },
 
@@ -627,6 +735,11 @@ export const useCaseStore = create<CaseStore>()(
                 ...state.draftSignatureCase,
                 uploads: nextUploads,
               },
+              savedDrafts: state.savedDrafts.map((draft) =>
+                draft.caseId === state.draftSignatureCase.caseId
+                  ? { ...draft, uploads: nextUploads }
+                  : draft,
+              ),
             };
           });
         },
@@ -744,6 +857,8 @@ export const useCaseStore = create<CaseStore>()(
                 caseCode: caseCode ?? caseId,
                 createdAt: new Date().toISOString(),
                 examiner: "Unknown",
+                ownerUserId: useAuthStore.getState().user?.userId?.trim(),
+                tenantId: useAuthStore.getState().user?.tenantId?.trim(),
                 status: "Processing",
                 workflowStatus: "Processing",
                 analysisType: DEFAULT_ANALYSIS_TYPE,
@@ -758,6 +873,9 @@ export const useCaseStore = create<CaseStore>()(
 
               return {
                 cases: nextCases,
+                savedDrafts: state.savedDrafts.filter(
+                  (draft) => draft.caseId !== currentDraft.caseId,
+                ),
                 draftSignatureCase: createInitialDraft(nextCaseNumber),
                 nextCaseNumber,
                 activeSignatureCaseId: caseId,
@@ -1085,6 +1203,8 @@ export const useCaseStore = create<CaseStore>()(
               caseCode: caseCode ?? caseId,
               createdAt: new Date().toISOString(),
               examiner: "Unknown",
+              ownerUserId: useAuthStore.getState().user?.userId?.trim(),
+              tenantId: useAuthStore.getState().user?.tenantId?.trim(),
               status: finalStatus,
               workflowStatus,
               analysisType: DEFAULT_ANALYSIS_TYPE,
@@ -1343,8 +1463,10 @@ export const useCaseStore = create<CaseStore>()(
         return AsyncStorage;
       }),
       partialize: (state) => ({
+        ownerUserId: useAuthStore.getState().user?.userId?.trim() ?? null,
         cases: state.cases,
         draftSignatureCase: state.draftSignatureCase,
+        savedDrafts: state.savedDrafts,
         nextCaseNumber: state.nextCaseNumber,
         activeSignatureCaseId: state.activeSignatureCaseId,
         hiddenSavedCases: state.hiddenSavedCases,
@@ -1352,11 +1474,23 @@ export const useCaseStore = create<CaseStore>()(
         processingJobs: state.processingJobs,
       }),
       merge: (persistedState, currentState) => {
-        const persisted = persistedState as Partial<CaseStore> | undefined;
+        const persisted = persistedState as
+          | (Partial<CaseStore> & { ownerUserId?: string | null })
+          | undefined;
+        //const currentUserId = useAuthStore.getState().user?.userId?.trim();
+        // const persistedOwnerUserId = persisted?.ownerUserId?.trim();
 
         if (!persisted?.cases) {
           return currentState;
         }
+
+        // TODO: Uncomment this owner check once every backend case includes
+        // createdByUserId and the persisted cache can be migrated safely.
+        /*
+        if (currentUserId && persistedOwnerUserId !== currentUserId) {
+          return currentState;
+        }
+        */
 
         return {
           ...currentState,
@@ -1370,6 +1504,7 @@ export const useCaseStore = create<CaseStore>()(
           signatureAnalysisResults:
             persisted.signatureAnalysisResults ??
             currentState.signatureAnalysisResults,
+          savedDrafts: persisted.savedDrafts ?? currentState.savedDrafts,
           processingJobs:
             persisted.processingJobs ?? currentState.processingJobs,
         };
@@ -1456,8 +1591,6 @@ export interface PendingCardEntry {
   sortKey: number;
 }
 
-const MAX_PENDING_CARDS = 3;
-
 function hasDraftProgress(draft: DraftCase) {
   return Boolean(
     draft.subjectName.trim() ||
@@ -1471,19 +1604,21 @@ function hasDraftProgress(draft: DraftCase) {
 export function getPendingCards(
   cases: SavedCase[],
   draft: DraftCase,
+  savedDrafts: DraftCase[] = [],
 ): PendingCardEntry[] {
   const pendingCards: PendingCardEntry[] = [];
+  const drafts = [...savedDrafts, ...(hasDraftProgress(draft) ? [draft] : [])];
 
-  if (hasDraftProgress(draft)) {
+  drafts.forEach((item, index) => {
     pendingCards.push({
-      id: draft.caseId,
-      caseCode: draft.caseId,
-      name: draft.subjectName.trim() || "Draft in progress",
-      type: draft.documentType,
+      id: item.caseId,
+      caseCode: item.caseId,
+      name: item.subjectName.trim() || "Draft in progress",
+      type: item.documentType,
       status: "draft",
-      sortKey: Number.MAX_SAFE_INTEGER,
+      sortKey: Number.MAX_SAFE_INTEGER - index,
     });
-  }
+  });
 
   cases.forEach((item) => {
     if (item.workflowStatus === "Processing") {
@@ -1509,7 +1644,5 @@ export function getPendingCards(
     }
   });
 
-  return pendingCards
-    .sort((left, right) => right.sortKey - left.sortKey)
-    .slice(0, MAX_PENDING_CARDS);
+  return pendingCards.sort((left, right) => right.sortKey - left.sortKey);
 }

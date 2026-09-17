@@ -1,9 +1,5 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
-import {
-  getAuthHeader,
-  handleUnauthorizedResponse,
-  useAuthStore,
-} from "@/store/authStore";
+import { getAuthHeader, handleUnauthorizedResponse } from "@/store/authStore";
 
 import type {
   AnalysisPriority,
@@ -19,9 +15,17 @@ type BackendCaseRecord = {
   caseCode?: string;
   createdByUserId?: string;
   CreatedByUserId?: string;
+  tenantId?: string;
+  TenantId?: string;
+  organizationId?: string;
+  OrganizationId?: string;
   subjectName?: string;
   createdByUser?: unknown;
   CreatedByUser?: unknown;
+  examiner?: unknown;
+  Examiner?: unknown;
+  createdByUserName?: unknown;
+  CreatedByUserName?: unknown;
   documentType?: unknown;
   DocumentType?: unknown;
   optionalDocumentType?: string;
@@ -71,6 +75,23 @@ function normalizeCreatedByUser(value: unknown): string {
     ? displayName.trim()
     : "Unknown";
 }
+
+/*
+function getOwnerUserId(record: BackendCaseRecord): string | null {
+  const directId = record.createdByUserId ?? record.CreatedByUserId;
+  if (typeof directId === "string" && directId.trim()) {
+    return directId.trim();
+  }
+
+  const creator = record.createdByUser ?? record.CreatedByUser;
+  if (!isRecord(creator)) return null;
+
+  const nestedId = creator.id ?? creator.Id ?? creator.userId ?? creator.UserId;
+  return typeof nestedId === "string" && nestedId.trim()
+    ? nestedId.trim()
+    : null;
+}
+*/
 
 function normalizeWorkflowStatus(value: unknown): CaseWorkflowStatus {
   if (value === 0 || value === "0") {
@@ -215,8 +236,20 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     caseCode: caseCode || caseId,
     subjectName: record.subjectName?.trim() || "No Subject",
     examiner: normalizeCreatedByUser(
-      record.createdByUser ?? record.CreatedByUser,
+      record.createdByUser ??
+        record.CreatedByUser ??
+        record.examiner ??
+        record.Examiner ??
+        record.createdByUserName ??
+        record.CreatedByUserName,
     ),
+    //ownerUserId: getOwnerUserId(record) ?? undefined,
+    tenantId: (
+      record.tenantId ??
+      record.TenantId ??
+      record.organizationId ??
+      record.OrganizationId
+    )?.trim(),
     documentType: documentType || DEFAULT_DOCUMENT_TYPE,
     otherDocumentType,
     priority: normalizePriority(record.priority),
@@ -233,14 +266,6 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     confidence: Number.isFinite(confidence) ? confidence : undefined,
     resultViewed: workflowStatus !== "Processing" ? false : undefined,
   };
-}
-
-function isAdminSession(): boolean {
-  return (
-    useAuthStore
-      .getState()
-      .user?.roles.some((role) => role.toLowerCase().includes("admin")) ?? false
-  );
 }
 
 export async function fetchBackendCases({
@@ -303,23 +328,40 @@ export async function fetchBackendCases({
     responseObject?.totalCount ?? responseObject?.TotalCount;
   const totalCount =
     typeof rawTotalCount === "number" ? rawTotalCount : records.length;
-  const currentUserId = useAuthStore.getState().user?.userId?.toLowerCase();
-  const canViewAllCases = isAdminSession();
-  const scopedRecords =
-    canViewAllCases || !currentUserId
-      ? records
-      : records.filter((record) => {
-          const creatorId = (
-            record.createdByUserId ?? record.CreatedByUserId
-          )?.toLowerCase();
-          return !creatorId || creatorId === currentUserId;
-        });
+  // TODO: Uncomment this ownership filter after the backend list DTO reliably
+  // returns createdByUserId and tenantId for every case.
+  /*
+  const authUser = useAuthStore.getState().user;
+  const currentUserId = authUser?.userId?.trim().toLowerCase();
+  const currentTenantId = authUser?.tenantId?.trim().toLowerCase();
+  const isAdmin =
+    authUser?.roles.some((role) => role.toLowerCase().includes("admin")) ??
+    false;
+  const scopedRecords = records.filter((record) => {
+    const recordOwnerId = getOwnerUserId(record)?.toLowerCase() ?? null;
+    const recordTenantId = (
+      record.tenantId ??
+      record.TenantId ??
+      record.organizationId ??
+      record.OrganizationId
+    )
+      ?.trim()
+      .toLowerCase();
+
+    if (isAdmin) {
+      return Boolean(currentTenantId && recordTenantId === currentTenantId);
+    }
+
+    return Boolean(currentUserId && recordOwnerId === currentUserId);
+  });
+  */
+  const scopedRecords = records;
 
   return {
     cases: scopedRecords
       .map(normalizeCaseRecord)
       .filter((item): item is SavedCase => Boolean(item)),
-    totalCount: canViewAllCases ? totalCount : scopedRecords.length,
+    totalCount,
     page,
     pageSize,
   };

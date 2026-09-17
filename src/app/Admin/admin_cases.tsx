@@ -261,6 +261,16 @@ export default function AdminCasesScreen() {
               priority={item.priority}
               name={`${item.subjectName} · ${item.examiner}`}
               status={item.status}
+              variant="admin"
+              examiner={item.examiner}
+              confidence={item.confidence ?? item.Confidence}
+              adminStatus={
+                item.workflowStatus === "PendingReview"
+                  ? "Review"
+                  : item.workflowStatus === "Reviewed"
+                    ? item.status
+                    : "Processing"
+              }
               onPress={() => {
                 setActiveSignatureCaseId(item.caseId);
 

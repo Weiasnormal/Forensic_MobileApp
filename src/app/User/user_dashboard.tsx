@@ -97,8 +97,13 @@ export default function UserDashboardScreen() {
   if (!hasTenant) return null;
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
-      <ScreenStatusBar variant="onLight" />
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={[styles.screen, activeTab === "profile" && styles.profileScreen]}
+    >
+      <ScreenStatusBar
+        variant={activeTab === "profile" ? "onBrand" : "onLight"}
+      />
 
       {activeTab === "home" ? (
         <View style={styles.homeHeader}>
@@ -177,10 +182,16 @@ function HomeTab({
   const router = useRouter();
   const nav = router as any;
   const draftSignatureCase = useCaseStore((state) => state.draftSignatureCase);
+  const savedDrafts = useCaseStore((state) => state.savedDrafts);
+  const activateDraft = useCaseStore((state) => state.activateDraft);
   const setActiveSignatureCaseId = useCaseStore(
     (state) => state.setActiveSignatureCaseId,
   );
-  const pendingCards = getPendingCards(cases, draftSignatureCase);
+  const pendingCards = getPendingCards(cases, draftSignatureCase, savedDrafts);
+  const [showAllPending, setShowAllPending] = useState(false);
+  const visiblePendingCards = showAllPending
+    ? pendingCards
+    : pendingCards.slice(0, 3);
   const latestCases = [...cases]
     .sort(
       (left, right) =>
@@ -254,7 +265,7 @@ function HomeTab({
           </View>
 
           <View style={styles.pendingList}>
-            {pendingCards.map((item) => (
+            {visiblePendingCards.map((item) => (
               <PendingCard
                 key={`${item.id}-${item.status}`}
                 caseCode={item.caseCode ?? item.id}
@@ -263,6 +274,7 @@ function HomeTab({
                 status={item.status}
                 onPress={() => {
                   if (item.status === "draft") {
+                    activateDraft(item.id);
                     nav.push("/analysis/signature/step1");
                     return;
                   }
@@ -279,6 +291,17 @@ function HomeTab({
                 }}
               />
             ))}
+            {pendingCards.length > 3 ? (
+              <TouchableOpacity
+                style={styles.loadMorePending}
+                onPress={() => setShowAllPending((current) => !current)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.loadMorePendingText}>
+                  {showAllPending ? "Show fewer pending cases" : "Load more..."}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </>
       ) : null}
@@ -333,6 +356,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  profileScreen: {
+    backgroundColor: colors.primary,
   },
   homeHeader: {
     backgroundColor: colors.background2,
@@ -488,6 +514,15 @@ const styles = StyleSheet.create({
   },
   pendingList: {
     marginBottom: 10,
+  },
+  loadMorePending: {
+    alignItems: "center",
+    paddingVertical: 8,
+    marginHorizontal: 16,
+  },
+  loadMorePendingText: {
+    ...getTypographyStyle("c3Caption", "semiBold"),
+    color: colors.primary,
   },
   recentList: {
     marginBottom: 8,

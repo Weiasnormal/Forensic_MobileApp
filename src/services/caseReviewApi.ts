@@ -40,6 +40,74 @@ export interface GradCamDto {
   imageId: string;
 }
 
+function normalizeOverlaySlot(value: unknown): string {
+  if (value === 0 || value === "0") return "Reference1";
+  if (value === 1 || value === "1") return "Reference2";
+  if (value === 2 || value === "2") return "Reference3";
+  if (value === 3 || value === "3") return "Reference4";
+  if (value === 4 || value === "4") return "Suspected";
+
+  const normalized = String(value ?? "")
+    .replace(/[^a-z0-9]/gi, "")
+    .toLowerCase();
+
+  if (normalized === "suspect" || normalized === "suspected") {
+    return "Suspected";
+  }
+
+  const referenceMatch = normalized.match(/^reference([1-4])$/);
+  return referenceMatch ? `Reference${referenceMatch[1]}` : "";
+}
+
+function normalizeOverlayVariant(value: unknown): string {
+  if (value === 0 || value === "0") return "Original";
+  if (value === 1 || value === "1") return "Heatmap";
+  if (value === 2 || value === "2") return "Overlay";
+  if (value === 3 || value === "3") return "BoundingBox";
+  if (value === 4 || value === "4") return "StrokeDiff";
+
+  const normalized = String(value ?? "")
+    .replace(/[^a-z0-9]/gi, "")
+    .toLowerCase();
+
+  if (normalized === "original") return "Original";
+  if (normalized === "heatmap") return "Heatmap";
+  if (normalized === "overlay") return "Overlay";
+  if (normalized === "boundingbox") return "BoundingBox";
+  if (normalized === "strokediff" || normalized === "strokedifference") {
+    return "StrokeDiff";
+  }
+  return "";
+}
+
+function parseGradCamResults(raw: unknown): GradCamDto[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw.flatMap((item: any) => {
+    const imageId = String(
+      item?.imageId ??
+        item?.ImageId ??
+        item?.image_id ??
+        item?.blobId ??
+        item?.BlobId ??
+        item?.id ??
+        item?.Id ??
+        "",
+    ).trim();
+    const slot = normalizeOverlaySlot(
+      item?.slot ?? item?.Slot ?? item?.overlaySlot ?? item?.OverlaySlot,
+    );
+    const variant = normalizeOverlayVariant(
+      item?.variant ??
+        item?.Variant ??
+        item?.overlayVariant ??
+        item?.OverlayVariant,
+    );
+
+    return imageId && slot && variant ? [{ imageId, slot, variant }] : [];
+  });
+}
+
 /** Mirrors Avera.Application/Cases/CaseDto.cs */
 export interface AdminCaseDetail {
   id: string;
@@ -162,13 +230,29 @@ function normalizeCreatedByUser(value: unknown): string {
 }
 
 function normalizeCaseDetail(raw: any): AdminCaseDetail {
-  const mlRaw = raw?.mlResponse ?? raw?.MLResponse ?? null;
+  const rootGradCamResults =
+    raw?.gradCamResults ??
+    raw?.GradCamResults ??
+    raw?.gradcamImages ??
+    raw?.GradcamImages;
+  const mlRaw =
+    raw?.mlResponse ??
+    raw?.MLResponse ??
+    raw?.ml_response ??
+    (Array.isArray(rootGradCamResults) ? raw : null);
 
   return {
     id: String(raw?.id ?? raw?.Id ?? ""),
     caseCode: raw?.caseCode ?? raw?.CaseCode ?? "",
     subjectName: raw?.subjectName ?? raw?.SubjectName ?? "",
-    examiner: normalizeCreatedByUser(raw?.createdByUser ?? raw?.CreatedByUser),
+    examiner: normalizeCreatedByUser(
+      raw?.createdByUser ??
+        raw?.CreatedByUser ??
+        raw?.examiner ??
+        raw?.Examiner ??
+        raw?.createdByUserName ??
+        raw?.CreatedByUserName,
+    ),
     priority: normalizePriority(raw?.priority ?? raw?.Priority),
     createdAt: raw?.createdAt ?? raw?.CreatedAt ?? "",
     caseStatus: normalizeWorkflowStatus(raw?.caseStatus ?? raw?.CaseStatus),
@@ -185,25 +269,38 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     mlResponse: mlRaw
       ? {
           confidenceForged: Number(
-            mlRaw.confidenceForged ?? mlRaw.ConfidenceForged ?? 0,
+            mlRaw.confidenceForged ??
+              mlRaw.ConfidenceForged ??
+              mlRaw.confidence_forged ??
+              0,
           ),
           confidenceGenuine: Number(
-            mlRaw.confidenceGenuine ?? mlRaw.ConfidenceGenuine ?? 0,
+            mlRaw.confidenceGenuine ??
+              mlRaw.ConfidenceGenuine ??
+              mlRaw.confidence_genuine ??
+              0,
           ),
-          distance: Number(mlRaw.distance ?? mlRaw.Distance ?? 0),
-          gradCamResults: Array.isArray(
-            mlRaw.gradCamResults ?? mlRaw.GradCamResults,
-          )
-            ? (mlRaw.gradCamResults ?? mlRaw.GradCamResults).map(
-                (item: any) => ({
-                  slot: String(item?.slot ?? item?.Slot ?? ""),
-                  variant: String(item?.variant ?? item?.Variant ?? ""),
-                  imageId: String(item?.imageId ?? item?.ImageId ?? ""),
-                }),
-              )
-            : [],
-          threshold: Number(mlRaw.threshold ?? mlRaw.Threshold ?? 0),
-          verdict: String(mlRaw.verdict ?? mlRaw.Verdict ?? ""),
+          distance: Number(
+            mlRaw.distance ?? mlRaw.Distance ?? mlRaw.distance_metric ?? 0,
+          ),
+          gradCamResults: parseGradCamResults(
+            mlRaw.gradCamResults ??
+              mlRaw.GradCamResults ??
+              mlRaw.gradcamResults ??
+              mlRaw.gradcamImages ??
+              mlRaw.GradcamImages ??
+              mlRaw.gradcam_images ??
+              raw?.gradCamResults ??
+              raw?.GradCamResults ??
+              raw?.gradcamImages ??
+              raw?.GradcamImages,
+          ),
+          threshold: Number(
+            mlRaw.threshold ?? mlRaw.Threshold ?? mlRaw.threshold_value ?? 0,
+          ),
+          verdict: String(
+            mlRaw.verdict ?? mlRaw.Verdict ?? mlRaw.verdict_label ?? "",
+          ),
         }
       : null,
     reviewedByUserId: raw?.reviewedByUserId ?? raw?.ReviewedByUserId ?? null,

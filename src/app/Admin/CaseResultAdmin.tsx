@@ -1,21 +1,22 @@
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import SecondaryButton from "@/_components/common/SecondaryButton";
 import VerdictCard from "@/_components/common/VerdIctCard";
+import ZoomableImageModal from "@/_components/common/ZoomableImageModal";
 import ErrorModal from "@/_components/modals/error_modal";
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-    CaseReviewApiError,
-    fetchCaseForReview,
-    FinalVerdict,
-    submitCaseReview,
-    type AdminCaseDetail,
+  CaseReviewApiError,
+  fetchCaseForReview,
+  FinalVerdict,
+  submitCaseReview,
+  type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import {
-    findOverlayImage,
-    REFERENCE_SLOTS,
-    type OverlayImageRef,
+  findOverlayImage,
+  REFERENCE_SLOTS,
+  type OverlayImageRef,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
 import { useCaseStore } from "@/store/caseStore";
@@ -25,18 +26,18 @@ import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 const viewModes = ["Heatmap", "Bounding Box", "Stroke Diff"] as const;
@@ -67,6 +68,8 @@ export default function CaseResultAdmin() {
   const [reviewNote, setReviewNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
 
   const localCase = useCaseStore((s) =>
     s.cases.find((c) => String(c.caseId) === caseId),
@@ -137,7 +140,7 @@ export default function CaseResultAdmin() {
 
   const overlayVariant =
     activeView === "Heatmap"
-      ? "Overlay"
+      ? "Heatmap"
       : activeView === "Bounding Box"
         ? "BoundingBox"
         : "StrokeDiff";
@@ -236,12 +239,6 @@ export default function CaseResultAdmin() {
   };
 
   const handleExportReport = async () => {
-    if (!caseDetail?.isPdfExportAllowed) {
-      useFeedbackStore
-        .getState()
-        .showToast("PDF export is not enabled for this case yet", "infoLight");
-      return;
-    }
     try {
       // Same GET /cases/{id}/results endpoint used in signature_results.tsx
       // (Avera.WebApi/Endpoints/ML/GetResults.cs).
@@ -425,7 +422,16 @@ export default function CaseResultAdmin() {
                 );
               }
               return (
-                <View key={`ref-${idx}`} style={styles.thumbCardSmall}>
+                <Pressable
+                  key={`ref-${idx}`}
+                  style={styles.thumbCardSmall}
+                  onPress={() => {
+                    setPreviewUri(uri);
+                    setPreviewTitle(
+                      `SIG ${String(idx + 1).padStart(2, "0")} — ${activeView}`,
+                    );
+                  }}
+                >
                   <View style={styles.thumbImageWrap}>
                     <ExpoImage
                       source={{
@@ -443,12 +449,28 @@ export default function CaseResultAdmin() {
                     SIG {String(idx + 1).padStart(2, "0")}
                   </Text>
                   <Text style={styles.thumbTag}>Reference</Text>
-                </View>
+                </Pressable>
               );
             })}
           </View>
 
-          <View style={styles.largeThumbWrap}>
+          <Pressable
+            style={styles.largeThumbWrap}
+            disabled={
+              !localCase?.uploads?.suspect &&
+              !suspectOverlayUri &&
+              !suspectedImageUri
+            }
+            onPress={() => {
+              const uri =
+                suspectOverlayUri ??
+                localCase?.uploads?.suspect ??
+                suspectedImageUri;
+              if (!uri) return;
+              setPreviewUri(uri);
+              setPreviewTitle(`Suspected Signature — ${activeView}`);
+            }}
+          >
             {localCase?.uploads?.suspect ||
             suspectOverlayUri ||
             suspectedImageUri ? (
@@ -485,7 +507,7 @@ export default function CaseResultAdmin() {
             )}
             <Text style={styles.suspectLabel}>SUSPECT</Text>
             <Text style={styles.suspectHint}>{mlVerdictLabel}</Text>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.reviewSection}>
@@ -721,6 +743,16 @@ export default function CaseResultAdmin() {
         </View>
       </ScrollView>
 
+      <ZoomableImageModal
+        visible={previewUri !== null}
+        uri={previewUri}
+        title={previewTitle}
+        onClose={() => {
+          setPreviewUri(null);
+          setPreviewTitle("");
+        }}
+      />
+
       <ErrorModal
         visible={!!saveError}
         title="Review Not Saved"
@@ -739,13 +771,8 @@ export default function CaseResultAdmin() {
           />
         )}
         <SecondaryButton
-          label={
-            caseDetail?.isPdfExportAllowed
-              ? "Export PDF Report"
-              : "PDF Export Disabled"
-          }
+          label="Export PDF Report"
           onPress={handleExportReport}
-          disabled={!caseDetail?.isPdfExportAllowed}
           size="medium"
           style={isAlreadyReviewed ? undefined : styles.secondaryButtonSpacing}
         />

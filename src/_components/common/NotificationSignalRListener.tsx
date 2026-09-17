@@ -24,6 +24,7 @@ export default function NotificationSignalRListener() {
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();
+    let isDisposed = false;
 
     const handleMemberRequestStatus = (payload?: {
       message?: string;
@@ -43,7 +44,7 @@ export default function NotificationSignalRListener() {
     connection.on("MemberRequestRejected", handleMemberRequestStatus);
     connection.on("MemberRequestDeclined", handleMemberRequestStatus);
     connection.onclose((error) => {
-      if (error) {
+      if (error && !isDisposed) {
         console.warn(
           "[NotificationSignalRListener] Notification connection closed:",
           error.message,
@@ -58,6 +59,7 @@ export default function NotificationSignalRListener() {
     });
 
     void connection.start().catch((error) => {
+      if (isDisposed) return;
       console.warn(
         "[NotificationSignalRListener] Unable to connect to notification hub:",
         error,
@@ -65,6 +67,7 @@ export default function NotificationSignalRListener() {
     });
 
     return () => {
+      isDisposed = true;
       connection.off("MemberRequestApproved", handleMemberRequestStatus);
       connection.off("MemberRequestRejected", handleMemberRequestStatus);
       connection.off("MemberRequestDeclined", handleMemberRequestStatus);
