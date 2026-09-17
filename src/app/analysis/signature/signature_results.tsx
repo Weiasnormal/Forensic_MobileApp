@@ -1,5 +1,6 @@
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import SecondaryButton from "@/_components/common/SecondaryButton";
+import ZoomableImageModal from "@/_components/common/ZoomableImageModal";
 import ErrorModal from "@/_components/modals/error_modal";
 import KeyFindingsModal from "@/_components/modals/key_findingsmodal";
 import { colors } from "@/constants/colors";
@@ -15,6 +16,7 @@ import {
   type SignatureAnalysisViewMode,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader, useAuthStore } from "@/store/authStore";
+import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
@@ -24,7 +26,6 @@ import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -75,7 +76,7 @@ const getAuthImageSource = (uri?: string | null) => {
 const viewModes = ["Heatmap", "Bounding Box", "Stroke Diff"] as const;
 
 const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
-  Heatmap: "Overlay",
+  Heatmap: "Heatmap",
   "Bounding Box": "BoundingBox",
   "Stroke Diff": "StrokeDiff",
 };
@@ -148,8 +149,10 @@ function buildPayloadRows(
   result: SignatureAnalysisResult,
   verdictLabel: string,
   currentCase: any,
+  reviewedIsSuspected?: boolean,
 ) {
-  const { isSuspected } = resolveCaseVerdict(currentCase, result);
+  const isSuspected =
+    reviewedIsSuspected ?? resolveCaseVerdict(currentCase, result).isSuspected;
   const isForged = isSuspected;
 
   return [
@@ -244,37 +247,39 @@ export function SignatureResultsScreen() {
 
   const loadReviewDetail = useCallback(async () => {
     if (!currentCaseId) return;
-    const shouldHydrateResult = !analysisResult;
-    if (shouldHydrateResult) {
-      setIsLoadingRemoteResult(true);
-      setRemoteResultError(null);
-    }
+    setIsLoadingRemoteResult(true);
+    setRemoteResultError(null);
     try {
       const detail = await fetchCaseForReview(currentCaseId);
       setReviewDetail(detail);
-      if (shouldHydrateResult) {
-        const remoteResult = buildRemoteSignatureResult(detail);
-        if (!remoteResult) {
+      const remoteResult = buildRemoteSignatureResult(detail);
+      if (!remoteResult) {
+        if (!useCaseStore.getState().signatureAnalysisResults[currentCaseId]) {
           setRemoteResultError("No analysis results found from the server.");
-        } else {
-          hydrateSignatureAnalysisResult(
-            currentCaseId,
-            remoteResult,
-            detail.caseStatus,
-          );
         }
+      } else {
+        hydrateSignatureAnalysisResult(
+          currentCaseId,
+          remoteResult,
+          detail.caseStatus,
+          detail.finalVerdict === FinalVerdict.Forged
+            ? "Suspected"
+            : detail.finalVerdict === FinalVerdict.Genuine
+              ? "Genuine"
+              : undefined,
+        );
       }
     } catch (error) {
       console.warn("Unable to load supervisor review status:", error);
-      if (shouldHydrateResult) {
+      if (!useCaseStore.getState().signatureAnalysisResults[currentCaseId]) {
         setRemoteResultError(
           "Unable to load analysis results from the server.",
         );
       }
     } finally {
-      if (shouldHydrateResult) setIsLoadingRemoteResult(false);
+      setIsLoadingRemoteResult(false);
     }
-  }, [analysisResult, currentCaseId, hydrateSignatureAnalysisResult]);
+  }, [currentCaseId, hydrateSignatureAnalysisResult]);
 
   useEffect(() => {
     loadReviewDetail();
@@ -283,6 +288,7 @@ export function SignatureResultsScreen() {
   useEffect(() => {
     if (!currentCaseId) return;
 
+    let isDisposed = false;
     const connection: HubConnection = new HubConnectionBuilder()
       .withUrl(NOTIFICATION_HUB_URL, {
         accessTokenFactory: () => useAuthStore.getState().accessToken ?? "",
@@ -310,19 +316,33 @@ export function SignatureResultsScreen() {
     });
 
     connection.onclose((error) => {
-      if (error) {
+      if (error && !isDisposed) {
         console.warn(
           "[SignatureResults] Review notification connection closed:",
           error.message,
         );
+        useFeedbackStore
+          .getState()
+          .showToast(
+            "Live review updates are temporarily unavailable. The case result is still available.",
+            "infoLight",
+          );
       }
     });
 
     void connection.start().catch((error) => {
+      if (isDisposed) return;
       console.warn("Unable to connect to notification hub:", error);
+      useFeedbackStore
+        .getState()
+        .showToast(
+          "Live review updates are unavailable. Refresh the case to check for changes.",
+          "infoLight",
+        );
     });
 
     return () => {
+      isDisposed = true;
       if (connection.state !== HubConnectionState.Disconnected) {
         void connection.stop().catch(() => {});
       }
@@ -351,8 +371,19 @@ export function SignatureResultsScreen() {
     const finalVerdict =
       currentCase?.verdict || currentCase?.Verdict || "UNKNOWN";
     const verdictLabel = getSignatureAnalysisVerdictLabel(finalVerdict as any);
-    return buildPayloadRows(analysisResult, verdictLabel, currentCase);
-  }, [analysisResult, currentCase]);
+    const reviewedIsSuspected =
+      reviewDetail?.finalVerdict === FinalVerdict.Forged
+        ? true
+        : reviewDetail?.finalVerdict === FinalVerdict.Genuine
+          ? false
+          : undefined;
+    return buildPayloadRows(
+      analysisResult,
+      verdictLabel,
+      currentCase,
+      reviewedIsSuspected,
+    );
+  }, [analysisResult, currentCase, reviewDetail?.finalVerdict]);
 
   const referenceOverlayUris = useMemo(() => {
     const variant = VIEW_MODE_TO_VARIANT[activeView];
@@ -464,11 +495,10 @@ export function SignatureResultsScreen() {
   const uploadedReferences = currentCase?.uploads.references ?? [];
   const uploadedSuspect = currentCase?.uploads.suspect ?? null;
 
-  const {
-    verdictLabel,
-    isSuspected,
-    confidence: confidenceValue,
-  } = resolveCaseVerdict(currentCase, activeResult);
+  const { verdictLabel, confidence: confidenceValue } = resolveCaseVerdict(
+    currentCase,
+    activeResult,
+  );
 
   const isCaseReviewed =
     reviewDetail?.finalVerdict !== null &&
@@ -490,9 +520,24 @@ export function SignatureResultsScreen() {
         ? "SUSPECTED"
         : undefined;
 
+  const hasAdminOverride = Boolean(newVerdictLabel);
+  const displayedVerdictLabel = newVerdictLabel ?? verdictLabel;
+  const displayedIsSuspected = displayedVerdictLabel === "SUSPECTED";
+  const modelConfidence = reviewDetail?.mlResponse
+    ? mlVerdictRaw === "FORGED"
+      ? reviewDetail.mlResponse.confidenceForged
+      : reviewDetail.mlResponse.confidenceGenuine
+    : confidenceValue;
+  const modelVerdictLabel =
+    mlVerdictRaw === "FORGED"
+      ? "Suspected"
+      : mlVerdictRaw === "GENUINE"
+        ? "Genuine"
+        : verdictLabel;
+
   const isPdfExportAllowed = reviewDetail?.isPdfExportAllowed === true;
 
-  const resultCardTheme = isSuspected
+  const resultCardTheme = displayedIsSuspected
     ? {
         cardBg: colors.dangerLight,
         iconBg: colors.danger,
@@ -519,7 +564,9 @@ export function SignatureResultsScreen() {
   };
 
   const handleBackToDashboard = () => {
-    setSignatureStatus(getSignatureAnalysisCaseStatus(activeResult));
+    setSignatureStatus(
+      currentCase?.status ?? getSignatureAnalysisCaseStatus(activeResult),
+    );
     useAnalysisFlowStore.setState({ currentAnalysisType: null });
     nav.replace({ pathname: "/User/user_dashboard", params: { tab: "home" } });
   };
@@ -626,16 +673,30 @@ export function SignatureResultsScreen() {
           </View>
           <View style={styles.heroTextWrap}>
             <Text style={[styles.heroPercent, { color: resultCardTheme.text }]}>
-              {(confidenceValue || 0).toFixed(1) + "%"}{" "}
-              <Text style={[styles.heroLabel, { color: resultCardTheme.text }]}>
-                {verdictLabel}
-              </Text>
+              {hasAdminOverride ? (
+                <Text
+                  style={[styles.heroLabel, { color: resultCardTheme.text }]}
+                >
+                  {displayedVerdictLabel}
+                </Text>
+              ) : (
+                <>
+                  {(confidenceValue || 0).toFixed(1) + "%"}{" "}
+                  <Text
+                    style={[styles.heroLabel, { color: resultCardTheme.text }]}
+                  >
+                    {displayedVerdictLabel}
+                  </Text>
+                </>
+              )}
             </Text>
 
             <Text
               style={[styles.heroCase, { color: resultCardTheme.subtleText }]}
             >
-              VERDICT · {activeResult.case_name}
+              {hasAdminOverride
+                ? `Admin Override · Model: ${(modelConfidence || 0).toFixed(1)}% ${modelVerdictLabel}`
+                : `VERDICT · ${activeResult.case_name}`}
             </Text>
 
             {processingTime && (
@@ -855,7 +916,7 @@ export function SignatureResultsScreen() {
           </View>
           <View style={styles.findingsList}>
             {payloadRows.map((item) => {
-              const findingTone = isSuspected
+              const findingTone = displayedIsSuspected
                 ? { line: colors.danger, text: colors.danger }
                 : { line: colors.statusGenuine, text: colors.statusGenuine };
 
@@ -897,7 +958,7 @@ export function SignatureResultsScreen() {
         title={selectedFinding?.metric ?? "Finding"}
         badgeLabel={selectedFinding?.value ?? ""}
         observation={selectedFinding?.detail}
-        isSuspected={isSuspected}
+        isSuspected={displayedIsSuspected}
         {...(() => {
           const metric = selectedFinding?.metric ?? "";
           const dist = activeResult?.distance ?? 0;
@@ -1015,35 +1076,12 @@ export function SignatureResultsScreen() {
         })()}
       />
 
-      <Modal
+      <ZoomableImageModal
         visible={previewSource !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={closePreview}
-      >
-        <Pressable style={styles.previewBackdrop} onPress={closePreview}>
-          <Pressable style={styles.previewSheet} onPress={() => {}}>
-            <View style={styles.previewHeader}>
-              <Text style={styles.previewTitle}>{previewLabel}</Text>
-              <Pressable
-                onPress={closePreview}
-                style={styles.previewCloseButton}
-              >
-                <Ionicons name="close" size={22} color={colors.textPrimary} />
-              </Pressable>
-            </View>
-            {previewSource !== null ? (
-              <View style={[styles.previewImage, { overflow: "hidden" }]}>
-                <ExpoImage
-                  source={getAuthImageSource(previewSource.uri)}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="contain"
-                />
-              </View>
-            ) : null}
-          </Pressable>
-        </Pressable>
-      </Modal>
+        uri={previewSource?.uri ?? null}
+        title={previewLabel}
+        onClose={closePreview}
+      />
 
       <ErrorModal
         visible={!!exportError}
