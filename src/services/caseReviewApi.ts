@@ -113,6 +113,7 @@ export interface AdminCaseDetail {
   id: string;
   caseCode: string;
   subjectName: string;
+  ownerUserId: string | null;
   examiner: string;
   priority: AnalysisPriority;
   createdAt: string;
@@ -245,6 +246,7 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     id: String(raw?.id ?? raw?.Id ?? ""),
     caseCode: raw?.caseCode ?? raw?.CaseCode ?? "",
     subjectName: raw?.subjectName ?? raw?.SubjectName ?? "",
+    ownerUserId: raw?.createdByUserId ?? raw?.CreatedByUserId ?? null,
     examiner: normalizeCreatedByUser(
       raw?.createdByUser ??
         raw?.CreatedByUser ??

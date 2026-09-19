@@ -65,6 +65,7 @@ const UserContext = createContext<UserStore | null>(null);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUserState] = useState<UserProfile>(DEFAULT_USER);
+  const userRef = useRef<UserProfile>(DEFAULT_USER);
   const previousAuthUserId = useRef<string | null>(null);
   const authUserId = useAuthStore((state) => state.user?.userId);
   const authEmail = useAuthStore((state) => state.user?.email);
@@ -114,11 +115,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         ) {
           return;
         }
-        setUserState({
+        const nextUser = {
           ...DEFAULT_USER,
           ...localProfile,
           avatarUri: localProfile.avatarUri ?? null,
-        });
+        };
+        userRef.current = nextUser;
+        setUserState(nextUser);
         return;
       }
 
@@ -130,7 +133,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       ) {
         return;
       }
-      setUserState({
+      const nextUser = {
         firstName:
           localProfile.firstName?.trim() ||
           remoteProfile.firstName?.trim() ||
@@ -145,7 +148,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           "",
         avatarUri: localProfile.avatarUri ?? remoteProfile.avatarUri ?? null,
         defaultResultView: localProfile.defaultResultView,
-      });
+      };
+      userRef.current = nextUser;
+      setUserState(nextUser);
     } catch (e) {
       const error = e as Error;
       log.error("UserStore", "Failed to load user profile", error);
@@ -156,10 +161,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       ) {
         return;
       }
-      setUserState((prev) => ({
-        ...DEFAULT_USER,
-        email: authEmail || "",
-      }));
+      // Keep the last usable profile when a refresh is temporarily unavailable.
+      setUserState((prev) => {
+        userRef.current = prev;
+        return prev;
+      });
     }
   }, [accessToken, authEmail, authUserId, isTokenExpired]);
 
@@ -198,13 +204,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (!nextAuthUserId) {
       previousAuthUserId.current = null;
+      userRef.current = DEFAULT_USER;
       setUserState(DEFAULT_USER);
       return;
     }
 
     if (previousAuthUserId.current !== nextAuthUserId) {
       previousAuthUserId.current = nextAuthUserId;
-      setUserState({ ...DEFAULT_USER, email: authEmail || "" });
+      const nextUser = { ...DEFAULT_USER, email: authEmail || "" };
+      userRef.current = nextUser;
+      setUserState(nextUser);
     }
   }, [authEmail, authUserId]);
 
@@ -285,19 +294,23 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         update: u,
       });
 
-      const normalizedAvatarUri = u.avatarUri
-        ? await copyImageToDocuments(u.avatarUri)
-        : u.avatarUri;
+      const normalizedAvatarUri =
+        u.avatarUri === undefined
+          ? userRef.current.avatarUri
+          : u.avatarUri
+            ? await copyImageToDocuments(u.avatarUri)
+            : null;
       const next = {
-        ...user,
+        ...userRef.current,
         ...u,
         avatarUri: normalizedAvatarUri ?? null,
       } as UserProfile;
+      userRef.current = next;
       setUserState(next);
       log.info("UserStore:SetUser", "State updated, persisting to storage");
       await persist(next);
     },
-    [copyImageToDocuments, persist, user],
+    [copyImageToDocuments, persist],
   );
 
   useEffect(() => {

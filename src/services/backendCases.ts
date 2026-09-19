@@ -76,7 +76,6 @@ function normalizeCreatedByUser(value: unknown): string {
     : "Unknown";
 }
 
-/*
 function getOwnerUserId(record: BackendCaseRecord): string | null {
   const directId = record.createdByUserId ?? record.CreatedByUserId;
   if (typeof directId === "string" && directId.trim()) {
@@ -91,7 +90,6 @@ function getOwnerUserId(record: BackendCaseRecord): string | null {
     ? nestedId.trim()
     : null;
 }
-*/
 
 function normalizeWorkflowStatus(value: unknown): CaseWorkflowStatus {
   if (value === 0 || value === "0") {
@@ -243,7 +241,7 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
         record.createdByUserName ??
         record.CreatedByUserName,
     ),
-    //ownerUserId: getOwnerUserId(record) ?? undefined,
+    ownerUserId: getOwnerUserId(record) ?? undefined,
     tenantId: (
       record.tenantId ??
       record.TenantId ??
@@ -328,37 +326,9 @@ export async function fetchBackendCases({
     responseObject?.totalCount ?? responseObject?.TotalCount;
   const totalCount =
     typeof rawTotalCount === "number" ? rawTotalCount : records.length;
-  // TODO: Uncomment this ownership filter after the backend list DTO reliably
-  // returns createdByUserId and tenantId for every case.
-  /*
-  const authUser = useAuthStore.getState().user;
-  const currentUserId = authUser?.userId?.trim().toLowerCase();
-  const currentTenantId = authUser?.tenantId?.trim().toLowerCase();
-  const isAdmin =
-    authUser?.roles.some((role) => role.toLowerCase().includes("admin")) ??
-    false;
-  const scopedRecords = records.filter((record) => {
-    const recordOwnerId = getOwnerUserId(record)?.toLowerCase() ?? null;
-    const recordTenantId = (
-      record.tenantId ??
-      record.TenantId ??
-      record.organizationId ??
-      record.OrganizationId
-    )
-      ?.trim()
-      .toLowerCase();
-
-    if (isAdmin) {
-      return Boolean(currentTenantId && recordTenantId === currentTenantId);
-    }
-
-    return Boolean(currentUserId && recordOwnerId === currentUserId);
-  });
-  */
-  const scopedRecords = records;
 
   return {
-    cases: scopedRecords
+    cases: records
       .map(normalizeCaseRecord)
       .filter((item): item is SavedCase => Boolean(item)),
     totalCount,
