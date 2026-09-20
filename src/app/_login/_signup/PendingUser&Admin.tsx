@@ -1,31 +1,27 @@
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
-import { NOTIFICATION_HUB_URL } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import { createNotificationConnection } from "@/services/notificationHub";
 import { fetchNotifications } from "@/services/notificationsApi";
 import { useAuthStore } from "@/store/authStore";
 import {
-    clearPendingSignupCredentials,
-    getPendingSignupCredentials,
+  clearPendingSignupCredentials,
+  getPendingSignupCredentials,
 } from "@/store/emailVerificationStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
-import {
-    HubConnectionBuilder,
-    HubConnectionState,
-    LogLevel,
-} from "@microsoft/signalr";
+import { HubConnectionState } from "@microsoft/signalr";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
-    AppState,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  AppState,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { resolveRole, ROLE_SETTINGS } from "../../../constants/roles";
 
@@ -109,13 +105,7 @@ export default function PendingUserAndAdminPage() {
       return () => appStateSubscription.remove();
     }
 
-    const connection = new HubConnectionBuilder()
-      .withUrl(NOTIFICATION_HUB_URL, {
-        accessTokenFactory: () => useAuthStore.getState().accessToken ?? "",
-      })
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
-      .build();
+    const connection = createNotificationConnection();
 
     connection.on("MemberRequestApproved", handleApproved);
     void connection.start().catch((error) => {

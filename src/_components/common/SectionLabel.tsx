@@ -1,11 +1,11 @@
-import React from 'react';
-import { Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '../../constants/typography';
+import { colors } from "@/constants/colors";
+import React from "react";
+import { StyleProp, StyleSheet, Text, TextStyle } from "react-native";
+import { getTypographyStyle } from "../../constants/typography";
 
 interface SectionLabelProps {
   label: string;
-  style?: ViewStyle;
+  style?: StyleProp<TextStyle>;
 }
 
 const SectionLabel: React.FC<SectionLabelProps> = ({ label, style }) => {
@@ -14,7 +14,7 @@ const SectionLabel: React.FC<SectionLabelProps> = ({ label, style }) => {
 
 const styles = StyleSheet.create({
   label: {
-    ...getTypographyStyle('headline'),
+    ...getTypographyStyle("headline"),
     color: colors.textSecondary,
     marginBottom: 10,
   },

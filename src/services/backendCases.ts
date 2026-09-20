@@ -2,12 +2,12 @@ import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { getAuthHeader, handleUnauthorizedResponse } from "@/store/authStore";
 
 import type {
-  AnalysisPriority,
-  AnalysisType,
-  CaseStatus,
-  CaseWorkflowStatus,
-  DocumentType,
-  SavedCase,
+    AnalysisPriority,
+    AnalysisType,
+    CaseStatus,
+    CaseWorkflowStatus,
+    DocumentType,
+    SavedCase,
 } from "@/store/caseStore";
 
 type BackendCaseRecord = {
@@ -63,7 +63,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeCreatedByUser(value: unknown): string {
   if (typeof value === "string") return value.trim();
-  if (!isRecord(value)) return "Unknown";
+  if (!isRecord(value)) return "";
 
   const displayName =
     value.name ??
@@ -73,7 +73,7 @@ function normalizeCreatedByUser(value: unknown): string {
     value.email;
   return typeof displayName === "string" && displayName.trim()
     ? displayName.trim()
-    : "Unknown";
+    : "";
 }
 
 function getOwnerUserId(record: BackendCaseRecord): string | null {
@@ -232,7 +232,7 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
   return {
     caseId,
     caseCode: caseCode || caseId,
-    subjectName: record.subjectName?.trim() || "No Subject",
+    subjectName: record.subjectName?.trim() || "",
     examiner: normalizeCreatedByUser(
       record.createdByUser ??
         record.CreatedByUser ??

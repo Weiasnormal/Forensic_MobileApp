@@ -1,16 +1,16 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { CASES_PAGE_SIZE, fetchBackendCases } from "@/services/backendCases";
 import {
-    notifyProcessingComplete,
-    notifyProcessingFailed,
+  notifyProcessingComplete,
+  notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-    OverlayImageRef,
-    OverlaySlot,
-    OverlayVariant,
-    getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisConfidence,
-    type SignatureAnalysisResult,
+  OverlayImageRef,
+  OverlaySlot,
+  OverlayVariant,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisConfidence,
+  type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
@@ -18,9 +18,9 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-    getAuthHeader,
-    handleUnauthorizedResponse,
-    useAuthStore,
+  getAuthHeader,
+  handleUnauthorizedResponse,
+  useAuthStore,
 } from "./authStore";
 import { useFeedbackStore } from "./feedbackStore";
 
@@ -867,7 +867,7 @@ export const useCaseStore = create<CaseStore>()(
                 caseId,
                 caseCode: caseCode ?? caseId,
                 createdAt: new Date().toISOString(),
-                examiner: "Unknown",
+                examiner: useAuthStore.getState().user?.email?.trim() || "",
                 ownerUserId: useAuthStore.getState().user?.userId?.trim(),
                 tenantId: useAuthStore.getState().user?.tenantId?.trim(),
                 status: "Processing",
@@ -1213,7 +1213,7 @@ export const useCaseStore = create<CaseStore>()(
               caseId,
               caseCode: caseCode ?? caseId,
               createdAt: new Date().toISOString(),
-              examiner: "Unknown",
+              examiner: useAuthStore.getState().user?.email?.trim() || "",
               ownerUserId: useAuthStore.getState().user?.userId?.trim(),
               tenantId: useAuthStore.getState().user?.tenantId?.trim(),
               status: finalStatus,

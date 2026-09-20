@@ -5,6 +5,7 @@ import ErrorModal from "@/_components/modals/error_modal";
 import KeyFindingsModal from "@/_components/modals/key_findingsmodal";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import { createNotificationConnection } from "@/services/notificationHub";
 import {
   findOverlayImage,
   getSignatureAnalysisCaseStatus,
@@ -15,7 +16,7 @@ import {
   type SignatureAnalysisResult,
   type SignatureAnalysisViewMode,
 } from "@/services/signatureAnalysis";
-import { getAuthHeader, useAuthStore } from "@/store/authStore";
+import { getAuthHeader } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,12 +37,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import {
-  API_ENDPOINTS,
-  API_KEY,
-  buildApiUrl,
-  NOTIFICATION_HUB_URL,
-} from "../../../constants/api";
+import { API_ENDPOINTS, API_KEY, buildApiUrl } from "../../../constants/api";
 import { useAnalysisFlowStore } from "../../../store/analysisFlowStore";
 import { useCaseStore, type CaseStatus } from "../../../store/caseStore";
 
@@ -51,12 +47,7 @@ import {
   FinalVerdict,
   type AdminCaseDetail,
 } from "@/services/caseReviewApi";
-import {
-  HubConnection,
-  HubConnectionBuilder,
-  HubConnectionState,
-  LogLevel,
-} from "@microsoft/signalr";
+import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 
 const getAuthImageSource = (uri?: string | null) => {
   if (!uri) return undefined;
@@ -289,13 +280,7 @@ export function SignatureResultsScreen() {
     if (!currentCaseId) return;
 
     let isDisposed = false;
-    const connection: HubConnection = new HubConnectionBuilder()
-      .withUrl(NOTIFICATION_HUB_URL, {
-        accessTokenFactory: () => useAuthStore.getState().accessToken ?? "",
-      })
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
-      .build();
+    const connection: HubConnection = createNotificationConnection();
 
     connection.on(
       "CaseReviewCompleted",

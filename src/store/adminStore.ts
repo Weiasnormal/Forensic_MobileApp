@@ -1,12 +1,8 @@
 import { ADMIN_API_ENDPOINTS } from "@/constants/adminApi";
-import { API_KEY, buildApiUrl, NOTIFICATION_HUB_URL } from "@/constants/api";
+import { API_KEY, buildApiUrl } from "@/constants/api";
+import { createNotificationConnection } from "@/services/notificationHub";
 import { normalizeInviteCode } from "@/utils/validation";
-import {
-  HubConnection,
-  HubConnectionBuilder,
-  HubConnectionState,
-  LogLevel,
-} from "@microsoft/signalr";
+import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 import { create } from "zustand";
 import { getAuthHeader, useAuthStore } from "./authStore";
 import { useFeedbackStore } from "./feedbackStore";
@@ -473,7 +469,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           error instanceof Error
             ? error.message
             : "Unable to load team members",
-        isUsingMockTeam: true,
+        isUsingMockTeam: false,
       });
     }
   },
@@ -487,13 +483,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       return;
     }
 
-    const connection = new HubConnectionBuilder()
-      .withUrl(NOTIFICATION_HUB_URL, {
-        accessTokenFactory: () => useAuthStore.getState().accessToken ?? "",
-      })
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
-      .build();
+    const connection = createNotificationConnection();
     memberRequestConnection = connection;
 
     connection.on("MemberRequestCreated", () => {

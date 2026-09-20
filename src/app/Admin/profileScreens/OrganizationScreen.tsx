@@ -1,15 +1,23 @@
-import InfoRow from '@/_components/admin/InfoRow';
-import ScreenHeader from '@/_components/common/ScreenHeader';
-import Toast from '@/_components/toast';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import { useAdminStore } from '@/store/adminStore';
-import { useUser } from '@/store/userStore';
-import * as Clipboard from 'expo-clipboard';
-import { ChevronRight, Copy, X } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import InfoRow from "@/_components/admin/InfoRow";
+import ScreenHeader from "@/_components/common/ScreenHeader";
+import Toast from "@/_components/toast";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { useAdminStore } from "@/store/adminStore";
+import { useUser } from "@/store/userStore";
+import * as Clipboard from "expo-clipboard";
+import { ChevronRight, Copy, X } from "lucide-react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface OrganizationScreenProps {
   organizationName?: string;
@@ -39,28 +47,40 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     fetchTenantProfile();
   }, [fetchTenantProfile]);
 
-  const resolvedOrganizationName = tenantProfile?.name || user?.organization || organizationName || 'PNP Crime Laboratory';
-  const resolvedOrganizationCode = tenantProfile?.inviteCode || organizationCode || '—';
+  const resolvedOrganizationName =
+    tenantProfile?.name ||
+    user?.organization ||
+    organizationName ||
+    "Organization unavailable";
+  const resolvedOrganizationCode =
+    tenantProfile?.inviteCode || organizationCode || "—";
   const resolvedMemberCount = tenantProfile?.memberCount ?? memberCount ?? 0;
   const resolvedCreatedDate = tenantProfile?.createdAt
-    ? new Date(tenantProfile.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : createdDate ?? '—';
+    ? new Date(tenantProfile.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : (createdDate ?? "—");
 
-  const [draftOrganizationName, setDraftOrganizationName] = useState(resolvedOrganizationName);
-  const [isEditingOrganizationName, setIsEditingOrganizationName] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [draftOrganizationName, setDraftOrganizationName] = useState(
+    resolvedOrganizationName,
+  );
+  const [isEditingOrganizationName, setIsEditingOrganizationName] =
+    useState(false);
+  const [toastMessage, setToastMessage] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
-  
+
   useEffect(() => {
     if (!isEditingOrganizationName) {
       setDraftOrganizationName(resolvedOrganizationName);
     }
   }, [resolvedOrganizationName, isEditingOrganizationName]);
 
-  
   const trimmedOrganizationName = draftOrganizationName.trim();
   const canSaveOrganizationName =
-    trimmedOrganizationName.length > 0 && trimmedOrganizationName !== resolvedOrganizationName.trim();
+    trimmedOrganizationName.length > 0 &&
+    trimmedOrganizationName !== resolvedOrganizationName.trim();
 
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
@@ -86,22 +106,28 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     const renamed = await renameTenant(trimmedOrganizationName);
 
     if (!renamed) {
-      showToast('Unable to rename organization on the server');
+      showToast("Unable to rename organization on the server");
       return;
     }
 
     await setUser({ organization: trimmedOrganizationName });
     setIsEditingOrganizationName(false);
-    showToast('Organization renamed');
-  }, [canSaveOrganizationName, renameTenant, setUser, showToast, trimmedOrganizationName]);
+    showToast("Organization renamed");
+  }, [
+    canSaveOrganizationName,
+    renameTenant,
+    setUser,
+    showToast,
+    trimmedOrganizationName,
+  ]);
 
   const handleCopyCode = useCallback(async () => {
     try {
       await Clipboard.setStringAsync(resolvedOrganizationCode);
       onCopyCodePress?.();
-      showToast('Code copied');
+      showToast("Code copied");
     } catch {
-      showToast('Unable to copy code');
+      showToast("Unable to copy code");
     }
   }, [onCopyCodePress, resolvedOrganizationCode, showToast]);
 
@@ -109,9 +135,15 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader title="Organization" onBackPress={onBackPress} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         <View style={styles.nameSection}>
-          <TouchableOpacity activeOpacity={0.75} onPress={handleEditOrganizationName}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={handleEditOrganizationName}
+          >
             <View style={styles.nameRow}>
               <Text style={styles.sectionLabel}>Organization Name</Text>
               <Text style={styles.nameValue}>{resolvedOrganizationName}</Text>
@@ -135,21 +167,36 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
                 />
 
                 {draftOrganizationName.length > 0 ? (
-                  <Pressable onPress={() => setDraftOrganizationName('')} hitSlop={10} style={styles.clearButton}>
+                  <Pressable
+                    onPress={() => setDraftOrganizationName("")}
+                    hitSlop={10}
+                    style={styles.clearButton}
+                  >
                     <View style={styles.clearIconCircle}>
-                      <X size={14} color={colors.textSecondary} strokeWidth={2.2} />
+                      <X
+                        size={14}
+                        color={colors.textSecondary}
+                        strokeWidth={2.2}
+                      />
                     </View>
                   </Pressable>
                 ) : null}
               </View>
 
               <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.secondaryButton} onPress={handleCancelOrganizationName} activeOpacity={0.8}>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={handleCancelOrganizationName}
+                  activeOpacity={0.8}
+                >
                   <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.primaryButton, !canSaveOrganizationName && styles.primaryButtonDisabled]}
+                  style={[
+                    styles.primaryButton,
+                    !canSaveOrganizationName && styles.primaryButtonDisabled,
+                  ]}
                   onPress={() => {
                     void handleSaveOrganizationName();
                   }}
@@ -167,7 +214,12 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
           label="Organization Code"
           value={resolvedOrganizationCode}
           rightAccessory={
-            <TouchableOpacity onPress={() => { void handleCopyCode(); }} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => {
+                void handleCopyCode();
+              }}
+              activeOpacity={0.7}
+            >
               <Copy size={20} color={colors.textPrimary} strokeWidth={2.1} />
             </TouchableOpacity>
           }
@@ -177,13 +229,24 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
           label="Members"
           value={String(resolvedMemberCount)}
           onPress={onMembersPress}
-          rightAccessory={<ChevronRight size={20} color={colors.textTertiary} strokeWidth={2.1} />}
+          rightAccessory={
+            <ChevronRight
+              size={20}
+              color={colors.textTertiary}
+              strokeWidth={2.1}
+            />
+          }
         />
 
         <InfoRow label="Created" value={resolvedCreatedDate} />
       </ScrollView>
 
-      <Toast visible={toastVisible} message={toastMessage} variant="success" onDismiss={() => setToastVisible(false)} />
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        variant="success"
+        onDismiss={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -205,52 +268,52 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionLabel: {
-    ...getTypographyStyle('c2Caption'),
+    ...getTypographyStyle("c2Caption"),
     color: colors.textSecondary,
     marginBottom: 6,
   },
   nameValue: {
-    ...getTypographyStyle('body', 'semiBold'),
+    ...getTypographyStyle("body", "semiBold"),
     color: colors.textPrimary,
   },
   editorCard: {
     paddingBottom: 8,
   },
   inputShell: {
-    position: 'relative',
+    position: "relative",
     borderWidth: 1,
     borderColor: colors.inputBorder,
     backgroundColor: colors.inputBackground,
     borderRadius: 12,
     minHeight: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingLeft: 14,
     paddingRight: 42,
   },
   input: {
-    ...getTypographyStyle('body'),
+    ...getTypographyStyle("body"),
     color: colors.textPrimary,
     paddingVertical: 11,
   },
   clearButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 10,
     top: 0,
     bottom: 0,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   clearIconCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#EDF3FA',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#EDF3FA",
+    alignItems: "center",
+    justifyContent: "center",
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
     gap: 10,
     marginTop: 12,
     marginBottom: 2,
@@ -261,27 +324,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.background2,
   },
   secondaryButtonText: {
-    ...getTypographyStyle('b3Button'),
-    color: '#64748B',
+    ...getTypographyStyle("b3Button"),
+    color: "#64748B",
   },
   primaryButton: {
     minWidth: 92,
     height: 36,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.primary,
   },
   primaryButtonDisabled: {
     backgroundColor: colors.primaryDisabled,
   },
   primaryButtonText: {
-    ...getTypographyStyle('b3Button'),
+    ...getTypographyStyle("b3Button"),
     color: colors.primaryText,
   },
 });
