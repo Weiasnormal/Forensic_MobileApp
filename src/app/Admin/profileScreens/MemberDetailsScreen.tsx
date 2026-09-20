@@ -4,19 +4,22 @@ import Divider from "@/_components/common/Divider";
 import ScreenHeader from "@/_components/common/ScreenHeader";
 import SectionLabel from "@/_components/common/SectionLabel";
 import SettingsRow from "@/_components/common/SettingsRow";
-import ToggleRow from "@/_components/common/ToggleRow";
+import ConfirmActionModal from "@/_components/modals/confirm_action";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useAdminStore } from "@/store/adminStore";
+import { useCaseStore } from "@/store/caseStore";
+import { normalizePersonDisplay } from "@/utils/validation";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Folder, MinusCircle, UserX } from "lucide-react-native";
-import React, { useEffect } from "react";
+import { Folder, Minus, MinusCircle, Plus, UserX } from "lucide-react-native";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,19 +29,97 @@ const MemberDetailsScreen: React.FC = () => {
   const router = useRouter();
   const fetchMemberById = useAdminStore((state) => state.fetchMemberById);
   const suspendTeamMember = useAdminStore((state) => state.suspendTeamMember);
+  const unsuspendTeamMember = useAdminStore(
+    (state) => state.unsuspendTeamMember,
+  );
   const removeTeamMember = useAdminStore((state) => state.removeTeamMember);
+  const setUserDailyCaseLimit = useAdminStore(
+    (state) => state.setUserDailyCaseLimit,
+  );
   const memberDetail = useAdminStore((state) => state.memberDetail);
   const isLoadingMemberDetail = useAdminStore(
     (state) => state.isLoadingMemberDetail,
   );
   const memberDetailError = useAdminStore((state) => state.memberDetailError);
+  const [limitDraft, setLimitDraft] = useState<number | null>(null);
+  const [pendingLimitChange, setPendingLimitChange] = useState<number | null>(
+    null,
+  );
+  const [isDailyLimitModalVisible, setIsDailyLimitModalVisible] =
+    useState(false);
+  const [isUpdatingDailyLimit, setIsUpdatingDailyLimit] = useState(false);
+  const dailyCaseLimit = memberDetail?.dailyCaseLimit ?? null;
+  const memberCaseCount = useCaseStore(
+    (state) =>
+      state.cases.filter(
+        (item) =>
+          (item.ownerUserId &&
+            String(item.ownerUserId).toLowerCase() ===
+              String(memberId ?? "").toLowerCase()) ||
+          (!item.ownerUserId &&
+            normalizePersonDisplay(item.examiner) ===
+              normalizePersonDisplay(
+                `${memberDetail?.firstName ?? ""} ${memberDetail?.lastName ?? ""}`,
+              )),
+      ).length,
+  );
   const isProtectedMember = /admin/i.test(memberDetail?.role ?? "");
+  const isSuspended = memberDetail?.isSuspended ?? false;
 
+  const [confirmationVisible, setConfirmationVisible] = React.useState(false);
+  const [isUpdatingAccess, setIsUpdatingAccess] = React.useState(false);
   useEffect(() => {
     if (memberId) {
       void fetchMemberById(memberId);
     }
   }, [fetchMemberById, memberId]);
+
+  useEffect(() => {
+    setLimitDraft(dailyCaseLimit);
+  }, [dailyCaseLimit]);
+
+  const limitSummary = useMemo(() => {
+    if (limitDraft === null) return "Unlimited";
+    return `${limitDraft} / day`;
+  }, [limitDraft]);
+
+  const openDailyLimitModal = () => {
+    setPendingLimitChange(limitDraft ?? 0);
+    setIsDailyLimitModalVisible(true);
+  };
+
+  const handleLimitStepper = (direction: "increase" | "decrease") => {
+    const currentValue = pendingLimitChange ?? 0;
+    const nextValue =
+      direction === "increase"
+        ? currentValue + 1
+        : Math.max(0, currentValue - 1);
+
+    setPendingLimitChange(nextValue);
+  };
+
+  const closeDailyLimitModal = () => {
+    setIsDailyLimitModalVisible(false);
+    setPendingLimitChange(limitDraft);
+  };
+
+  const confirmLimitChange = async () => {
+    if (!memberId || pendingLimitChange === null) {
+      return;
+    }
+
+    setIsUpdatingDailyLimit(true);
+    try {
+      const success = await setUserDailyCaseLimit(memberId, pendingLimitChange);
+      if (success) {
+        setLimitDraft(pendingLimitChange);
+        setIsDailyLimitModalVisible(false);
+        setPendingLimitChange(null);
+      }
+    } finally {
+      setIsUpdatingDailyLimit(false);
+    }
+  };
 
   if (
     !memberId ||
@@ -78,10 +159,11 @@ const MemberDetailsScreen: React.FC = () => {
     );
   }
 
-  const memberName =
-    `${memberDetail.firstName} ${memberDetail.lastName}`.trim();
+  const memberName = normalizePersonDisplay(
+    `${memberDetail.firstName} ${memberDetail.lastName}`,
+  );
   const memberInitials =
-    `${memberDetail.firstName[0] ?? ""}${memberDetail.lastName[0] ?? ""}`.toUpperCase();
+    `${memberName.split(" ")[0]?.[0] ?? ""}${memberName.split(" ").slice(1).join(" ")[0] ?? ""}`.toUpperCase();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -100,50 +182,48 @@ const MemberDetailsScreen: React.FC = () => {
         <SettingsRow
           icon={Folder}
           title="View Case History"
-          subtitle="Case history unavailable"
+          subtitle={
+            memberCaseCount > 0
+              ? `${memberCaseCount} case${memberCaseCount === 1 ? "" : "s"} created by this analyst`
+              : "No cases created by this analyst"
+          }
+          onPress={() =>
+            router.push({
+              pathname: "/Admin/admin_dashboard",
+              params: {
+                tab: "cases",
+                memberId,
+                memberName: memberName,
+              },
+            })
+          }
         />
         <Divider />
 
-        <View style={styles.limitRow}>
-          <View style={styles.limitTextWrapper}>
-            <Text allowFontScaling={false} style={styles.limitTitle}>
-              Daily Case Limit
-            </Text>
-            <Text allowFontScaling={false} style={styles.limitSubtitle}>
-              Not provided by backend
-            </Text>
-          </View>
-          <Text allowFontScaling={false} style={styles.unavailableText}>
-            Unavailable
-          </Text>
-        </View>
-        <Divider />
-
-        <ToggleRow
-          title="Case Submission"
-          subtitle="Not provided by backend"
-          value={false}
-          disabled
+        <SettingsRow
+          title="Daily Case Limit"
+          subtitle={
+            limitDraft === null
+              ? "No limit currently configured"
+              : `Current limit: ${limitDraft} case${limitDraft === 1 ? "" : "s"} per day`
+          }
+          rightText={limitSummary}
+          onPress={openDailyLimitModal}
         />
+        <Divider />
 
         <SectionLabel label="Access Controls" style={styles.sectionSpacing} />
         <DangerRow
           icon={MinusCircle}
-          title="Suspend Analyst"
-          subtitle="Temporarily disable access"
+          title={isSuspended ? "Unsuspend Analyst" : "Suspend Analyst"}
+          color={isSuspended ? colors.textPrimary : colors.danger}
+          subtitle={
+            isSuspended
+              ? "Restore the analyst's organization access"
+              : "Temporarily disable access"
+          }
           onPress={() => {
-            Alert.alert(
-              "Suspend analyst?",
-              "This will temporarily disable the analyst's access. Continue?",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Suspend",
-                  style: "destructive",
-                  onPress: () => void suspendTeamMember(memberId),
-                },
-              ],
-            );
+            setConfirmationVisible(true);
           }}
         />
         {!isProtectedMember ? (
@@ -158,6 +238,103 @@ const MemberDetailsScreen: React.FC = () => {
           />
         ) : null}
       </ScrollView>
+
+      <ConfirmActionModal
+        visible={confirmationVisible}
+        title={isSuspended ? "Unsuspend analyst?" : "Suspend analyst?"}
+        message={
+          isSuspended
+            ? "This will restore the analyst's organization access. Continue?"
+            : "This will temporarily disable the analyst's access. Continue?"
+        }
+        confirmLabel={isSuspended ? "Unsuspend" : "Suspend"}
+        variant={isSuspended ? "success" : "danger"}
+        isLoading={isUpdatingAccess}
+        onCancel={() => setConfirmationVisible(false)}
+        onConfirm={async () => {
+          setIsUpdatingAccess(true);
+          try {
+            if (isSuspended) {
+              await unsuspendTeamMember(memberId);
+            } else {
+              await suspendTeamMember(memberId);
+            }
+            setConfirmationVisible(false);
+          } finally {
+            setIsUpdatingAccess(false);
+          }
+        }}
+      />
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isDailyLimitModalVisible}
+        onRequestClose={closeDailyLimitModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.limitModalCard}>
+            <Text allowFontScaling={false} style={styles.limitModalTitle}>
+              Daily case limit
+            </Text>
+            <Text allowFontScaling={false} style={styles.limitModalSubtitle}>
+              {`Set ${memberName}'s daily limit`}
+            </Text>
+
+            <View style={styles.limitModalControls}>
+              <TouchableOpacity
+                style={styles.stepButton}
+                activeOpacity={0.8}
+                onPress={() => handleLimitStepper("decrease")}
+              >
+                <Minus size={22} color={colors.primary} />
+              </TouchableOpacity>
+
+              <Text allowFontScaling={false} style={styles.limitModalValue}>
+                {pendingLimitChange === null
+                  ? "Unlimited"
+                  : `${pendingLimitChange}`}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.stepButton}
+                activeOpacity={0.8}
+                onPress={() => handleLimitStepper("increase")}
+              >
+                <Plus size={22} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity
+                style={[styles.modalSecondaryButton, styles.modalActionButton]}
+                onPress={closeDailyLimitModal}
+                activeOpacity={0.8}
+              >
+                <Text
+                  allowFontScaling={false}
+                  style={styles.modalSecondaryText}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalPrimaryButton, styles.modalActionButton]}
+                onPress={async () => {
+                  await confirmLimitChange();
+                }}
+                disabled={isUpdatingDailyLimit}
+                activeOpacity={0.8}
+              >
+                <Text allowFontScaling={false} style={styles.modalPrimaryText}>
+                  {isUpdatingDailyLimit ? "Saving..." : "Confirm"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -216,9 +393,98 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+  limitControlWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  stepButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  limitValueText: {
+    ...getTypographyStyle("c1Caption", "semiBold"),
+    color: colors.primary,
+    minWidth: 60,
+    textAlign: "center",
+  },
   unavailableText: {
     ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textTertiary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.48)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  limitModalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: colors.background2,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+  },
+  limitModalTitle: {
+    ...getTypographyStyle("t3Title"),
+    color: colors.textPrimary,
+    textAlign: "center",
+  },
+  limitModalSubtitle: {
+    ...getTypographyStyle("headline", "regular"),
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  limitModalControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  limitModalValue: {
+    ...getTypographyStyle("t3Title"),
+    color: colors.primary,
+    minWidth: 90,
+    textAlign: "center",
+  },
+  modalActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 22,
+    gap: 12,
+  },
+  modalActionButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSecondaryButton: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalPrimaryButton: {
+    backgroundColor: colors.primary,
+  },
+  modalSecondaryText: {
+    ...getTypographyStyle("body", "semiBold"),
+    color: colors.textPrimary,
+  },
+  modalPrimaryText: {
+    ...getTypographyStyle("body", "semiBold"),
+    color: colors.primaryText,
   },
 });
 

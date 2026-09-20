@@ -1,7 +1,8 @@
 import { ADMIN_API_ENDPOINTS } from "@/constants/adminApi";
 import { API_KEY, buildApiUrl } from "@/constants/api";
 import { createNotificationConnection } from "@/services/notificationHub";
-import { normalizeInviteCode } from "@/utils/validation";
+import { normalizeInviteCode, normalizePersonName } from "@/utils/validation";
+
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 import { create } from "zustand";
 import { getAuthHeader, useAuthStore } from "./authStore";
@@ -40,6 +41,8 @@ export interface TenantMemberDetail {
   lastName: string;
   email: string;
   role: string;
+  isSuspended: boolean;
+  dailyCaseLimit: number | null;
 }
 
 interface AdminStore {
@@ -61,12 +64,17 @@ interface AdminStore {
   approveTeamMember: (id: string) => Promise<void>;
   rejectTeamMember: (id: string) => Promise<void>;
   suspendTeamMember: (id: string) => Promise<void>;
+  unsuspendTeamMember: (id: string) => Promise<void>;
   removeTeamMember: (id: string) => Promise<void>;
 
   memberDetail: TenantMemberDetail | null;
   isLoadingMemberDetail: boolean;
   memberDetailError: string | null;
   fetchMemberById: (userId: string) => Promise<TenantMemberDetail | null>;
+  setUserDailyCaseLimit: (
+    userId: string,
+    dailyLimit: number | null,
+  ) => Promise<boolean>;
 
   isCreatingTenant: boolean;
   createTenantError: string | null;
@@ -87,12 +95,32 @@ interface AdminStore {
 function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
   const id = record?.id?.toString().trim();
   if (!id) return null;
+
+  const rawDailyLimit =
+    record?.dailyCaseLimit ??
+    record?.DailyCaseLimit ??
+    record?.daily_limit ??
+    record?.Daily_Limit ??
+    record?.dailyLimit ??
+    record?.DailyLimit ??
+    null;
+
+  const parsedDailyLimit =
+    rawDailyLimit === null || rawDailyLimit === undefined
+      ? null
+      : Number(rawDailyLimit);
+
   return {
     id,
-    firstName: record.firstName?.trim() || "",
-    lastName: record.lastName?.trim() || "",
+    firstName: normalizePersonName(record.firstName?.trim() || ""),
+    lastName: normalizePersonName(record.lastName?.trim() || ""),
     email: record.email?.trim() || "",
     role: record.role?.trim() || "Analyst",
+    isSuspended: Boolean(record.isSuspended ?? record.IsSuspended),
+    dailyCaseLimit:
+      parsedDailyLimit !== null && Number.isFinite(parsedDailyLimit)
+        ? Math.max(0, Math.trunc(parsedDailyLimit))
+        : null,
   };
 }
 
@@ -383,6 +411,61 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
+  setUserDailyCaseLimit: async (userId: string, dailyLimit: number | null) => {
+    try {
+      const normalizedLimit =
+        dailyLimit === null ? null : Math.max(0, Math.trunc(dailyLimit));
+
+      const response = await fetch(
+        buildApiUrl(ADMIN_API_ENDPOINTS.tenant.setDailyLimit),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-Api-Key": API_KEY || "",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify({
+            UserId: userId,
+            DailyLimit: normalizedLimit,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Set daily limit failed (${response.status})`);
+      }
+
+      set((state) => ({
+        memberDetail:
+          state.memberDetail?.id === userId
+            ? { ...state.memberDetail, dailyCaseLimit: normalizedLimit }
+            : state.memberDetail,
+      }));
+
+      useFeedbackStore
+        .getState()
+        .showToast(
+          normalizedLimit === null
+            ? "Daily case limit cleared"
+            : `Daily case limit set to ${normalizedLimit}`,
+          "success",
+        );
+      return true;
+    } catch (error) {
+      adminLog.warn(
+        "AdminStore:MemberDetail",
+        `Unable to update daily limit for ${userId}`,
+        error,
+      );
+      useFeedbackStore
+        .getState()
+        .showToast("Unable to update daily case limit. Try again.", "error");
+      return false;
+    }
+  },
+
   fetchTeamMembers: async () => {
     set({ isLoadingTeam: true, teamLoadError: null });
 
@@ -414,8 +497,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .filter((m: any) => belongsToCurrentTenant(m))
         .map((m: any) => ({
           id: m.id,
-          firstName: m.firstName || "Unknown",
-          lastName: m.lastName || "",
+          firstName: normalizePersonName(m.firstName || "Unknown"),
+          lastName: normalizePersonName(m.lastName || ""),
           email: m.email || "—",
           role: normalizeTeamMemberRole(m.role ?? m.Role ?? m.roles ?? m.Roles),
           status:
@@ -438,8 +521,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
               .split(/\s+/);
             return {
               id: r.requestId, // approve/reject use the REQUEST id, not a user id
-              firstName: firstName || "Unknown",
-              lastName: rest.join(" "),
+              firstName: normalizePersonName(firstName || "Unknown"),
+              lastName: normalizePersonName(rest.join(" ")),
               email: "—",
               role: "Analyst" as const,
               status: "pending" as const,
@@ -488,6 +571,21 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
     connection.on("MemberRequestCreated", () => {
       void get().fetchTeamMembers();
+    });
+
+    connection.on("UserDeleted", () => {
+      void get().fetchTeamMembers();
+      void get().fetchTenantProfile();
+    });
+
+    connection.on("TenantRenamed", () => {
+      void get().fetchTenantProfile();
+      void get().fetchTeamMembers();
+    });
+
+    connection.on("NewCaseResult", () => {
+      void get().fetchTeamMembers();
+      void get().fetchTenantProfile();
     });
 
     connection.onreconnected(() => {
@@ -689,6 +787,57 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
+  unsuspendTeamMember: async (id) => {
+    const targetMember = get().teamMembers.find((member) => member.id === id);
+    if (!targetMember || targetMember.status !== "suspended") {
+      useFeedbackStore
+        .getState()
+        .showToast("This member is not currently suspended.", "infoLight");
+      return;
+    }
+
+    const previousTeamMembers = get().teamMembers;
+    set((state) => ({
+      teamMembers: state.teamMembers.map((member) =>
+        member.id === id ? { ...member, status: "active" } : member,
+      ),
+      memberDetail:
+        state.memberDetail?.id === id
+          ? { ...state.memberDetail, isSuspended: false }
+          : state.memberDetail,
+    }));
+
+    try {
+      const response = await fetch(
+        buildApiUrl(ADMIN_API_ENDPOINTS.tenant.unsuspendUser),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-Api-Key": API_KEY || "",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(id),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`Unsuspend failed (${response.status})`);
+      }
+      useFeedbackStore.getState().showToast("Member unsuspended", "success");
+    } catch (error) {
+      adminLog.warn(
+        "AdminStore:Team",
+        `Unable to unsuspend member ${id} on the backend`,
+        error,
+      );
+      set({ teamMembers: previousTeamMembers });
+      useFeedbackStore
+        .getState()
+        .showToast("Unable to unsuspend member. Try again.", "error");
+    }
+  },
+
   removeTeamMember: async (userId: string) => {
     const currentUser = useAuthStore.getState().user;
     const targetMember = get().teamMembers.find(
@@ -800,7 +949,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
 export function getTeamSummary(members: TeamMember[]) {
   const analysts = members.filter((member) => member.role === "Analyst");
-  const totalAnalysts = analysts.length;
+  const totalAnalysts = analysts.filter(
+    (member) => member.status !== "pending",
+  ).length;
   const activeCount = analysts.filter(
     (member) => member.status === "active",
   ).length;

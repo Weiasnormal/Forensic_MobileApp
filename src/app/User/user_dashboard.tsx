@@ -8,26 +8,27 @@ import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useAuthStore } from "@/store/authStore";
 import { useUser } from "@/store/userStore";
+import { limitDashboardName } from "@/utils/validation";
 import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CaseCard from "../../_components/caseCards";
 import PendingCard from "../../_components/pendingCards";
 import {
-    getPendingCards,
-    type SavedCase,
-    useCaseStore,
+  getPendingCards,
+  type SavedCase,
+  useCaseStore,
 } from "../../store/caseStore";
 import Navbar, { type TabKey } from "../_navbar/nav_bar";
 import ProfileScreen from "./user_profile";
@@ -164,7 +165,7 @@ export default function UserDashboardScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.5}
               >
-                Hello, Analyst {user?.lastName}
+                Hello, Analyst {limitDashboardName(user?.lastName || "")}
               </Text>
             </View>
             <View style={styles.homeHeaderActions}>

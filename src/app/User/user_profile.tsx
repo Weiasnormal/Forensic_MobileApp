@@ -22,6 +22,7 @@ import { useAuthStore } from "@/store/authStore";
 import { getCaseSummary, useCaseStore } from "@/store/caseStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
+import { normalizePersonDisplay } from "@/utils/validation";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { Bell, FileText, Grid, Info, Lock, User } from "lucide-react-native";
@@ -120,7 +121,7 @@ export default function UserProfileScreen() {
           />
           <View style={styles.headerCopy}>
             <Text allowFontScaling={false} style={styles.name}>
-              {user.firstName} {user.lastName}
+              {normalizePersonDisplay(`${user.firstName} ${user.lastName}`)}
             </Text>
             <Text
               allowFontScaling={false}

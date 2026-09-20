@@ -1,37 +1,46 @@
 import CaseCard from "@/_components/caseCards";
+import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import FilterCasesModal from "@/_components/modals/filtercases";
-import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import { colors } from "@/constants/colors";
 import {
-    formatCaseDateLabel,
-    getCaseSummary,
-    type SavedCase,
-    useCaseStore,
+  formatCaseDateLabel,
+  getCaseSummary,
+  type SavedCase,
+  useCaseStore,
 } from "@/store/caseStore";
 import {
-    caseMatchesSearch,
-    normalizeCaseSearchQuery,
+  caseMatchesSearch,
+  normalizeCaseSearchQuery,
 } from "@/utils/caseSearch";
+import { normalizePersonDisplay } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SectionList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const quickFilters = ["All", "Genuine", "Suspected", "Processing"];
 const DEFAULT_HEADER_HEIGHT = 140;
 
-export default function AdminCasesScreen() {
+interface AdminCasesScreenProps {
+  memberId?: string;
+  memberName?: string;
+}
+
+export default function AdminCasesScreen({
+  memberId,
+  memberName,
+}: AdminCasesScreenProps) {
   const router = useRouter();
   const nav = router as any;
   const [query, setQuery] = useState("");
@@ -60,8 +69,19 @@ export default function AdminCasesScreen() {
   );
 
   useEffect(() => {
-    refreshCasesFromBackend();
-  }, [refreshCasesFromBackend]);
+    let isCancelled = false;
+
+    void (async () => {
+      const refreshed = await refreshCasesFromBackend();
+      if (!isCancelled && memberId && refreshed) {
+        await loadAllCases();
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [loadAllCases, memberId, refreshCasesFromBackend]);
 
   useEffect(() => {
     const debounceId = setTimeout(() => {
@@ -75,11 +95,11 @@ export default function AdminCasesScreen() {
     if (debouncedQuery.trim() || activeFilter !== "All" || advancedFilters) {
       void loadAllCases();
     }
-  }, [activeFilter, advancedFilters, debouncedQuery, loadAllCases]);
+  }, [activeFilter, advancedFilters, debouncedQuery, loadAllCases, memberId]);
 
   const casesToUse = advancedFilters ? advancedFilters.filteredCases : cases;
 
-  const { sections, visibleCaseCount } = useMemo(() => {
+  const { sections } = useMemo(() => {
     const normalizedQuery = normalizeCaseSearchQuery(debouncedQuery);
     const sortedCases = [...casesToUse].sort((left, right) => {
       return (
@@ -88,6 +108,14 @@ export default function AdminCasesScreen() {
     });
 
     const filteredCases = sortedCases.filter((item) => {
+      const matchesMember =
+        (!memberId && !memberName) ||
+        (item.ownerUserId &&
+          String(item.ownerUserId).toLowerCase() === memberId?.toLowerCase()) ||
+        (!item.ownerUserId &&
+          memberName &&
+          normalizePersonDisplay(item.examiner) ===
+            normalizePersonDisplay(memberName));
       const matchesQuery = caseMatchesSearch(item, normalizedQuery);
 
       const matchesFilter =
@@ -98,7 +126,7 @@ export default function AdminCasesScreen() {
         item.documentType === activeFilter ||
         item.priority === activeFilter;
 
-      return matchesQuery && matchesFilter;
+      return matchesMember && matchesQuery && matchesFilter;
     });
 
     const grouped = filteredCases.reduce<Record<string, SavedCase[]>>(
@@ -119,12 +147,10 @@ export default function AdminCasesScreen() {
         title,
         data,
       })),
-      visibleCaseCount: filteredCases.length,
     };
-  }, [activeFilter, casesToUse, debouncedQuery]);
+  }, [activeFilter, casesToUse, debouncedQuery, memberId, memberName]);
 
   const totalCases = totalCaseCount || getCaseSummary(cases).totalCases;
-  const hasSearchQuery = debouncedQuery.trim().length > 0;
   const showSearchFeedback = isSearchFocused || query.trim().length > 0;
 
   return (
@@ -141,7 +167,9 @@ export default function AdminCasesScreen() {
         }}
       >
         <View style={styles.headerRow}>
-          <Text style={styles.pageTitle}>All Cases</Text>
+          <Text style={styles.pageTitle}>
+            {memberId ? "Analyst Cases" : "All Cases"}
+          </Text>
           <View style={styles.countBadge}>
             <Text style={styles.countBadgeText}>{totalCases}</Text>
           </View>

@@ -3,32 +3,32 @@ import { getTypographyStyle } from "@/constants/typography";
 import { getTeamSummary, useAdminStore } from "@/store/adminStore";
 import { type SavedCase, useCaseStore } from "@/store/caseStore";
 import {
-  AlertCircle,
-  CheckCheck,
-  ChevronDown,
-  FolderOpen,
-  Info,
-  Users,
+    AlertCircle,
+    CheckCheck,
+    ChevronDown,
+    FolderOpen,
+    Info,
+    Users,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  type DimensionValue,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    type DimensionValue,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Polyline } from "react-native-svg";
 import {
-  AdminStatCard,
-  TeamOverviewCard,
-  type TeamOverviewData,
+    AdminStatCard,
+    TeamOverviewCard,
+    type TeamOverviewData,
 } from "./cards";
 
 const TIME_RANGE_OPTIONS = [
@@ -261,8 +261,8 @@ export default function AdminStatsScreen() {
     [cases, chartGranularity],
   );
 
-  const { activeCount } = getTeamSummary(teamMembers);
-  const totalRosterCount = teamMembers.length;
+  const { activeCount, totalAnalysts } = getTeamSummary(teamMembers);
+  const totalRosterCount = totalAnalysts;
 
   const topAnalysts: TeamOverviewData[] = useMemo(
     () =>
@@ -274,6 +274,7 @@ export default function AdminStatsScreen() {
           firstName: member.firstName,
           lastName: member.lastName,
           casesHandled: member.casesHandled,
+          status: member.status === "suspended" ? "suspended" : "active",
         })),
     [teamMembers],
   );
@@ -312,7 +313,11 @@ export default function AdminStatsScreen() {
               value={String(summary.total)}
               icon={FolderOpen}
               tint={colors.primary}
-              subtext={casesThisWeek > 0 ? `↑ ${casesThisWeek} this week` : "No new cases this week"}
+              subtext={
+                casesThisWeek > 0
+                  ? `↑ ${casesThisWeek} this week`
+                  : "No new cases this week"
+              }
               subtextColor={colors.labelsuccess}
             />
           </View>
@@ -436,9 +441,7 @@ function DocumentTypesSkeleton({ opacity }: { opacity: Animated.Value }) {
     <>
       {rowWidths.map((width, index) => (
         <View key={index} style={styles.skeletonDocRow}>
-          <Animated.View
-            style={[styles.skeletonDocBar, { width, opacity }]}
-          />
+          <Animated.View style={[styles.skeletonDocBar, { width, opacity }]} />
           <Animated.View
             style={[
               index < 2 ? styles.skeletonDocPill : styles.skeletonDocDot,
@@ -464,7 +467,9 @@ function TopAnalystsSkeleton({ opacity }: { opacity: Animated.Value }) {
           ]}
         >
           <Animated.View style={[styles.skeletonAvatar, { opacity }]} />
-          <Animated.View style={[styles.skeletonAnalystLine, { width, opacity }]} />
+          <Animated.View
+            style={[styles.skeletonAnalystLine, { width, opacity }]}
+          />
           <View style={styles.skeletonAnalystRight}>
             <Animated.View style={[styles.skeletonPillSm, { opacity }]} />
             <Animated.View style={[styles.skeletonPillXs, { opacity }]} />
@@ -553,7 +558,10 @@ function DropdownPill<T extends string>({
                     setOpen(false);
                   }}
                 >
-                  <Text allowFontScaling={false} style={styles.dropdownOptionText}>
+                  <Text
+                    allowFontScaling={false}
+                    style={styles.dropdownOptionText}
+                  >
                     {option}
                   </Text>
                 </Pressable>

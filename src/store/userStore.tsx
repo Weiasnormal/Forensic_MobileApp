@@ -1,5 +1,6 @@
 import { fetchCurrentUser } from "@/services/authApi";
 import type { SignatureAnalysisViewMode } from "@/services/signatureAnalysis";
+import { normalizePersonName } from "@/utils/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import React, {
@@ -118,6 +119,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const nextUser = {
           ...DEFAULT_USER,
           ...localProfile,
+          firstName: normalizePersonName(localProfile.firstName ?? ""),
+          lastName: normalizePersonName(localProfile.lastName ?? ""),
           avatarUri: localProfile.avatarUri ?? null,
         };
         userRef.current = nextUser;
@@ -134,12 +137,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       const nextUser = {
-        firstName:
+        firstName: normalizePersonName(
           localProfile.firstName?.trim() ||
-          remoteProfile.firstName?.trim() ||
-          "",
-        lastName:
+            remoteProfile.firstName?.trim() ||
+            "",
+        ),
+        lastName: normalizePersonName(
           localProfile.lastName?.trim() || remoteProfile.lastName?.trim() || "",
+        ),
         email: remoteProfile.email?.trim() || authEmail || "",
         role: remoteProfile.role?.trim() || localProfile.role?.trim() || "",
         organization:
@@ -303,6 +308,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       const next = {
         ...userRef.current,
         ...u,
+        firstName:
+          u.firstName === undefined
+            ? userRef.current.firstName
+            : normalizePersonName(u.firstName),
+        lastName:
+          u.lastName === undefined
+            ? userRef.current.lastName
+            : normalizePersonName(u.lastName),
         avatarUri: normalizedAvatarUri ?? null,
       } as UserProfile;
       userRef.current = next;

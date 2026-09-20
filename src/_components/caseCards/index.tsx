@@ -1,5 +1,6 @@
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import { normalizePersonDisplay } from "@/utils/validation";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export type CaseStatus = "Suspected" | "Genuine" | "Processing";
@@ -87,7 +88,8 @@ export default function CaseCard({
           </Text>
           {isAdminCard ? (
             <Text allowFontScaling={false} style={styles.typeLabel}>
-              {examiner || "Unknown"} · {formatDate(createdAt)}
+              {examiner ? normalizePersonDisplay(examiner) : "Unknown"} ·{" "}
+              {formatDate(createdAt)}
             </Text>
           ) : (
             <Text allowFontScaling={false} style={styles.typeLabel}>

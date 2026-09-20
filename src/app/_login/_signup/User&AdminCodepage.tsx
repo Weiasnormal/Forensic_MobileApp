@@ -101,7 +101,6 @@ export default function UserAndAdminCodePage() {
       );
 
       setSubmitError(friendlyMessage);
-      useFeedbackStore.getState().showToast(friendlyMessage, "infoLight");
     } finally {
       setIsSubmitting(false);
     }

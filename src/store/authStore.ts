@@ -1,5 +1,6 @@
 import * as authApi from "@/services/authApi";
 import { normalizeAuthErrorMessage } from "@/services/authApi";
+import { normalizePersonName } from "@/utils/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { create } from "zustand";
@@ -146,8 +147,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isAuthenticating: true, authError: null });
         try {
           await authApi.register({
-            firstName,
-            lastName,
+            firstName: normalizePersonName(firstName),
+            lastName: normalizePersonName(lastName),
             email,
             password,
             role,

@@ -5,6 +5,7 @@ import {
   useAuthStore,
 } from "@/store/authStore";
 import type { AnalysisPriority, DocumentType } from "@/store/caseStore";
+import { normalizePersonDisplay } from "@/utils/validation";
 
 /** Mirrors Avera.Domain/Cases/FinalVerdict.cs — do not reorder, values match backend exactly. */
 export enum FinalVerdict {
@@ -219,14 +220,14 @@ function normalizePriority(value: unknown): AnalysisPriority {
 }
 
 function normalizeCreatedByUser(value: unknown): string {
-  if (typeof value === "string") return value.trim();
+  if (typeof value === "string") return normalizePersonDisplay(value);
   if (!value || typeof value !== "object") return "Unknown";
 
   const user = value as Record<string, unknown>;
   const displayName =
     user.name ?? user.fullName ?? user.userName ?? user.username ?? user.email;
   return typeof displayName === "string" && displayName.trim()
-    ? displayName.trim()
+    ? normalizePersonDisplay(displayName)
     : "Unknown";
 }
 

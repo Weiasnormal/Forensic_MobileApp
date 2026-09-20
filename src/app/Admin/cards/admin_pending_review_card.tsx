@@ -1,7 +1,8 @@
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { normalizePersonDisplay } from "@/utils/validation";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export interface PendingReview {
   id: string;
@@ -21,6 +22,12 @@ export default function PendingReviewCard({
   review,
   onReview,
 }: PendingReviewCardProps) {
+  const displayExaminer = normalizePersonDisplay(review.examiner);
+  const trimmedExaminer =
+    displayExaminer.length > 20
+      ? `${displayExaminer.slice(0, 17)}...`
+      : displayExaminer;
+
   return (
     <View style={styles.row}>
       <View style={styles.accent} />
@@ -29,8 +36,13 @@ export default function PendingReviewCard({
         <Text allowFontScaling={false} style={styles.caseCode}>
           {review.caseCode}
         </Text>
-        <Text allowFontScaling={false} style={styles.meta}>
-          {review.examiner} · {review.dateLabel}
+        <Text
+          allowFontScaling={false}
+          style={styles.meta}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {trimmedExaminer} · {review.dateLabel}
         </Text>
         <Text allowFontScaling={false} style={styles.verdict}>
           {review.verdictLabel} · {review.confidence.toFixed(1)}%
@@ -52,8 +64,8 @@ export default function PendingReviewCard({
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
@@ -61,10 +73,10 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorderMuted, // FLAG — was '#E3EAF3', unconfirmed exact match
     paddingVertical: 12,
     paddingHorizontal: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   accent: {
-    position: 'absolute',
+    position: "absolute",
     left: 13,
     top: 12,
     bottom: 12,
@@ -77,16 +89,16 @@ const styles = StyleSheet.create({
     paddingLeft: 6,
   },
   caseCode: {
-    ...getTypographyStyle('headline'),
+    ...getTypographyStyle("headline"),
     color: colors.textPrimary,
   },
   meta: {
-    ...getTypographyStyle('c2Caption', 'regular'),
+    ...getTypographyStyle("c2Caption", "regular"),
     color: colors.textSecondary,
     marginTop: 5,
   },
   verdict: {
-    ...getTypographyStyle('l2List'),
+    ...getTypographyStyle("l2List"),
     color: colors.primary,
     marginTop: 5,
   },
@@ -97,7 +109,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   buttonText: {
-    ...getTypographyStyle('c2Caption', 'bold'), // matches size (12) + weight (bold≈800) closely
+    ...getTypographyStyle("c2Caption", "bold"), // matches size (12) + weight (bold≈800) closely
     color: colors.primary,
   },
 });

@@ -21,6 +21,7 @@ import {
 import { getAuthHeader } from "@/store/authStore";
 import { useCaseStore } from "@/store/caseStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
+import { normalizePersonDisplay } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -352,7 +353,11 @@ export default function CaseResultAdmin() {
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Analyst</Text>
-            <Text style={styles.infoValue}>{caseDetail.examiner || "—"}</Text>
+            <Text style={styles.infoValue}>
+              {caseDetail.examiner
+                ? normalizePersonDisplay(caseDetail.examiner)
+                : "—"}
+            </Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Date</Text>
