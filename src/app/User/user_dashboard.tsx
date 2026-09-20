@@ -326,6 +326,7 @@ function HomeTab({
               hasHiddenPending ? `View all (${pendingCards.length})` : undefined
             }
             onActionPress={onViewAllPendingPress}
+            style={styles.listSectionHeader}
           />
 
           <View style={styles.pendingList}>
@@ -365,6 +366,7 @@ function HomeTab({
             title="Recent Cases"
             actionLabel="View all"
             onActionPress={onViewAllPress}
+            style={styles.listSectionHeader}
           />
 
           <View style={styles.recentList}>
@@ -566,5 +568,8 @@ const styles = StyleSheet.create({
   },
   recentList: {
     marginBottom: 8,
+  },
+  listSectionHeader: {
+    marginHorizontal: 16,
   },
 });

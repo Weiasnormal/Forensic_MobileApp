@@ -1,8 +1,11 @@
 import CaseCard from "@/_components/caseCards";
+import EmptyState from "@/_components/common/EmptyState";
 import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
+import SecondaryButton from "@/_components/common/SecondaryButton";
 import FilterCasesModal from "@/_components/modals/filtercases";
 import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
 import {
   formatCaseDateLabel,
   getCaseSummary,
@@ -16,6 +19,7 @@ import {
 import { normalizePersonDisplay } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Search } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -29,7 +33,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const quickFilters = ["All", "Genuine", "Suspected", "Processing"];
+const quickFilters = ["All", "Pending", "Genuine", "Suspected"];
 const DEFAULT_HEADER_HEIGHT = 140;
 
 interface AdminCasesScreenProps {
@@ -171,7 +175,9 @@ export default function AdminCasesScreen({
             {memberId ? "Analyst Cases" : "All Cases"}
           </Text>
           <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{totalCases}</Text>
+            <Text allowFontScaling={false} style={styles.countBadgeText}>
+              {totalCases}
+            </Text>
           </View>
         </View>
 
@@ -183,7 +189,7 @@ export default function AdminCasesScreen({
               onChangeText={setQuery}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              placeholder="Search case ID, subject, examiner..."
+              placeholder="Search case ID, subject..."
               placeholderTextColor={colors.label}
               style={styles.searchInput}
             />
@@ -199,12 +205,10 @@ export default function AdminCasesScreen({
         </View>
 
         {showSearchFeedback ? (
-          <>
-            <Text style={styles.searchHint}>
-              Search covers case ID, subject, examiner, analysis type, and
-              priority across the whole organization.
-            </Text>
-          </>
+          <Text allowFontScaling={false} style={styles.searchHint}>
+            Search covers case ID, subject, examiner, analysis type, and
+            priority across the whole organization.
+          </Text>
         ) : null}
 
         <FlatList
@@ -219,6 +223,7 @@ export default function AdminCasesScreen({
               activeOpacity={0.86}
             >
               <Text
+                allowFontScaling={false}
                 style={[
                   styles.chipText,
                   activeFilter === item && styles.chipTextActive,
@@ -241,19 +246,19 @@ export default function AdminCasesScreen({
           />
         </View>
       ) : sections.length === 0 ? (
-        <View style={styles.emptySearchArea}>
-          <Ionicons name="search-outline" size={34} color={colors.label} />
-          <Text style={styles.emptySearchTitle}>No matching cases</Text>
-          <Text style={styles.emptySearchText}>
-            Try a case ID, subject, examiner, analysis type, or priority.
-          </Text>
-          <TouchableOpacity
-            style={styles.clearSearchButtonLarge}
-            activeOpacity={0.88}
-            onPress={() => setQuery("")}
-          >
-            <Text style={styles.clearSearchTextLarge}>Clear search</Text>
-          </TouchableOpacity>
+        <View style={[styles.emptyStateWrapper, { marginTop: headerHeight }]}>
+          <EmptyState
+            icon={Search}
+            title="No matching cases"
+            subtitle="Try a case ID, subject, examiner, analysis type, or priority."
+            action={
+              <SecondaryButton
+                label="Clear search"
+                onPress={() => setQuery("")}
+                size="small"
+              />
+            }
+          />
         </View>
       ) : (
         <SectionList
@@ -305,7 +310,9 @@ export default function AdminCasesScreen({
             />
           )}
           renderSectionHeader={({ section }) => (
-            <Text style={styles.sectionHeader}>{section.title}</Text>
+            <Text allowFontScaling={false} style={styles.sectionHeader}>
+              {section.title}
+            </Text>
           )}
           showsVerticalScrollIndicator={false}
           style={[styles.list, { marginTop: headerHeight }]}
@@ -315,21 +322,10 @@ export default function AdminCasesScreen({
           }}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            hasMoreCases ? (
-              <TouchableOpacity
-                style={styles.loadMoreButton}
-                onPress={() => {
-                  void loadMoreCases();
-                }}
-                disabled={isLoadingMoreCases}
-                activeOpacity={0.85}
-              >
-                {isLoadingMoreCases ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : (
-                  <Text style={styles.loadMoreText}>Load more cases</Text>
-                )}
-              </TouchableOpacity>
+            isLoadingMoreCases ? (
+              <View style={styles.loadingFooter}>
+                <ActivityIndicator color={colors.primary} />
+              </View>
             ) : null
           }
         />
@@ -358,9 +354,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 20,
+    elevation: 1,
     backgroundColor: colors.background2,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.disabledBorder,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -374,10 +371,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   pageTitle: {
+    ...getTypographyStyle("t1Title"),
     color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "900",
     letterSpacing: -0.6,
+    paddingBottom: 4,
   },
   countBadge: {
     backgroundColor: colors.badgeBackground,
@@ -386,9 +383,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   countBadgeText: {
+    ...getTypographyStyle("c2Caption"),
     color: colors.primary,
-    fontSize: 12,
-    fontWeight: "800",
   },
   searchRow: {
     flexDirection: "row",
@@ -407,49 +403,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.searchBorder,
   },
   searchInput: {
     flex: 1,
+    ...getTypographyStyle("body", "medium"),
     color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: "500",
   },
   searchHint: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    fontSize: 12,
+    ...getTypographyStyle("c2Caption", "regular"),
     lineHeight: 16,
-    color: "Tertiary",
-  },
-  searchMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 10,
-    gap: 10,
-  },
-  searchMetaText: {
-    flex: 1,
-    fontSize: 12,
-    color: "#64748B",
-    fontWeight: "600",
-  },
-  emptyArea: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  clearSearchButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: colors.badgeBackground,
-  },
-  clearSearchText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.primary,
+    color: colors.textMuted,
   },
   filterButton: {
     width: 44,
@@ -459,7 +425,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.background2,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.searchBorder,
   },
   chipsContent: {
     paddingHorizontal: 16,
@@ -471,7 +437,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.searchBorder,
     backgroundColor: colors.background2,
   },
   chipActive: {
@@ -479,9 +445,8 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   chipText: {
-    color: "#64748B",
-    fontSize: 12,
-    fontWeight: "700",
+    ...getTypographyStyle("b3Button"),
+    color: colors.chipTextInactive,
   },
   chipTextActive: {
     color: colors.primaryText,
@@ -491,59 +456,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   listContent: {
-    paddingBottom: 120,
+    paddingBottom: 45,
   },
-  loadMoreButton: {
-    alignSelf: "center",
-    marginVertical: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.badgeBackground,
-  },
-  loadMoreText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.primary,
+  loadingFooter: {
+    alignItems: "center",
+    paddingVertical: 16,
   },
   sectionHeader: {
+    ...getTypographyStyle("headline"),
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.label,
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
-  emptySearchArea: {
+  emptyArea: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  emptyStateWrapper: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    paddingTop: 120,
-    gap: 10,
-  },
-  emptySearchTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: colors.textPrimary,
-  },
-  emptySearchText: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
-    color: "#64748B",
-  },
-  clearSearchButtonLarge: {
-    marginTop: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-  },
-  clearSearchTextLarge: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: colors.primaryText,
   },
 });

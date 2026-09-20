@@ -185,7 +185,11 @@ export default function UserProfileScreen() {
 
         <SectionLabel label="About" />
         <GroupedCard>
-          <SettingsRow icon={Info} title="Help & Support" />
+          <SettingsRow
+            icon={Info}
+            title="Help & Support"
+            onPress={() => router.push("/User/pages/HelpSupportScreen")}
+          />
           <Divider />
           <SettingsRow
             icon={FileText}

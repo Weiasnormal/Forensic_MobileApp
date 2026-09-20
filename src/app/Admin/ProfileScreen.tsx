@@ -314,6 +314,7 @@ const styles = StyleSheet.create({
   headerTopRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: -10,
   },
   headerCopy: {
     marginLeft: 18,

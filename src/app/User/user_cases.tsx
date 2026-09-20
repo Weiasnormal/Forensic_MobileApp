@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   sectionHeader: {
-    ...getTypographyStyle("l2List"),
+    ...getTypographyStyle("headline"),
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,

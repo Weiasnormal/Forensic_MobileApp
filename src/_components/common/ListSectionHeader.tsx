@@ -33,11 +33,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 5,
     marginBottom: 10,
   },
   title: {
     ...getTypographyStyle('headline'),
-    color: colors.textPrimary,
+    color: colors.textSecondary,
   },
   action: {
     ...getTypographyStyle('b3Button'),

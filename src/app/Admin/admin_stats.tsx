@@ -23,7 +23,10 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Svg, { Circle, Polyline } from "react-native-svg";
 import {
     AdminStatCard,
@@ -152,6 +155,7 @@ function buildTrendBuckets(
 }
 
 export default function AdminStatsScreen() {
+  const insets = useSafeAreaInsets();
   const cases = useCaseStore((state) => state.cases);
   const refreshCasesFromBackend = useCaseStore(
     (state) => state.refreshCasesFromBackend,
@@ -280,8 +284,8 @@ export default function AdminStatsScreen() {
   );
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
-      <View style={styles.header}>
+    <SafeAreaView edges={["left", "right"]} style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + 5 }]}>
         <View style={styles.headerRow}>
           <Text allowFontScaling={false} style={styles.title}>
             Org Statistics
@@ -682,8 +686,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   title: {
-    ...getTypographyStyle("t2Title"), // FLAG — weight was 900, no matching token; using bold
-    color: "#1E293B", // FLAG — unconfirmed match to colors.textPrimary
+    ...getTypographyStyle("t1Title"), 
+    color: colors.textPrimary,
     letterSpacing: -0.6,
   },
   pill: {
@@ -742,7 +746,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     ...getTypographyStyle("headline"),
-    color: colors.textPrimary,
+    color: colors.textSecondary,
     marginBottom: 10,
     marginTop: 2,
   },

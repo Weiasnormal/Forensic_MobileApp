@@ -422,7 +422,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...getTypographyStyle("t1Title"),
-    fontSize: 26,
     color: colors.statsTextPrimary,
     letterSpacing: -0.8,
   },
@@ -448,7 +447,6 @@ const styles = StyleSheet.create({
   },
   bigNumber: {
     ...getTypographyStyle("largeTitle"),
-    fontSize: 42,
     lineHeight: 42,
     color: colors.statsTextDeep,
     letterSpacing: -1.2,
@@ -469,7 +467,6 @@ const styles = StyleSheet.create({
   },
   statPillGreenText: {
     ...getTypographyStyle("c2Caption"),
-    fontSize: 11,
     color: colors.labelsuccess,
   },
   statPillRed: {
@@ -482,7 +479,6 @@ const styles = StyleSheet.create({
   },
   statPillRedText: {
     ...getTypographyStyle("c2Caption"),
-    fontSize: 11,
     color: colors.danger,
   },
   donutArea: {
@@ -550,19 +546,16 @@ const styles = StyleSheet.create({
   },
   donutPercent: {
     ...getTypographyStyle("t3Title", "bold"),
-    fontSize: 18,
     color: colors.textPrimary,
     letterSpacing: -0.4,
   },
   donutCaption: {
     ...getTypographyStyle("c2Caption"),
-    fontSize: 11,
     marginTop: 1,
     color: colors.labelsuccess,
   },
   sectionHeader: {
-    ...getTypographyStyle("t3Title", "bold"),
-    fontSize: 16,
+    ...getTypographyStyle("headline"),
     color: colors.textPrimary,
     marginBottom: 10,
     marginTop: 2,
@@ -598,7 +591,6 @@ const styles = StyleSheet.create({
   },
   trendBadgeText: {
     ...getTypographyStyle("c2Caption"),
-    fontSize: 11,
     color: colors.labelsuccess,
   },
   barChartWrap: {
@@ -631,7 +623,6 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     ...getTypographyStyle("c3Caption", "regular"),
-    fontSize: 11,
     marginTop: 6,
     color: colors.label,
   },
@@ -652,7 +643,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     ...getTypographyStyle("c2Caption"),
-    fontSize: 11,
     color: colors.textMuted,
   },
   docRow: {
