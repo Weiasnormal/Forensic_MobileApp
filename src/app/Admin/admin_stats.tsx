@@ -1,25 +1,34 @@
 import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
 import { getTeamSummary, useAdminStore } from "@/store/adminStore";
 import { type SavedCase, useCaseStore } from "@/store/caseStore";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  AlertCircle,
+  CheckCheck,
+  ChevronDown,
+  FolderOpen,
+  Info,
+  Users,
+} from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  type DimensionValue,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Polyline } from "react-native-svg";
 import {
-    AdminStatCard,
-    TeamOverviewCard,
-    type TeamOverviewData,
+  AdminStatCard,
+  TeamOverviewCard,
+  type TeamOverviewData,
 } from "./cards";
 
 const TIME_RANGE_OPTIONS = [
@@ -155,6 +164,7 @@ export default function AdminStatsScreen() {
   const [chartGranularity, setChartGranularity] =
     useState<ChartGranularity>(DEFAULT_GRANULARITY);
 
+  const isEmpty = cases.length === 0;
   const skeletonOpacity = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
@@ -163,6 +173,31 @@ export default function AdminStatsScreen() {
     })();
     fetchTeamMembers();
   }, [fetchTeamMembers, loadAllCases, refreshCasesFromBackend]);
+
+  useEffect(() => {
+    if (!isEmpty) {
+      skeletonOpacity.setValue(1);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(skeletonOpacity, {
+          toValue: 0.35,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(skeletonOpacity, {
+          toValue: 0.9,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [isEmpty, skeletonOpacity]);
 
   const filteredCases = useMemo(
     () => filterCasesByRange(cases, timeRange),
@@ -243,78 +278,13 @@ export default function AdminStatsScreen() {
     [teamMembers],
   );
 
-  useEffect(() => {
-    if (cases.length > 0) {
-      skeletonOpacity.setValue(1);
-      return;
-    }
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(skeletonOpacity, {
-          toValue: 0.35,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(skeletonOpacity, {
-          toValue: 0.9,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-    return () => animation.stop();
-  }, [cases.length, skeletonOpacity]);
-
-  if (cases.length === 0) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Org Statistics</Text>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.skeletonInfoCard}>
-            <Ionicons
-              name="information-circle-outline"
-              size={24}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.skeletonInfoTextLabel}>
-              Once your team submits cases, organization-wide analytics will
-              appear here.
-            </Text>
-          </View>
-
-          <View style={styles.skeletonCardLarge}>
-            <Animated.View
-              style={[styles.skeletonTitlePill, { opacity: skeletonOpacity }]}
-            />
-            <Animated.View
-              style={[styles.skeletonLineMd, { opacity: skeletonOpacity }]}
-            />
-            <Animated.View
-              style={[styles.skeletonLineLg, { opacity: skeletonOpacity }]}
-            />
-            <Animated.View
-              style={[styles.skeletonLineLg, { opacity: skeletonOpacity }]}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView edges={["left", "right"]} style={styles.screen}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Org Statistics</Text>
+          <Text allowFontScaling={false} style={styles.title}>
+            Org Statistics
+          </Text>
           <DropdownPill
             value={timeRange}
             options={TIME_RANGE_OPTIONS}
@@ -332,7 +302,7 @@ export default function AdminStatsScreen() {
             <AdminStatCard
               label="Active Analysts"
               value={String(activeCount)}
-              icon="people-outline"
+              icon={Users} // was "people-outline"
               tint={colors.primary}
               subtext={`${activeCount} of ${totalRosterCount} total analysts`}
               subtextColor="#94A3B8"
@@ -340,13 +310,9 @@ export default function AdminStatsScreen() {
             <AdminStatCard
               label="Total Cases"
               value={String(summary.total)}
-              icon="folder-open-outline"
+              icon={FolderOpen}
               tint={colors.primary}
-              subtext={
-                casesThisWeek > 0
-                  ? `↑ ${casesThisWeek} this week`
-                  : "No new cases this week"
-              }
+              subtext={casesThisWeek > 0 ? `↑ ${casesThisWeek} this week` : "No new cases this week"}
               subtextColor={colors.labelsuccess}
             />
           </View>
@@ -354,7 +320,7 @@ export default function AdminStatsScreen() {
             <AdminStatCard
               label="Genuine Cases"
               value={String(summary.genuine)}
-              icon="checkmark-done-outline"
+              icon={CheckCheck}
               tint={colors.labelsuccess}
               subtext={`${summary.genuinePercent}% of total`}
               subtextColor={colors.labelsuccess}
@@ -362,7 +328,7 @@ export default function AdminStatsScreen() {
             <AdminStatCard
               label="Suspected Cases"
               value={String(summary.suspected)}
-              icon="alert-circle-outline"
+              icon={AlertCircle}
               tint={colors.danger}
               subtext={`${summary.suspectedPercent}% rate`}
               subtextColor={colors.danger}
@@ -370,8 +336,19 @@ export default function AdminStatsScreen() {
           </View>
         </View>
 
+        {isEmpty ? (
+          <View style={styles.infoCard}>
+            <Info size={22} color={colors.textSecondary} />
+            <Text allowFontScaling={false} style={styles.infoCardText}>
+              Statistics will populate once analysts begin submitting cases.
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeader}>Case Over Time</Text>
+          <Text allowFontScaling={false} style={styles.sectionHeader}>
+            Case Overtime
+          </Text>
           <DropdownPill
             value={chartGranularity}
             options={GRANULARITY_OPTIONS}
@@ -387,13 +364,17 @@ export default function AdminStatsScreen() {
           <TrendLineChart buckets={trendBuckets} />
         </View>
 
-        <Text style={styles.sectionHeader}>Analysis Types</Text>
+        <Text allowFontScaling={false} style={styles.sectionHeader}>
+          Document Types
+        </Text>
 
         <View style={styles.chartCard}>
           {summary.documentTypes.length > 0 ? (
             summary.documentTypes.map((item) => (
               <View key={item.label} style={styles.docRow}>
-                <Text style={styles.docLabel}>{item.label}</Text>
+                <Text allowFontScaling={false} style={styles.docLabel}>
+                  {item.label}
+                </Text>
                 <View style={styles.progressWrap}>
                   <View style={styles.progressTrack}>
                     <View
@@ -404,15 +385,19 @@ export default function AdminStatsScreen() {
                     />
                   </View>
                 </View>
-                <Text style={styles.docCount}>{item.count}</Text>
+                <Text allowFontScaling={false} style={styles.docCount}>
+                  {item.count}
+                </Text>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyState}>No cases in this period</Text>
+            <DocumentTypesSkeleton opacity={skeletonOpacity} />
           )}
         </View>
 
-        <Text style={styles.sectionHeader}>Top Analysts</Text>
+        <Text allowFontScaling={false} style={styles.sectionHeader}>
+          Top Analysts
+        </Text>
 
         {topAnalysts.length > 0 ? (
           <View style={styles.rosterCard}>
@@ -425,8 +410,8 @@ export default function AdminStatsScreen() {
             ))}
           </View>
         ) : (
-          <View style={styles.emptyMini}>
-            <Text style={styles.emptyMiniText}>No analyst data yet</Text>
+          <View style={styles.rosterCard}>
+            <TopAnalystsSkeleton opacity={skeletonOpacity} />
           </View>
         )}
       </ScrollView>
@@ -438,8 +423,55 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
+      <Text allowFontScaling={false} style={styles.legendText}>
+        {label}
+      </Text>
     </View>
+  );
+}
+
+function DocumentTypesSkeleton({ opacity }: { opacity: Animated.Value }) {
+  const rowWidths: DimensionValue[] = ["78%", "62%", "70%", "48%", "58%"];
+  return (
+    <>
+      {rowWidths.map((width, index) => (
+        <View key={index} style={styles.skeletonDocRow}>
+          <Animated.View
+            style={[styles.skeletonDocBar, { width, opacity }]}
+          />
+          <Animated.View
+            style={[
+              index < 2 ? styles.skeletonDocPill : styles.skeletonDocDot,
+              { opacity },
+            ]}
+          />
+        </View>
+      ))}
+    </>
+  );
+}
+
+function TopAnalystsSkeleton({ opacity }: { opacity: Animated.Value }) {
+  const rowWidths: DimensionValue[] = ["62%", "48%", "56%"];
+  return (
+    <>
+      {rowWidths.map((width, index) => (
+        <View
+          key={index}
+          style={[
+            styles.skeletonAnalystRow,
+            index < rowWidths.length - 1 && styles.rowDividerBottom,
+          ]}
+        >
+          <Animated.View style={[styles.skeletonAvatar, { opacity }]} />
+          <Animated.View style={[styles.skeletonAnalystLine, { width, opacity }]} />
+          <View style={styles.skeletonAnalystRight}>
+            <Animated.View style={[styles.skeletonPillSm, { opacity }]} />
+            <Animated.View style={[styles.skeletonPillXs, { opacity }]} />
+          </View>
+        </View>
+      ))}
+    </>
   );
 }
 
@@ -480,8 +512,10 @@ function DropdownPill<T extends string>({
           onPress={openDropdown}
           activeOpacity={0.85}
         >
-          <Text style={styles.pillText}>{value}</Text>
-          <Ionicons name="chevron-up" size={14} color={colors.label} />
+          <Text allowFontScaling={false} style={styles.pillText}>
+            {value}
+          </Text>
+          <ChevronDown size={14} color={colors.label} />
         </TouchableOpacity>
       </View>
 
@@ -512,14 +546,16 @@ function DropdownPill<T extends string>({
                   key={option}
                   style={({ pressed }) => [
                     styles.dropdownOption,
-                    pressed && { backgroundColor: "#F2F6FE" },
+                    pressed && styles.dropdownOptionPressed,
                   ]}
                   onPress={() => {
                     onChange(option);
                     setOpen(false);
                   }}
                 >
-                  <Text style={styles.dropdownOptionText}>{option}</Text>
+                  <Text allowFontScaling={false} style={styles.dropdownOptionText}>
+                    {option}
+                  </Text>
                 </Pressable>
               ))}
             </Pressable>
@@ -602,6 +638,7 @@ function TrendLineChart({ buckets }: { buckets: TrendBucket[] }) {
         {buckets.map((bucket, index) => (
           <Text
             key={`label-${index}`}
+            allowFontScaling={false}
             style={styles.axisLabel}
             numberOfLines={1}
           >
@@ -617,7 +654,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-    top: 30,
   },
   header: {
     backgroundColor: colors.background2,
@@ -638,9 +674,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   title: {
-    color: "#1E293B",
-    fontSize: 22,
-    fontWeight: "900",
+    ...getTypographyStyle("t2Title"), // FLAG — weight was 900, no matching token; using bold
+    color: "#1E293B", // FLAG — unconfirmed match to colors.textPrimary
     letterSpacing: -0.6,
   },
   pill: {
@@ -655,9 +690,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   pillText: {
+    ...getTypographyStyle("l2List"), // FLAG — was 12px, token is 11px
     color: colors.label,
-    fontSize: 12,
-    fontWeight: "700",
   },
   dropdownMenu: {
     position: "absolute",
@@ -676,10 +710,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
+  dropdownOptionPressed: {
+    backgroundColor: "#F2F6FE", // FLAG — no matching token identified
+  },
   dropdownOptionText: {
+    ...getTypographyStyle("headline"), // exact match: 14/bold
     color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: "700",
   },
   statsGrid: {
     gap: 10,
@@ -697,9 +733,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionHeader: {
-    color: colors.label,
-    fontSize: 16,
-    fontWeight: "800",
+    ...getTypographyStyle("headline"),
+    color: colors.textPrimary,
     marginBottom: 10,
     marginTop: 2,
   },
@@ -707,7 +742,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background2,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#DDE6F2",
+    borderColor: "#DDE6F2", // FLAG — no matching token identified
     padding: 16,
     marginBottom: 16,
     shadowColor: "#0F172A",
@@ -732,9 +767,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   legendText: {
+    ...getTypographyStyle("c2Caption"), // exact match: 11/semiBold
     color: colors.label,
-    fontSize: 11,
-    fontWeight: "600",
   },
   axisRow: {
     flexDirection: "row",
@@ -743,11 +777,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   axisLabel: {
+    ...getTypographyStyle("c3Caption"), // exact match: 10/semiBold
     flex: 1,
     textAlign: "center",
     color: colors.label,
-    fontSize: 10,
-    fontWeight: "600",
   },
   docRow: {
     flexDirection: "row",
@@ -755,10 +788,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   docLabel: {
+    ...getTypographyStyle("headline"), // exact match: 14/bold
     width: 112,
     color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: "700",
   },
   progressWrap: {
     flex: 1,
@@ -767,7 +799,7 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 5,
     borderRadius: 999,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#E2E8F0", // FLAG — no matching token identified
     overflow: "hidden",
   },
   progressFill: {
@@ -776,11 +808,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   docCount: {
+    ...getTypographyStyle("headline"), // exact match: 14/bold
     width: 20,
     textAlign: "right",
     color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: "700",
   },
   rosterCard: {
     backgroundColor: colors.background2,
@@ -790,28 +821,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: "hidden",
   },
-  emptyMini: {
-    backgroundColor: colors.background2,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  emptyMiniText: {
-    color: colors.label,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  emptyState: {
-    color: colors.label,
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-    paddingVertical: 10,
-  },
-  skeletonInfoCard: {
+  infoCard: {
     minHeight: 62,
     borderRadius: 16,
     borderWidth: 1,
@@ -819,44 +829,78 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background2,
     marginBottom: 16,
     paddingHorizontal: 14,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  skeletonInfoTextLabel: {
+  infoCardText: {
+    ...getTypographyStyle("c2Caption", "regular"),
     flex: 1,
-    color: "#8FA2BE",
-    fontSize: 13,
-    fontWeight: "600",
+    color: colors.textSecondary,
   },
-  skeletonCardLarge: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background2,
-    marginBottom: 16,
-    minHeight: 168,
-    padding: 16,
-  },
-  skeletonTitlePill: {
-    width: 108,
-    height: 22,
-    borderRadius: 999,
-    backgroundColor: "#C8D3E3",
+  // ── Document Types skeleton ──
+  skeletonDocRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 14,
   },
-  skeletonLineMd: {
-    width: 110,
+  skeletonDocBar: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: colors.skeletonBase,
+  },
+  skeletonDocPill: {
+    width: 30,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: colors.skeletonLight,
+  },
+  skeletonDocDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.skeletonLight,
+  },
+  // ── Top Analysts skeleton ──
+  skeletonAnalystRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  rowDividerBottom: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  skeletonAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.skeletonBase,
+  },
+  skeletonAnalystLine: {
+    flex: 1,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: colors.skeletonBase,
+  },
+  skeletonAnalystRight: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  skeletonPillSm: {
+    width: 28,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#D4DDEB",
-    marginBottom: 14,
+    backgroundColor: colors.skeletonLight,
   },
-  skeletonLineLg: {
-    width: 100,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#C8D3E3",
-    marginBottom: 8,
+  skeletonPillXs: {
+    width: 18,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: colors.skeletonLight,
   },
 });

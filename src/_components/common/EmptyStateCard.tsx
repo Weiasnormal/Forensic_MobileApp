@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     gap: 14,
     backgroundColor: colors.cardBackground,
     borderRadius: 18,
-    padding: 16,
+    padding: 5,
   },
   iconWrap: {
     width: 56,
@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   icon: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
   },
   iconPlaceholder: {
     width: 34,

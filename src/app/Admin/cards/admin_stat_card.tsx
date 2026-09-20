@@ -1,11 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 export interface AdminStatCardData {
 	label: string;
 	value: string;
-	icon: keyof typeof Ionicons.glyphMap;
+	icon: LucideIcon;
 	tint?: string;
 	subtext?: string;
 	subtextColor?: string;
@@ -14,19 +16,32 @@ export interface AdminStatCardData {
 export default function AdminStatCard({
 	label,
 	value,
-	icon,
-	tint = '#1E6FD9',
+	icon: Icon,
+	tint = colors.primary,
 	subtext,
-	subtextColor = '#94A3B8',
+	subtextColor = colors.label,
 }: AdminStatCardData) {
 	return (
 		<View style={styles.card}>
 			<View style={[styles.iconWrap, { backgroundColor: `${tint}1A` }]}>
-				<Ionicons name={icon} size={18} color={tint} />
+				<Icon size={18} color={tint} />
 			</View>
-			<Text style={styles.value}>{value}</Text>
-			<Text style={styles.label}>{label}</Text>
-			{subtext ? <Text style={[styles.subtext, { color: subtextColor }]}>{subtext}</Text> : null}
+
+			<View style={styles.textGroup}>
+				<Text allowFontScaling={false} style={styles.value}>
+					{value}
+				</Text>
+
+				<Text allowFontScaling={false} style={styles.label}>
+					{label}
+				</Text>
+
+				{subtext ? (
+					<Text allowFontScaling={false} style={[styles.subtext, { color: subtextColor }]}>
+						{subtext}
+					</Text>
+				) : null}
+			</View>
 		</View>
 	);
 }
@@ -34,13 +49,14 @@ export default function AdminStatCard({
 const styles = StyleSheet.create({
 	card: {
 		flex: 1,
-		backgroundColor: '#FFFFFF',
+		aspectRatio: 1,
+		gap: 12,
+		paddingVertical: 12,
+		paddingHorizontal: 14,
+		backgroundColor: colors.cardBackground,
 		borderRadius: 16,
 		borderWidth: 1,
-		borderColor: '#DDE6F2',
-		padding: 14,
-        width: 145,
-        height: 155,
+		borderColor: colors.cardBorderMuted,
 	},
 	iconWrap: {
 		width: 45,
@@ -48,23 +64,20 @@ const styles = StyleSheet.create({
 		borderRadius: 11,
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginBottom: 10,
+	},
+	textGroup: {
+		gap: 4,
 	},
 	value: {
-		color: '#111827',
-		fontSize: 22,
-		fontWeight: '900',
+		...getTypographyStyle('t2Title'),
+		color: colors.statsTextDeep,
 		letterSpacing: -0.5,
 	},
 	label: {
-		marginTop: 2,
-		color: '#94A3B8',
-		fontSize: 11,
-		fontWeight: '700',
+		...getTypographyStyle('l2List'),
+		color: colors.label,
 	},
 	subtext: {
-		marginTop: 4,
-		fontSize: 10,
-		fontWeight: '700',
+		...getTypographyStyle('c3Caption', 'bold'),
 	},
 });
