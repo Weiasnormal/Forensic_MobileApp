@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    ...getTypographyStyle("t1Title", "bold"),
+    ...getTypographyStyle("t2Title", "bold"),
     color: colors.primaryText,
   },
   subtitle: {

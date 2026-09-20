@@ -30,7 +30,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ activeTab, onTabChange }) => 
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 25 }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 15 }]}>
       {TABS.map(({ key, label, icon: Icon }) => {
         const isActive = key === activeTab;
         const tint = isActive ? colors.primary : colors.textTertiary;

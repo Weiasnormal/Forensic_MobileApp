@@ -32,18 +32,20 @@ export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarPro
 	const insets = useSafeAreaInsets();
 
 	const renderTab = ({ key, label, icon: Icon }: TabDefinition) => {
-		const active = activeTab === key;
-		const tint = active ? colors.primary : colors.textTertiary;
+		const isActive = key === activeTab;
+		const tint = isActive ? colors.primary : colors.textTertiary;
 
 		return (
 			<TouchableOpacity
 				key={key}
-				style={[styles.navItem, active && styles.navItemActive]}
+				style={styles.tab}
 				onPress={() => onTabChange(key)}
-				activeOpacity={0.82}
+				activeOpacity={0.7}
 			>
-				<Icon size={22} color={tint} />
-				<Text allowFontScaling={false} style={[styles.navLabel, { color: tint }]}>
+				<View style={isActive ? styles.activeIconPill : styles.inactiveIconWrap}>
+					<Icon size={24} color={tint} />
+				</View>
+				<Text allowFontScaling={false} style={[styles.label, { color: tint }]}>
 					{label}
 				</Text>
 			</TouchableOpacity>
@@ -51,69 +53,66 @@ export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarPro
 	};
 
 	return (
-		<View style={[styles.bottomNavShell, { paddingBottom: insets.bottom }]}>
-			<View style={styles.bottomNav}>
-				{leftTabs.map(renderTab)}
+		<View style={[styles.container, { paddingBottom: insets.bottom + 15 }]}>
+			{leftTabs.map(renderTab)}
 
-				<View style={styles.centerSlot}>
-					<TouchableOpacity style={styles.newButton} activeOpacity={0.84} onPress={onNewPress}>
-						<Plus size={26} color={colors.primaryText} />
-					</TouchableOpacity>
-					<Text allowFontScaling={false} style={styles.newLabel}>New</Text>
-				</View>
-
-				{rightTabs.map(renderTab)}
+			<View style={styles.centerSlot}>
+				<TouchableOpacity style={styles.newButton} activeOpacity={0.84} onPress={onNewPress}>
+					<Plus size={26} color={colors.primaryText} />
+				</TouchableOpacity>
+				<Text allowFontScaling={false} style={[styles.label, { color: colors.primary }]}>
+					New
+				</Text>
 			</View>
+
+			{rightTabs.map(renderTab)}
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	bottomNavShell: {
-		backgroundColor: colors.background2,
-	},
-	bottomNav: {
+	container: {
 		flexDirection: 'row',
-		alignItems: 'flex-end',
-		backgroundColor: colors.background2,
 		borderTopWidth: 1,
-		borderTopColor: colors.disabledBorder,
-		paddingTop: 8,
-		paddingBottom: 12,
-		paddingHorizontal: 8,
+		borderTopColor: colors.border,
+		paddingTop: 20,
+		backgroundColor: colors.background2,
 	},
-	navItem: {
+	tab: {
 		flex: 1,
 		alignItems: 'center',
+	},
+	activeIconPill: {
+		minWidth: 52,
+		height: 30,
+		paddingHorizontal: 18,
+		borderRadius: 99,
+		backgroundColor: colors.background,
+		alignItems: 'center',
 		justifyContent: 'center',
-		paddingVertical: 6,
-		borderRadius: 14,
+	},
+	inactiveIconWrap: {
+		height: 30,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	label: {
+		...getTypographyStyle('c2Caption'),
+		marginTop: 4,
 	},
 	centerSlot: {
 		flex: 1,
 		alignItems: 'center',
 	},
 	newButton: {
-		width: 60,
-		height: 60,
+		width: 56,
+		height: 56,
 		borderRadius: 999,
 		backgroundColor: colors.primary,
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginTop: -24,
+		marginTop: -26,
 		borderWidth: 2,
 		borderColor: colors.primaryLight,
-	},
-	newLabel: {
-		...getTypographyStyle('c3Caption', 'bold'),
-		marginTop: 3,
-		color: colors.primary,
-	},
-	navItemActive: {
-		backgroundColor: colors.primaryLight,
-	},
-	navLabel: {
-		...getTypographyStyle('c3Caption', 'bold'),
-		marginTop: 3,
 	},
 });
