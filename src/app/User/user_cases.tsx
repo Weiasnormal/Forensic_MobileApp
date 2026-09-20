@@ -30,17 +30,24 @@ import {
   caseMatchesSearch,
   normalizeCaseSearchQuery,
 } from "../../utils/caseSearch";
+import { isPendingCase } from "../../utils/pendingCase";
 
-const quickFilters = ["All", "Genuine", "Suspected", "Processing"];
+const quickFilters = ["All", "Pending", "Genuine", "Suspected", "Processing"];
 const DEFAULT_HEADER_HEIGHT = 140;
 
-export default function UserCasesScreen() {
+interface UserCasesScreenProps {
+  initialFilter?: string;
+}
+
+export default function UserCasesScreen({
+  initialFilter = "All",
+}: UserCasesScreenProps) {
   const router = useRouter();
   const nav = router as any;
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [showFilter, setShowFilter] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(DEFAULT_HEADER_HEIGHT);
   const [advancedFilters, setAdvancedFilters] = useState<{
@@ -58,6 +65,9 @@ export default function UserCasesScreen() {
   const loadAllCases = useCaseStore((state) => state.loadAllCases);
   const setActiveSignatureCaseId = useCaseStore(
     (state) => state.setActiveSignatureCaseId,
+  );
+  const markCaseResultViewed = useCaseStore(
+    (state) => state.markCaseResultViewed,
   );
   const refreshCasesFromBackend = useCaseStore(
     (state) => state.refreshCasesFromBackend,
@@ -99,6 +109,7 @@ export default function UserCasesScreen() {
 
       const matchesFilter =
         activeFilter === "All" ||
+        (activeFilter === "Pending" && isPendingCase(item)) ||
         item.status === activeFilter ||
         (activeFilter === "Processing" &&
           item.workflowStatus === "Processing") ||
@@ -133,6 +144,37 @@ export default function UserCasesScreen() {
   const hasSearchQuery = debouncedQuery.trim().length > 0;
   const showSearchFeedback = isSearchFocused || query.trim().length > 0;
 
+  const openCase = (item: SavedCase) => {
+    setActiveSignatureCaseId(item.caseId);
+
+    if (item.workflowStatus === "Processing") {
+      if (item.analysisType === "HW") {
+        nav.push("/analysis/handwriting/processing");
+        return;
+      }
+
+      nav.push({
+        pathname: "/analysis/signature/processing",
+        params: { caseId: item.caseId },
+      });
+      return;
+    }
+
+    if (item.analysisType === "HW") {
+      nav.push("/analysis/handwriting/results");
+    } else {
+      nav.push({
+        pathname: "/analysis/signature/signature_results",
+        params: { caseId: item.caseId },
+      });
+    }
+
+    // The result has now been seen, so it leaves the Pending list.
+    if (!item.resultViewed) {
+      markCaseResultViewed(item.caseId);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <ScreenStatusBar variant="onLight" />
@@ -148,7 +190,7 @@ export default function UserCasesScreen() {
       >
         <View style={styles.headerRow}>
           <Text allowFontScaling={false} style={styles.pageTitle}>
-            My cases
+            My Cases
           </Text>
           <View style={styles.countBadge}>
             <Text allowFontScaling={false} style={styles.countBadgeText}>
@@ -190,25 +232,6 @@ export default function UserCasesScreen() {
               Search covers case ID, subject, examiner, document type, priority,
               and analysis type.
             </Text>
-
-            <View style={styles.searchMetaRow}>
-              <Text allowFontScaling={false} style={styles.searchMetaText}>
-                {hasSearchQuery
-                  ? `Showing ${visibleCaseCount} of ${casesToUse.length} cases for “${debouncedQuery.trim()}”`
-                  : `Showing all ${casesToUse.length} cases`}
-              </Text>
-              {hasSearchQuery ? (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => setQuery("")}
-                  style={styles.clearSearchButton}
-                >
-                  <Text allowFontScaling={false} style={styles.clearSearchText}>
-                    Clear
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
           </>
         ) : null}
 
@@ -273,31 +296,7 @@ export default function UserCasesScreen() {
               priority={item.priority}
               name={`${item.subjectName} · ${item.documentType}`}
               status={item.status}
-              onPress={() => {
-                setActiveSignatureCaseId(item.caseId);
-
-                if (item.workflowStatus === "Processing") {
-                  if (item.analysisType === "HW") {
-                    nav.push("/analysis/handwriting/processing");
-                    return;
-                  }
-
-                  nav.push({
-                    pathname: "/analysis/signature/processing",
-                    params: { caseId: item.caseId },
-                  });
-                  return;
-                }
-
-                if (item.analysisType === "HW") {
-                  nav.push("/analysis/handwriting/results");
-                } else {
-                  nav.push({
-                    pathname: "/analysis/signature/signature_results",
-                    params: { caseId: item.caseId },
-                  });
-                }
-              }}
+              onPress={() => openCase(item)}
             />
           )}
           renderSectionHeader={({ section }) => (
@@ -313,23 +312,10 @@ export default function UserCasesScreen() {
           }}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            hasMoreCases ? (
-              <TouchableOpacity
-                style={styles.loadMoreButton}
-                onPress={() => {
-                  void loadMoreCases();
-                }}
-                disabled={isLoadingMoreCases}
-                activeOpacity={0.85}
-              >
-                {isLoadingMoreCases ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : (
-                  <Text allowFontScaling={false} style={styles.loadMoreText}>
-                    Load more cases
-                  </Text>
-                )}
-              </TouchableOpacity>
+            isLoadingMoreCases ? (
+              <View style={styles.loadingFooter}>
+                <ActivityIndicator color={colors.primary} />
+              </View>
             ) : null
           }
         />
@@ -411,15 +397,13 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...getTypographyStyle("body", "medium"),
-    fontSize: 14,
     color: colors.textPrimary,
   },
   searchHint: {
     ...getTypographyStyle("c2Caption", "regular"),
-    fontSize: 12,
     lineHeight: 16,
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 10,
     color: colors.textMuted,
   },
   searchMetaRow: {
@@ -429,12 +413,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
     gap: 10,
-  },
-  searchMetaText: {
-    ...getTypographyStyle("c2Caption"),
-    fontSize: 12,
-    flex: 1,
-    color: colors.textMuted,
   },
   clearSearchButton: {
     paddingHorizontal: 10,
@@ -485,19 +463,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   listContent: {
-    paddingBottom: 120,
+    paddingBottom: 35,
   },
-  loadMoreButton: {
-    alignSelf: "center",
-    marginVertical: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.badgeBackground,
-  },
-  loadMoreText: {
-    ...getTypographyStyle("b3Button"),
-    color: colors.primary,
+  loadingFooter: {
+    alignItems: "center",
+    paddingVertical: 16,
   },
   sectionHeader: {
     ...getTypographyStyle("l2List"),
@@ -509,16 +479,5 @@ const styles = StyleSheet.create({
   },
   emptyStateWrapper: {
     flex: 1,
-  },
-  clearSearchButtonLarge: {
-    marginTop: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-  },
-  clearSearchTextLarge: {
-    ...getTypographyStyle("l1List"),
-    color: colors.primaryText,
   },
 });

@@ -14,8 +14,7 @@ export default function GetStartedPage() {
 	const translateY = useRef(new Animated.Value(22)).current;
 
 	const handleGetStarted = () => {
-		//router.push('/_login/OnBoardingpage');
-		router.push('/_login/_signup/OrganizationCreate');
+		router.push('/_login/OnBoardingpage');
 	};
 
 	const handleSignIn = () => {

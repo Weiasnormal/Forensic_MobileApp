@@ -1,16 +1,16 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { CASES_PAGE_SIZE, fetchBackendCases } from "@/services/backendCases";
 import {
-  notifyProcessingComplete,
-  notifyProcessingFailed,
+    notifyProcessingComplete,
+    notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-  OverlayImageRef,
-  OverlaySlot,
-  OverlayVariant,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisConfidence,
-  type SignatureAnalysisResult,
+    OverlayImageRef,
+    OverlaySlot,
+    OverlayVariant,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisConfidence,
+    type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
@@ -18,9 +18,9 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-  getAuthHeader,
-  handleUnauthorizedResponse,
-  useAuthStore,
+    getAuthHeader,
+    handleUnauthorizedResponse,
+    useAuthStore,
 } from "./authStore";
 import { useFeedbackStore } from "./feedbackStore";
 
@@ -509,13 +509,24 @@ export const useCaseStore = create<CaseStore>()(
             });
 
             set((state) => {
+              const viewedCaseIds = new Set(
+                state.cases
+                  .filter((item) => item.resultViewed)
+                  .map((item) => item.caseId),
+              );
+              const cases = result.cases.map((item) =>
+                viewedCaseIds.has(item.caseId)
+                  ? { ...item, resultViewed: true }
+                  : item,
+              );
+
               return {
-                cases: result.cases,
+                cases,
                 totalCaseCount: result.totalCount,
-                hasMoreCases: result.cases.length < result.totalCount,
+                hasMoreCases: cases.length < result.totalCount,
                 nextCaseNumber: Math.max(
                   state.nextCaseNumber,
-                  getNextCaseNumberFromCases(result.cases),
+                  getNextCaseNumberFromCases(cases),
                 ),
               };
             });

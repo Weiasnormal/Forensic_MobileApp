@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { type SavedCase } from '../../store/caseStore';
+import { isPendingCase } from '../../utils/pendingCase';
 import { useBottomSheetTransition } from '../transition';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
@@ -30,7 +31,7 @@ interface FilterCasesModalProps {
 }
 
 const sortOptions = ['Newest first', 'Oldest first', 'Suspected first', 'Genuine first'];
-const verdictOptions = ['All', 'Genuine', 'Suspected', 'Processing'];
+const verdictOptions = ['All', 'Pending', 'Genuine', 'Suspected', 'Processing'];
 const priorityOptions = ['All', 'Low', 'Medium', 'High', 'Urgent'];
 
 const DEFAULT_SORT = sortOptions[0];
@@ -53,11 +54,11 @@ export default function FilterCasesModal({ visible, onClose, cases, onApply }: F
 		let filteredCases = [...cases];
 
 		if (verdictValue && verdictValue !== 'All') {
-			filteredCases = filteredCases.filter((item) =>
-				verdictValue === 'Processing'
-					? item.workflowStatus === 'Processing'
-					: item.status === verdictValue,
-			);
+			filteredCases = filteredCases.filter((item) => {
+				if (verdictValue === 'Pending') return isPendingCase(item);
+				if (verdictValue === 'Processing') return item.workflowStatus === 'Processing';
+				return item.status === verdictValue;
+			});
 		}
 
 		if (priorityValue && priorityValue !== 'All') {
@@ -256,6 +257,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		gap: 10,
 		marginTop: 16,
+		marginBottom: 35,
 	},
 	resetButton: {
 		flex: 1,

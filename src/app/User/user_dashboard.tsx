@@ -34,6 +34,38 @@ import ProfileScreen from "./user_profile";
 
 const TAB_KEYS: TabKey[] = ["home", "cases", "stats", "profile"];
 
+const PENDING_PREVIEW_LIMIT = 3;
+const PENDING_STATUS_ORDER = ["result-ready", "processing", "draft"] as const;
+
+type PendingCardList = ReturnType<typeof getPendingCards>;
+
+/**
+ * Picks the cards shown on Home. One card per status first (Result Ready,
+ * Processing, Draft), then fills leftover slots in the same priority order.
+ * Output is ordered by status priority.
+ */
+function selectPendingPreview(
+  cards: PendingCardList,
+  limit: number,
+): PendingCardList {
+  const byStatus = PENDING_STATUS_ORDER.map((status) =>
+    cards.filter((card) => card.status === status),
+  );
+  const picked = new Set<PendingCardList[number]>();
+
+  for (const group of byStatus) {
+    if (group[0] && picked.size < limit) picked.add(group[0]);
+  }
+
+  for (const group of byStatus) {
+    for (const card of group) {
+      if (picked.size < limit) picked.add(card);
+    }
+  }
+
+  return byStatus.flatMap((group) => group.filter((card) => picked.has(card)));
+}
+
 function resolveTabValue(value: string | string[] | undefined): TabKey {
   const candidate = Array.isArray(value) ? value[0] : value;
   if (candidate && TAB_KEYS.includes(candidate as TabKey)) {
@@ -48,6 +80,7 @@ export default function UserDashboardScreen() {
   const [activeTab, setActiveTab] = useState<TabKey>(
     resolveTabValue(params.tab),
   );
+  const [casesInitialFilter, setCasesInitialFilter] = useState("All");
   const router = useRouter();
   const nav = router as any;
   const cases = useCaseStore((state) => state.cases);
@@ -92,6 +125,18 @@ export default function UserDashboardScreen() {
   const handleNewAnalysisPress = () => {
     startNewSignatureDraft();
     nav.push("/analysis/signature/step1");
+  };
+
+  const handleTabChange = (tab: TabKey) => {
+    setCasesInitialFilter("All");
+    setActiveTab(tab);
+  };
+
+  const handleViewAllCases = () => handleTabChange("cases");
+
+  const handleViewAllPending = () => {
+    setCasesInitialFilter("Pending");
+    setActiveTab("cases");
   };
 
   if (!hasTenant) return null;
@@ -150,11 +195,12 @@ export default function UserDashboardScreen() {
           <HomeTab
             onStartAnalysis={handleNewAnalysisPress}
             cases={cases}
-            onViewAllPress={() => setActiveTab("cases")}
+            onViewAllPress={handleViewAllCases}
+            onViewAllPendingPress={handleViewAllPending}
           />
         </ScrollView>
       ) : activeTab === "cases" ? (
-        <CasesScreen />
+        <CasesScreen initialFilter={casesInitialFilter} />
       ) : activeTab === "stats" ? (
         <StatsScreen />
       ) : (
@@ -163,7 +209,7 @@ export default function UserDashboardScreen() {
 
       <Navbar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         onNewPress={handleNewAnalysisPress}
       />
     </SafeAreaView>
@@ -174,10 +220,12 @@ function HomeTab({
   onStartAnalysis,
   cases,
   onViewAllPress,
+  onViewAllPendingPress,
 }: {
   onStartAnalysis: () => void;
   cases: SavedCase[];
   onViewAllPress: () => void;
+  onViewAllPendingPress: () => void;
 }) {
   const router = useRouter();
   const nav = router as any;
@@ -187,11 +235,15 @@ function HomeTab({
   const setActiveSignatureCaseId = useCaseStore(
     (state) => state.setActiveSignatureCaseId,
   );
+  const markCaseResultViewed = useCaseStore(
+    (state) => state.markCaseResultViewed,
+  );
   const pendingCards = getPendingCards(cases, draftSignatureCase, savedDrafts);
-  const [showAllPending, setShowAllPending] = useState(false);
-  const visiblePendingCards = showAllPending
-    ? pendingCards
-    : pendingCards.slice(0, 3);
+  const visiblePendingCards = selectPendingPreview(
+    pendingCards,
+    PENDING_PREVIEW_LIMIT,
+  );
+  const hasHiddenPending = pendingCards.length > PENDING_PREVIEW_LIMIT;
   const latestCases = [...cases]
     .sort(
       (left, right) =>
@@ -199,6 +251,13 @@ function HomeTab({
         new Date(left.createdAt).getTime(),
     )
     .slice(0, 5);
+
+  // The result has now been seen, so the case leaves the Pending list.
+  const markViewed = (item: SavedCase) => {
+    if (!item.resultViewed) {
+      markCaseResultViewed(item.caseId);
+    }
+  };
 
   const goToCaseDestination = (item: SavedCase) => {
     setActiveSignatureCaseId(item.caseId);
@@ -218,10 +277,12 @@ function HomeTab({
 
     if (item.analysisType === "HW") {
       nav.push("/analysis/handwriting/results");
+      markViewed(item);
       return;
     }
 
     nav.push(`/analysis/signature/signature_results`);
+    markViewed(item);
   };
 
   return (
@@ -258,11 +319,13 @@ function HomeTab({
 
       {pendingCards.length > 0 ? (
         <>
-          <View style={styles.sectionHeader}>
-            <Text allowFontScaling={false} style={styles.sectionTitle}>
-              Pending Cases
-            </Text>
-          </View>
+          <ListSectionHeader
+            title="Pending Cases"
+            actionLabel={
+              hasHiddenPending ? `View all (${pendingCards.length})` : undefined
+            }
+            onActionPress={onViewAllPendingPress}
+          />
 
           <View style={styles.pendingList}>
             {visiblePendingCards.map((item) => (
@@ -291,17 +354,6 @@ function HomeTab({
                 }}
               />
             ))}
-            {pendingCards.length > 3 ? (
-              <TouchableOpacity
-                style={styles.loadMorePending}
-                onPress={() => setShowAllPending((current) => !current)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.loadMorePendingText}>
-                  {showAllPending ? "Show fewer pending cases" : "Load more..."}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
           </View>
         </>
       ) : null}
@@ -379,15 +431,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   homeGreeting: {
-    ...getTypographyStyle("t2Title"),
+    ...getTypographyStyle("t3Title"),
     color: colors.textPrimary,
     letterSpacing: -0.5,
     flexShrink: 1,
     marginRight: 8,
   },
   homeAvatarCircle: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 22,
     backgroundColor: colors.primary,
     alignItems: "center",
@@ -395,13 +447,12 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   homeAvatarImage: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 22,
   },
   homeAvatarText: {
-    ...getTypographyStyle("t3Title"),
-    fontSize: 18,
+    ...getTypographyStyle("headline", "bold"),
     color: colors.primaryText,
   },
   homeOrgText: {
@@ -466,8 +517,7 @@ const styles = StyleSheet.create({
   },
   analysisBannerChevronText: {
     color: colors.primaryText,
-    fontSize: 24,
-    fontWeight: "300",
+    ...getTypographyStyle("t1Title", "regular"),
     lineHeight: 24,
     textAlign: "center",
     includeFontPadding: false,
@@ -496,12 +546,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...getTypographyStyle("t3Title"),
-    fontSize: 16,
     color: colors.textPrimary,
   },
   emptySubtitle: {
     ...getTypographyStyle("c2Caption", "regular"),
-    fontSize: 12,
     lineHeight: 17,
     color: colors.textMuted,
     textAlign: "center",
@@ -515,31 +563,7 @@ const styles = StyleSheet.create({
   pendingList: {
     marginBottom: 10,
   },
-  loadMorePending: {
-    alignItems: "center",
-    paddingVertical: 8,
-    marginHorizontal: 16,
-  },
-  loadMorePendingText: {
-    ...getTypographyStyle("c3Caption", "semiBold"),
-    color: colors.primary,
-  },
   recentList: {
     marginBottom: 8,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    marginHorizontal: 16,
-  },
-  sectionTitle: {
-    ...getTypographyStyle("headline"),
-    color: colors.textPrimary,
-  },
-  sectionLink: {
-    ...getTypographyStyle("b3Button"),
-    color: colors.primary,
   },
 });
