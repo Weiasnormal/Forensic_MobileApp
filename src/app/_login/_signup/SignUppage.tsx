@@ -35,7 +35,7 @@ export default function SignUpPage() {
   const [wasPasswordBlurred, setWasPasswordBlurred] = useState(false);
 
   const [tabsWidth, setTabsWidth] = useState(0);
-  const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
+  const slideAnim = useRef(new Animated.Value(0)).current; // 0 = user, 1 = admin
 
   const roleConfig = ROLE_SETTINGS[activeRole].signUp;
   const {
@@ -93,7 +93,7 @@ export default function SignUpPage() {
       useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
       setPendingSignupCredentials(values.email, values.password);
 
-      useFeedbackStore.getState().showToast('Account created — verify your email to continue', 'success');
+      useFeedbackStore.getState().showToast('Account created. Verify your email to continue', 'success');
 
       router.push({
         pathname: '/_login/_signup/VerifyEmailInstruction',
@@ -277,7 +277,6 @@ export default function SignUpPage() {
                     autoCapitalize="none"
                     textContentType="newPassword"
                     autoComplete="new-password"
-                    focused={isPasswordFocused}
                     rightIcon={
                       <Ionicons
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -376,7 +375,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.heroIconButtonBorder, 
+    borderColor: colors.heroIconButtonBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },

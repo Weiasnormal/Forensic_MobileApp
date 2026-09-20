@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { resolveRole, ROLE_SETTINGS } from '../../constants/roles';
 
@@ -13,6 +14,7 @@ const successIllustration = require('../../../assets/expo.icon/Assets/success.we
 
 export default function SuccessPage() {
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
@@ -26,31 +28,29 @@ export default function SuccessPage() {
 				contentContainerStyle={styles.scrollContent}
 				bounces={false}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
-				<View style={styles.content}>
-					<View style={styles.mainContent}>
-						<View style={styles.illustrationWrap}>
-							<Image source={successIllustration} style={styles.illustration} contentFit="contain" />
-						</View>
-
-						<Text allowFontScaling={false} style={styles.title}>
-							Password Reset
-						</Text>
-						<Text allowFontScaling={false} style={styles.subtitle}>
-							{`${roleConfig.successMessage}\nSign in with your new password.`}
-						</Text>
+				<View style={styles.mainContent}>
+					<View style={styles.illustrationWrap}>
+						<Image source={successIllustration} style={styles.illustration} contentFit="contain" />
 					</View>
 
-					<View style={styles.bottomActions}>
-						<PrimaryButton
-							label="Back to Welcome Page"
-							onPress={() => router.push('/_login/GetStarted')}
-							size="large"
-							style={styles.signInButton}
-						/>
-					</View>
+					<Text allowFontScaling={false} style={styles.title}>
+						Password Reset
+					</Text>
+					<Text allowFontScaling={false} style={styles.subtitle}>
+						{`${roleConfig.successMessage}\nSign in with your new password.`}
+					</Text>
 				</View>
 			</ScrollView>
+
+			<View style={[styles.bottomActions, { paddingBottom: insets.bottom + 35 }]}>
+				<PrimaryButton
+					label="Back to Welcome Page"
+					onPress={() => router.push('/_login/GetStarted')}
+					size="large"
+				/>
+			</View>
 		</KeyboardAvoidingView>
 	);
 }
@@ -62,23 +62,15 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		paddingBottom: 10,
 		backgroundColor: colors.background2,
 	},
 	scrollView: {
 		flex: 1,
 		backgroundColor: colors.background2,
 	},
-	content: {
-		flex: 1,
-		backgroundColor: colors.background2,
-		paddingHorizontal: 20,
-		paddingTop: 42,
-		paddingBottom: 20,
-		justifyContent: 'space-between',
-	},
 	mainContent: {
 		alignItems: 'center',
+		paddingHorizontal: 20,
 		paddingTop: 100,
 	},
 	illustrationWrap: {
@@ -90,7 +82,7 @@ const styles = StyleSheet.create({
 	},
 	illustration: {
 		width: 300,
-		height: 250,
+		height: 300,
 	},
 	title: {
 		...getTypographyStyle('t1Title'),
@@ -98,18 +90,14 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 	},
 	subtitle: {
-		...getTypographyStyle('body'),
-		fontSize: 14,
+		...getTypographyStyle('c1Caption', 'regular'),
 		marginTop: 8,
 		color: colors.textSecondary,
 		textAlign: 'center',
 	},
 	bottomActions: {
-		marginTop: 'auto',
-		width: '100%',
-	},
-	signInButton: {
-		marginTop: 10,
-		marginBottom: 12,
+		paddingHorizontal: 20,
+		paddingTop: 12,
+		backgroundColor: colors.background2,
 	},
 });

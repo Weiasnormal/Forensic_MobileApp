@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import FormField from '@/_components/common/FormField';
@@ -19,11 +20,13 @@ import ErrorBanner from '@/_components/common/ErrorBanner';
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const params = useLocalSearchParams<{ role?: string; email?: string; code?: string }>();
 	const activeRole = resolveRole(params.role);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+	const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
 	const [wasPasswordBlurred, setWasPasswordBlurred] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const {
@@ -68,23 +71,24 @@ export default function ResetPasswordPage() {
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 			<StatusBar style="light" translucent backgroundColor={colors.primary} />
 
+			<View style={styles.hero}>
+				<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
+					<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
+				</TouchableOpacity>
+
+				<View style={styles.heroCopy}>
+					<Text allowFontScaling={false} style={styles.title}>Reset Password</Text>
+					<Text allowFontScaling={false} style={styles.subtitle}>Sign in to continue to Avera</Text>
+				</View>
+			</View>
+
 			<ScrollView
 				style={styles.scrollView}
 				contentContainerStyle={styles.scrollContent}
 				bounces={false}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
-				<View style={styles.hero}>
-					<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
-					</TouchableOpacity>
-
-					<View style={styles.heroCopy}>
-						<Text allowFontScaling={false} style={styles.title}>Reset Password</Text>
-						<Text allowFontScaling={false} style={styles.subtitle}>Sign in to continue to Avera</Text>
-					</View>
-				</View>
-
 				<View style={styles.content}>
 					<View style={styles.inputGroup}>
 						<Controller
@@ -133,53 +137,50 @@ export default function ResetPasswordPage() {
 
 					<View style={styles.inputGroup}>
 						<Controller
-							control={control}
-							name="confirmPassword"
-							render={({ field: { onChange, onBlur, value } }) => (
-								<FormField
-									label="Confirm new password"
-									value={value}
-									onChangeText={onChange}
-									onBlur={onBlur}
-									placeholder="Repeat password"
-									secureTextEntry={!showConfirmPassword}
-									autoCapitalize="none"
-									textContentType="newPassword"
-									autoComplete="password"
-									error={errors.confirmPassword?.message}
-									rightIcon={
-										<Ionicons
-											name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-											size={20}
-											color={colors.textTertiary}
-										/>
-									}
-									onRightIconPress={() => setShowConfirmPassword((v) => !v)}
+						control={control}
+						name="confirmPassword"
+						render={({ field: { onChange, onBlur, value } }) => (
+							<FormField
+								label="Confirm new password"
+								value={value}
+								onChangeText={onChange}
+								onFocus={() => setIsConfirmPasswordFocused(true)}
+								onBlur={() => {
+									onBlur();
+									setIsConfirmPasswordFocused(false);
+								}}
+								placeholder="Repeat password"
+								secureTextEntry={!showConfirmPassword}
+								autoCapitalize="none"
+								textContentType="newPassword"
+								autoComplete="password"
+								error={errors.confirmPassword?.message}
+								focused={isConfirmPasswordFocused}
+								rightIcon={
+									<Ionicons
+									name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+									size={20}
+									color={colors.textTertiary}
 								/>
-							)}
+							}
+							onRightIconPress={() => setShowConfirmPassword((v) => !v)}
+							/>
+						)}
 						/>
-					</View>
-
-					<View style={styles.bottomActions}>
-						{resetError ? <ErrorBanner message={resetError} title="Reset failed" /> : null}
-						
-						<PrimaryButton
-							label="Reset password"
-							onPress={handleSubmit(handleReset)}
-							size="large"
-							loading={isSubmitting}
-							style={styles.resetButton}
-						/>
-
-						<View style={styles.footerRow}>
-							<Text allowFontScaling={false} style={styles.footerPrompt}>Don&apos;t have an account? </Text>
-							<TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/_signup/SignUppage')}>
-								<Text allowFontScaling={false} style={styles.footerAction}>Create account</Text>
-							</TouchableOpacity>
-						</View>
 					</View>
 				</View>
 			</ScrollView>
+
+			<View style={[styles.bottomActions, { paddingBottom: insets.bottom + 35 }]}>
+				{resetError ? <ErrorBanner message={resetError} title="Reset failed" /> : null}
+
+				<PrimaryButton
+					label="Reset password"
+					onPress={handleSubmit(handleReset)}
+					size="large"
+					loading={isSubmitting}
+				/>
+			</View>
 		</KeyboardAvoidingView>
 	);
 }
@@ -191,7 +192,6 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		paddingBottom: 10,
 		backgroundColor: colors.background2,
 	},
 	scrollView: {
@@ -208,13 +208,11 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		...getTypographyStyle('t1Title'),
-		fontSize: 28,
 		color: colors.primaryText,
 	},
 	subtitle: {
-		...getTypographyStyle('body'),
-		fontSize: 14,
-		color: 'rgba(255,255,255,0.85)',
+		...getTypographyStyle('c1Caption', 'regular'),
+		color: colors.heroSubtitleText,
 		marginTop: 4,
 	},
 	heroCopy: {
@@ -225,17 +223,13 @@ const styles = StyleSheet.create({
 		height: 36,
 		borderRadius: 10,
 		borderWidth: 1,
-		borderColor: 'rgba(255,255,255,0.5)',
-		backgroundColor: 'rgba(255,255,255,0.15)',
+		borderColor: colors.heroIconButtonBorder,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	content: {
-		flex: 1,
-		backgroundColor: colors.background2,
 		paddingHorizontal: 20,
 		paddingTop: 24,
-		paddingBottom: 20,
 	},
 	inputGroup: {
 		marginBottom: 18,
@@ -244,24 +238,8 @@ const styles = StyleSheet.create({
 		marginBottom: 0,
 	},
 	bottomActions: {
-		marginTop: 'auto',
-	},
-	resetButton: {
-		marginTop: 10,
-		marginBottom: 12,
-	},
-	footerRow: {
-		flexDirection: 'row',
-		justifyContent: 'center',
-		alignItems: 'center',
-		gap: 3,
-	},
-	footerPrompt: {
-		...getTypographyStyle('c1Caption'),
-		color: colors.textSecondary,
-	},
-	footerAction: {
-		...getTypographyStyle('c1Caption', 'bold'),
-		color: colors.primary,
+		paddingHorizontal: 20,
+		paddingTop: 12,
+		backgroundColor: colors.background2,
 	},
 });

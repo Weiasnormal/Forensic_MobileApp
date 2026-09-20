@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import PrimaryButton from '@/_components/common/PrimaryButton';
@@ -15,6 +16,7 @@ import { buildApiUrl, API_KEY, API_ENDPOINTS } from '@/constants/api';
 
 export default function VerifyPage() {
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const params = useLocalSearchParams<{ role?: string; email?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
@@ -85,25 +87,26 @@ export default function VerifyPage() {
 		<KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 			<StatusBar style="light" translucent backgroundColor={colors.primary} />
 
+			<View style={styles.hero}>
+				<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
+					<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
+				</TouchableOpacity>
+
+				<View style={styles.heroCopy}>
+					<Text allowFontScaling={false} style={styles.title}>Check Your Email</Text>
+					<Text allowFontScaling={false} style={styles.subtitle}>
+						We sent a 6-digit code to{'\n'}{email}
+					</Text>
+				</View>
+			</View>
+
 			<ScrollView
 				style={styles.scrollView}
 				contentContainerStyle={styles.scrollContent}
 				bounces={false}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
-				<View style={styles.hero}>
-					<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={22} color={colors.primaryText} />
-					</TouchableOpacity>
-
-					<View style={styles.heroCopy}>
-						<Text allowFontScaling={false} style={styles.title}>Check Your Email</Text>
-						<Text allowFontScaling={false} style={styles.subtitle}>
-							We sent a 6-digit code to {email}
-						</Text>
-					</View>
-				</View>
-
 				<View style={styles.content}>
 					<Text allowFontScaling={false} style={styles.sectionLabel}>Enter verification code</Text>
 
@@ -135,44 +138,40 @@ export default function VerifyPage() {
 						<Text allowFontScaling={false} style={styles.errorText}>{verifyError}</Text>
 					) : null}
 
-					<View style={styles.metaRow}>
+					<View style={styles.metaColumn}>
 						<Text allowFontScaling={false} style={styles.metaText}>Code expires in: 4:30</Text>
 						<TouchableOpacity activeOpacity={0.7}>
 							<Text allowFontScaling={false} style={styles.metaAction}>Resend code</Text>
 						</TouchableOpacity>
 					</View>
-
-					<View style={styles.bottomActions}>
-						<PrimaryButton
-							label={isVerifying ? 'Verifying…' : 'Verify'}
-							onPress={handleSubmit(handleVerify)}
-							loading={isVerifying}
-							size="large"
-							style={styles.verifyButton}
-						/>
-
-						<View style={styles.footerRow}>
-							<Text allowFontScaling={false} style={styles.footerPrompt}>Wrong email? </Text>
-							<TouchableOpacity
-								activeOpacity={0.7}
-								onPress={() =>
-									router.push({ pathname: '/_login/forgot_password/enterEmail', params: { role: activeRole } })
-								}
-							>
-								<Text allowFontScaling={false} style={styles.footerAction}>Change email</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
 				</View>
 			</ScrollView>
+
+			<View style={[styles.bottomActions, { paddingBottom: insets.bottom + 35 }]}>
+				<PrimaryButton
+					label={isVerifying ? 'Verifying…' : 'Verify'}
+					onPress={handleSubmit(handleVerify)}
+					loading={isVerifying}
+					size="large"
+				/>
+			</View>
 		</KeyboardAvoidingView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: colors.background2 },
-	scrollContent: { flexGrow: 1, paddingBottom: 10, backgroundColor: colors.background2 },
-	scrollView: { flex: 1, backgroundColor: colors.background2 },
+	container: {
+		flex: 1,
+		backgroundColor: colors.background2,
+	},
+	scrollContent: {
+		flexGrow: 1,
+		backgroundColor: colors.background2,
+	},
+	scrollView: {
+		flex: 1,
+		backgroundColor: colors.background2,
+	},
 	hero: {
 		backgroundColor: colors.primary,
 		paddingHorizontal: 20,
@@ -181,34 +180,84 @@ const styles = StyleSheet.create({
 		borderBottomLeftRadius: 28,
 		borderBottomRightRadius: 28,
 	},
-	title: { ...getTypographyStyle('t1Title'), fontSize: 28, color: colors.primaryText },
-	subtitle: { ...getTypographyStyle('body'), fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
-	heroCopy: { marginTop: 20 },
+	title: {
+		...getTypographyStyle('t1Title'),
+		color: colors.primaryText,
+	},
+	subtitle: {
+		...getTypographyStyle('c1Caption', 'regular'),
+		color: colors.heroSubtitleText,
+		marginTop: 4,
+	},
+	heroCopy: {
+		marginTop: 20,
+	},
 	backButton: {
-		width: 36, height: 36, borderRadius: 10, borderWidth: 1,
-		borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.15)',
-		alignItems: 'center', justifyContent: 'center',
+		width: 36,
+		height: 36,
+		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: colors.heroIconButtonBorder,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
-	content: { flex: 1, backgroundColor: colors.background2, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 20 },
-	sectionLabel: { ...getTypographyStyle('c1Caption'), alignSelf: 'center', color: colors.textSecondary, marginBottom: 18 },
-	codeRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+	content: {
+		paddingHorizontal: 20,
+		paddingTop: 24,
+	},
+	sectionLabel: {
+		...getTypographyStyle('c1Caption'),
+		alignSelf: 'center',
+		color: colors.textSecondary,
+		marginBottom: 18,
+	},
+	codeRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		gap: 6,
+	},
 	codeBox: {
-		flex: 1, height: 52, borderRadius: 12, borderWidth: 1,
-		borderColor: colors.inputBorder, backgroundColor: colors.background,
-		alignItems: 'center', justifyContent: 'center',
+		flex: 1,
+		height: 52,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: colors.inputBorder,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
-	codeBoxError: { borderColor: colors.danger },
+	codeBoxError: {
+		borderColor: colors.danger,
+	},
 	codeInput: {
-		width: '100%', height: '100%', textAlign: 'center',
-		...getTypographyStyle('t3Title'), color: colors.textPrimary, paddingVertical: 0,
+		width: '100%',
+		height: '100%',
+		textAlign: 'center',
+		...getTypographyStyle('t3Title'),
+		color: colors.textPrimary,
+		paddingVertical: 0,
 	},
-	errorText: { ...getTypographyStyle('c2Caption'), marginTop: 10, color: colors.danger, textAlign: 'center' },
-	metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-	metaText: { ...getTypographyStyle('c2Caption'), color: colors.textSecondary },
-	metaAction: { ...getTypographyStyle('c2Caption', 'bold'), color: colors.primary },
-	bottomActions: { marginTop: 'auto' },
-	verifyButton: { marginTop: 10, marginBottom: 12 },
-	footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 3 },
-	footerPrompt: { ...getTypographyStyle('c1Caption'), color: colors.textSecondary },
-	footerAction: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary },
+	errorText: {
+		...getTypographyStyle('c2Caption'),
+		marginTop: 10,
+		color: colors.danger,
+		textAlign: 'center',
+	},
+	metaColumn: {
+		alignItems: 'center',
+		gap: 6,
+		marginTop: 14,
+	},
+	metaText: {
+		...getTypographyStyle('c2Caption'),
+		color: colors.textSecondary,
+	},
+	metaAction: {
+		...getTypographyStyle('c2Caption', 'bold'),
+		color: colors.primary,
+	},
+	bottomActions: {
+		paddingHorizontal: 20,
+		paddingTop: 12,
+		backgroundColor: colors.background2,
+	},
 });

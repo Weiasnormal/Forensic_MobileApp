@@ -112,7 +112,7 @@ export default function UserAndAdminCodePage() {
 					<Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.subtitle}</Text>
 				</View>
 
-				<View style={[styles.formArea, { paddingBottom: insets.bottom + 12 }]}>
+				<View style={[styles.formArea, { paddingBottom: insets.bottom + 35 }]}>
 					<Text allowFontScaling={false} style={styles.label}>Invite code</Text>
 
 					<View style={styles.codeInputContainer}>

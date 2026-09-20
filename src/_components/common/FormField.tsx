@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '../../constants/typography';
@@ -16,6 +16,7 @@ interface FormFieldProps {
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
   error?: string;
+  /** Optional override. When omitted, the field tracks its own focus. */
   focused?: boolean;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
@@ -36,12 +37,25 @@ const FormField: React.FC<FormFieldProps> = ({
   rightIcon,
   onRightIconPress,
   error,
-  focused = false,
+  focused,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
   autoComplete,
   textContentType,
 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const showFocused = (focused ?? isFocused) && !disabled;
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    onFocus?.();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    onBlur?.();
+  };
+
   return (
     <View style={[styles.wrapper, style]}>
       <Text style={styles.label}>{label}</Text>
@@ -49,7 +63,7 @@ const FormField: React.FC<FormFieldProps> = ({
         style={[
           styles.inputWrap,
           disabled && styles.inputDisabled,
-          focused && styles.inputFocused,
+          showFocused && styles.inputFocused,
           !!error && styles.inputErrorBorder,
         ]}
       >
@@ -57,8 +71,8 @@ const FormField: React.FC<FormFieldProps> = ({
           style={[styles.input, rightIcon ? { paddingRight: 8 } : null]}
           value={value}
           onChangeText={onChangeText}
-          onBlur={onBlur}
-          onFocus={onFocus}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
           editable={!disabled}
           placeholder={placeholder}
           placeholderTextColor={colors.textTertiary}
@@ -114,7 +128,7 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.inputBackground,
   },
   inputErrorBorder: {
     borderColor: colors.danger,
