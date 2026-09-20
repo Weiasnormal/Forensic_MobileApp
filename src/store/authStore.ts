@@ -1,4 +1,5 @@
 import * as authApi from "@/services/authApi";
+import { normalizeAuthErrorMessage } from "@/services/authApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { create } from "zustand";
@@ -153,10 +154,14 @@ export const useAuthStore = create<AuthState>()(
           });
           set({ isAuthenticating: false });
         } catch (error) {
+          const normalizedMessage = normalizeAuthErrorMessage(
+            error instanceof Error ? error.message : error,
+            email,
+          );
+
           set({
             isAuthenticating: false,
-            authError:
-              error instanceof Error ? error.message : "Unable to register.",
+            authError: normalizedMessage || "Unable to register.",
           });
           throw error;
         }
