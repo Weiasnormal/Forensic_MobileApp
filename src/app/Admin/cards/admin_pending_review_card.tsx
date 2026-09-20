@@ -1,5 +1,7 @@
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface PendingReview {
   id: string;
@@ -24,11 +26,13 @@ export default function PendingReviewCard({
       <View style={styles.accent} />
 
       <View style={styles.info}>
-        <Text style={styles.caseCode}>{review.caseCode}</Text>
-        <Text style={styles.meta}>
+        <Text allowFontScaling={false} style={styles.caseCode}>
+          {review.caseCode}
+        </Text>
+        <Text allowFontScaling={false} style={styles.meta}>
           {review.examiner} · {review.dateLabel}
         </Text>
-        <Text style={styles.verdict}>
+        <Text allowFontScaling={false} style={styles.verdict}>
           {review.verdictLabel} · {review.confidence.toFixed(1)}%
         </Text>
       </View>
@@ -38,7 +42,9 @@ export default function PendingReviewCard({
         onPress={() => onReview(review)}
         activeOpacity={0.85}
       >
-        <Text style={styles.buttonText}>Review</Text>
+        <Text allowFontScaling={false} style={styles.buttonText}>
+          Review
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -46,57 +52,52 @@ export default function PendingReviewCard({
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E3EAF3",
+    borderColor: colors.cardBorderMuted, // FLAG — was '#E3EAF3', unconfirmed exact match
     paddingVertical: 12,
-    paddingHorizontal: 14,
-    overflow: "hidden",
+    paddingHorizontal: 20,
+    overflow: 'hidden',
   },
   accent: {
-    position: "absolute",
+    position: 'absolute',
     left: 13,
     top: 12,
     bottom: 12,
     width: 3,
     borderRadius: 999,
-    backgroundColor: "#1E6FD9",
+    backgroundColor: colors.primary,
   },
   info: {
     flex: 1,
     paddingLeft: 6,
-    left: 6,
   },
   caseCode: {
-    color: "#0F172A",
-    fontSize: 13,
-    fontWeight: "800",
+    ...getTypographyStyle('headline'),
+    color: colors.textPrimary,
   },
   meta: {
-    color: "#94A3B8",
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
+    ...getTypographyStyle('c2Caption', 'regular'),
+    color: colors.textSecondary,
+    marginTop: 5,
   },
   verdict: {
-    color: "#1E6FD9",
-    fontSize: 11,
-    fontWeight: "700",
-    marginTop: 2,
+    ...getTypographyStyle('l2List'),
+    color: colors.primary,
+    marginTop: 5,
   },
   button: {
-    backgroundColor: "#EAF3FF",
+    backgroundColor: colors.badgeBackground,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   buttonText: {
-    color: "#1E6FD9",
-    fontSize: 12,
-    fontWeight: "800",
+    ...getTypographyStyle('c2Caption', 'bold'), // matches size (12) + weight (bold≈800) closely
+    color: colors.primary,
   },
 });

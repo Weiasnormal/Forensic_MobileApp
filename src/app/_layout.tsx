@@ -15,11 +15,8 @@ import {
   useFonts,
 } from "@expo-google-fonts/sora";
 import { Stack, useRouter, useSegments } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
-SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const PUBLIC_SEGMENTS = ["_login", "_introPage", "_devscan"];
 
@@ -106,7 +103,6 @@ export default function RootLayout() {
 
   React.useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync().catch(() => {});
       void configureProcessingNotifications();
     }
   }, [fontsLoaded]);

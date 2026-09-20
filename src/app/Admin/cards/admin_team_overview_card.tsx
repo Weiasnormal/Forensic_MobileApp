@@ -1,9 +1,8 @@
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// Kept deliberately minimal so this can be reused anywhere a "person + case
-// count" row is needed (Team Management's roster, Stats' leaderboard, etc.)
-// — pass any object that has these four fields.
 export interface TeamOverviewData {
 	id: string;
 	firstName: string;
@@ -14,7 +13,6 @@ export interface TeamOverviewData {
 interface TeamOverviewCardProps {
 	member: TeamOverviewData;
 	onPress?: () => void;
-	/** Set false on the last row of a list to omit the divider line. */
 	showDivider?: boolean;
 }
 
@@ -31,14 +29,16 @@ export default function TeamOverviewCard({ member, onPress, showDivider = true }
 			disabled={!onPress}
 		>
 			<View style={styles.avatar}>
-				<Text style={styles.avatarText}>{getInitials(member.firstName, member.lastName)}</Text>
+				<Text allowFontScaling={false} style={styles.avatarText}>
+					{getInitials(member.firstName, member.lastName)}
+				</Text>
 			</View>
 
-			<Text style={styles.name} numberOfLines={1}>
+			<Text allowFontScaling={false} style={styles.name} numberOfLines={1}>
 				{member.firstName} {member.lastName}
 			</Text>
 
-			<Text style={styles.countLine}>
+			<Text allowFontScaling={false} style={styles.countLine}>
 				<Text style={styles.countValue}>{member.casesHandled}</Text> cases
 			</Text>
 		</TouchableOpacity>
@@ -55,35 +55,31 @@ const styles = StyleSheet.create({
 	},
 	rowDivider: {
 		borderBottomWidth: 1,
-		borderBottomColor: '#EEF2F7',
+		borderBottomColor: colors.dividerLight, // FLAG — was '#EEF2F7', unconfirmed exact match
 	},
 	avatar: {
 		width: 38,
 		height: 38,
 		borderRadius: 19,
-		backgroundColor: '#EAF3FF',
+		backgroundColor: colors.badgeBackground, // FLAG — same as other two files, unconfirmed exact match
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	avatarText: {
-		color: '#1E6FD9',
-		fontWeight: '800',
-		fontSize: 13,
+		...getTypographyStyle('l1List'), // FLAG — was fontSize:13/fontWeight:'800'
+		color: colors.primary,
 	},
 	name: {
+		...getTypographyStyle('headline'), // exact match: 14/bold ≈ original 14/700 — no flag
+		color: colors.textPrimary,
 		flex: 1,
-		color: '#0F172A',
-		fontSize: 14,
-		fontWeight: '700',
 	},
 	countLine: {
-		color: '#64748B',
-		fontSize: 13,
-		fontWeight: '600',
+		...getTypographyStyle('c1Caption'), // exact match: 13/semiBold ≈ original 13/600 — no flag
+		color: colors.textSecondary, // FLAG — was '#64748B', differs from your confirmed textSecondary hex '#667085'
 	},
 	countValue: {
-		color: '#1E6FD9',
-		fontWeight: '900',
-		fontSize: 14,
+		...getTypographyStyle('headline'), // FLAG — was fontWeight:'900'; headline is bold(700), no '900' token exists
+		color: colors.primary,
 	},
 });

@@ -1,21 +1,24 @@
 import AdminNavbar, { type AdminTabKey } from "@/_components/admin/AdminNavbar";
+import EmptyStateCard from "@/_components/common/EmptyStateCard";
+import ListSectionHeader from "@/_components/common/ListSectionHeader";
 import NotificationBell from "@/_components/common/NotificationBell";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
 import {
-    getNotificationsEnabledPreference,
-    setNotificationsEnabledPreference,
+  getNotificationsEnabledPreference,
+  setNotificationsEnabledPreference,
 } from "@/services/processingNotifications";
 import {
-    formatRelativeTime,
-    getTeamSummary,
-    useAdminStore,
+  formatRelativeTime,
+  getTeamSummary,
+  useAdminStore,
 } from "@/store/adminStore";
 import { useAuthStore } from "@/store/authStore";
 import {
-    getCaseSummary,
-    useCaseStore,
-    type SavedCase,
+  getCaseSummary,
+  useCaseStore,
+  type SavedCase,
 } from "@/store/caseStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
@@ -24,26 +27,25 @@ import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import AdminCasesScreen from "./admin_cases";
 import AdminStatsScreen from "./admin_stats";
 import AdminTeamScreen from "./admin_team";
 import {
-    MemberRequestCard,
-    PendingReviewCard,
-    type MemberRequestData,
-    type PendingReview,
+  MemberRequestCard,
+  PendingReviewCard,
+  type MemberRequestData,
+  type PendingReview,
 } from "./cards";
 import ProfileScreen from "./ProfileScreen";
 
@@ -200,10 +202,16 @@ export default function AdminDashboard() {
         <View style={[styles.homeHeader, { paddingTop: insets.top + 18 }]}>
           <View style={styles.homeHeaderTop}>
             <View>
-              <Text style={styles.homeOrgText}>
+              <Text allowFontScaling={false} style={styles.homeOrgText}>
                 {user?.organization || "PNP Crime Laboratory"}
               </Text>
-              <Text style={styles.homeGreeting}>
+              <Text
+                allowFontScaling={false}
+                style={styles.homeGreeting}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+              >
                 Hello, Admin {user?.lastName}
               </Text>
             </View>
@@ -213,10 +221,10 @@ export default function AdminDashboard() {
                 {user && user.avatarUri ? (
                   <Image
                     source={{ uri: user.avatarUri }}
-                    style={{ width: 44, height: 44, borderRadius: 22 }}
+                    style={styles.homeAvatarImage}
                   />
                 ) : (
-                  <Text style={styles.homeAvatarText}>
+                  <Text allowFontScaling={false} style={styles.homeAvatarText}>
                     {getInitials(user?.firstName || "", user?.lastName || "")}
                   </Text>
                 )}
@@ -349,13 +357,13 @@ function AdminHomeTab({
             label="Active Analysts"
             value={String(activeAnalysts)}
             icon="people-outline"
-            tint="#1E6FD9"
+            tint={colors.primary}
           />
           <StatCard
             label="Total Cases"
             value={String(totalCases)}
             icon="folder-open-outline"
-            tint="#1E6FD9"
+            tint={colors.primary}
           />
         </View>
         <View style={styles.statsGridRow}>
@@ -363,23 +371,22 @@ function AdminHomeTab({
             label="Pending Review"
             value={String(pendingReviews.length)}
             icon="shield-checkmark-outline"
-            tint="#D97706"
+            tint="#D97706" 
           />
           <StatCard
             label="Suspected Cases"
             value={String(suspectCount)}
             icon="reader-outline"
-            tint="#E24B4A"
+            tint="#E24B4A" 
           />
         </View>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Member Requests</Text>
-        <TouchableOpacity onPress={onViewTeam}>
-          <Text style={styles.sectionLink}>View all</Text>
-        </TouchableOpacity>
-      </View>
+      <ListSectionHeader
+        title="Member Requests"
+        actionLabel="View all"
+        onActionPress={onViewTeam}
+      />
 
       {memberRequests.length > 0 ? (
         <View style={styles.listGroup}>
@@ -393,17 +400,17 @@ function AdminHomeTab({
           ))}
         </View>
       ) : (
-        <View style={styles.emptyMini}>
-          <Text style={styles.emptyMiniText}>No pending member requests.</Text>
-        </View>
+        <EmptyStateCard
+          title="No pending requests"
+          icon={require("../../../assets/images/member_request.png")}
+        />
       )}
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Pending Reviews</Text>
-        <TouchableOpacity onPress={onViewAllCases}>
-          <Text style={styles.sectionLink}>Manage</Text>
-        </TouchableOpacity>
-      </View>
+      <ListSectionHeader
+        title="Pending Reviews"
+        actionLabel="Manage"
+        onActionPress={onViewAllCases}
+      />
 
       {pendingReviews.length > 0 ? (
         <View style={styles.listGroup}>
@@ -416,9 +423,11 @@ function AdminHomeTab({
           ))}
         </View>
       ) : (
-        <View style={styles.emptyMini}>
-          <Text style={styles.emptyMiniText}>No cases waiting for review.</Text>
-        </View>
+        <EmptyStateCard
+          title="No pending reviews"
+          subtitle="No pending reviews"
+          icon={require("../../../assets/images/pending_request.png")}
+        />
       )}
     </View>
   );
@@ -438,10 +447,14 @@ function StatCard({
   return (
     <View style={styles.statCard}>
       <View style={[styles.statIconWrap, { backgroundColor: `${tint}1A` }]}>
-        <Ionicons name={icon} size={18} color={tint} />
+        <Ionicons name={icon} size={24} color={tint} />
       </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text allowFontScaling={false} style={styles.statValue}>
+        {value}
+      </Text>
+      <Text allowFontScaling={false} style={styles.statLabel}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -469,28 +482,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   homeGreeting: {
+    ...getTypographyStyle("t3Title"),
     color: colors.textPrimary,
-    fontSize: 22,
-    fontWeight: "900",
     letterSpacing: -0.5,
+    flexShrink: 1,
+    marginRight: 8,
   },
   homeAvatarCircle: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 22,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
+  },
+  homeAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
   },
   homeAvatarText: {
-    color: "#E7F2FF",
-    fontSize: 18,
-    fontWeight: "800",
+    ...getTypographyStyle("headline", "bold"),
+    color: colors.primaryText,
   },
   homeOrgText: {
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "700",
   },
   scrollView: {
     flex: 1,
@@ -534,49 +552,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   statValue: {
+    ...getTypographyStyle("t2Title"), 
     color: colors.textPrimary,
-    fontSize: 22,
-    fontWeight: "900",
     letterSpacing: -0.5,
   },
   statLabel: {
+    ...getTypographyStyle("l2List"),
+    color: colors.label,
     marginTop: 2,
-    color: colors.label,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: colors.label,
-  },
-  sectionLink: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: "700",
   },
   listGroup: {
     gap: 10,
     marginBottom: 18,
-  },
-  emptyMini: {
-    backgroundColor: colors.background2,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    alignItems: "center",
-    marginBottom: 18,
-  },
-  emptyMiniText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "600",
   },
 });
