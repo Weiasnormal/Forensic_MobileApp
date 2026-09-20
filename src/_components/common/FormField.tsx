@@ -4,7 +4,8 @@ import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '../../constants/typography';
 
 interface FormFieldProps {
-  label: string;
+  /** Optional. When omitted, no label row is rendered. */
+  label?: string;
   value: string;
   onChangeText?: (text: string) => void;
   onBlur?: () => void;
@@ -58,7 +59,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
   return (
     <View style={[styles.wrapper, style]}>
-      <Text style={styles.label}>{label}</Text>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <View
         style={[
           styles.inputWrap,

@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import { ChevronRight, LucideIcon } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 
 interface DangerRowProps {
   icon: LucideIcon;
@@ -48,12 +49,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...getTypographyStyle('body', 'semiBold'),
     color: colors.danger,
   },
   subtitle: {
-    fontSize: 13,
+    ...getTypographyStyle('c1Caption', 'regular'),
     color: colors.textSecondary,
     marginTop: 2,
   },

@@ -19,6 +19,7 @@ export const colors = {
   danger: "#DC2626",
   dangerLight: "#FEF2F2",
   dangerBorder: "#FECACA",
+  dangerButton: '#E54848',
 
   warningBackground: "#F7F8FA",
   warningBorder: "#ECEEF1",

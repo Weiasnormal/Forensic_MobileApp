@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Modal, StyleSheet, Text, View } from 'react-native';
+import FormField from '@/_components/common/FormField';
 import PrimaryButton from '@/_components/common/PrimaryButton';
 import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
@@ -31,6 +32,10 @@ export default function TypeToConfirmModal({
   const [value, setValue] = useState('');
   const canConfirm = value.trim().toUpperCase() === confirmWord.toUpperCase();
 
+  useEffect(() => {
+    if (!visible) setValue('');
+  }, [visible]);
+
   const handleCancel = () => {
     setValue('');
     onCancel();
@@ -39,7 +44,6 @@ export default function TypeToConfirmModal({
   const handleConfirm = () => {
     if (!canConfirm) return;
     onConfirm();
-    setValue('');
   };
 
   return (
@@ -55,35 +59,33 @@ export default function TypeToConfirmModal({
           <Text style={styles.title}>{title}</Text>
           {message ? <Text style={styles.message}>{message}</Text> : null}
 
-          <TextInput
+          <FormField
             value={value}
             onChangeText={setValue}
-            placeholder={confirmWord}
-            placeholderTextColor={colors.textTertiary}
             autoCapitalize="characters"
-            autoCorrect={false}
-            style={styles.input}
+            disabled={isLoading}
+            style={styles.field}
           />
 
           <PrimaryButton
             label={confirmLabel}
             onPress={handleConfirm}
+            size="large"
             loading={isLoading}
             disabled={!canConfirm || isLoading}
-            backgroundColor={colors.danger}
-            textColor="#FFFFFF"
+            backgroundColor={colors.dangerButton}
             style={styles.button}
           />
 
           <SecondaryButton
             label={cancelLabel}
             onPress={handleCancel}
+            size="large"
             backgroundColor={colors.background2}
-            borderColor={colors.border}
+            borderColor={colors.inputBorder}
             textColor={colors.textSecondary}
-            textVariant="b1Button"
-            style={styles.button}
             disabled={isLoading}
+            style={styles.button}
           />
         </View>
       </View>
@@ -94,7 +96,7 @@ export default function TypeToConfirmModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -112,30 +114,21 @@ const styles = StyleSheet.create({
     ...getTypographyStyle('t3Title'),
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   message: {
     ...getTypographyStyle('headline', 'regular'),
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
     lineHeight: 21,
+    marginBottom: 24,
   },
-  input: {
+  field: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    backgroundColor: colors.inputBackground,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    ...getTypographyStyle('body'),
-    color: colors.textPrimary,
-    marginBottom: 18,
-    textAlign: 'center',
+    marginBottom: 12,
   },
   button: {
     width: '100%',
-    marginTop: 4,
+    marginTop: 12,
   },
 });
