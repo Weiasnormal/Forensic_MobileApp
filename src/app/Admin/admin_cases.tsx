@@ -423,18 +423,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: 45,
   },
   loadingFooter: {
     alignItems: "center",
     paddingVertical: 16,
   },
   sectionHeader: {
-    ...getTypographyStyle("l2List"),
+    ...getTypographyStyle("headline"),
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    color: colors.label,
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   emptyArea: {

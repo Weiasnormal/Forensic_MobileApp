@@ -281,8 +281,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   sectionLabel: {
-    ...getTypographyStyle("l1List"),
-    color: colors.label,
+    ...getTypographyStyle("headline"),
+    color: colors.textSecondary,
     letterSpacing: 0.3,
     marginBottom: 10,
   },

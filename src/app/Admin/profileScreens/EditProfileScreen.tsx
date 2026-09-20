@@ -163,7 +163,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               label="Email"
               value={email}
               style={styles.formField}
-              disabled
               rightIcon={<Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />}
               onRightIconPress={() => setShowChangeEmail(true)}
             />
