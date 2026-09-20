@@ -1,6 +1,7 @@
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import { normalizeInviteCodeErrorMessage } from "@/services/authApi";
 import { useAuthStore } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -94,11 +95,13 @@ export default function UserAndAdminCodePage() {
         pathname: "/_login/_signup/PendingUser&Admin",
         params: { role: activeRole },
       });
-    } catch {
-      setSubmitError(null);
-      useFeedbackStore
-        .getState()
-        .showToast("Organization not found", "infoLight");
+    } catch (error) {
+      const friendlyMessage = normalizeInviteCodeErrorMessage(
+        error instanceof Error ? error.message : error,
+      );
+
+      setSubmitError(friendlyMessage);
+      useFeedbackStore.getState().showToast(friendlyMessage, "infoLight");
     } finally {
       setIsSubmitting(false);
     }

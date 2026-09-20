@@ -1,30 +1,45 @@
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import FormField from '@/_components/common/FormField';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import * as authApi from '@/services/authApi';
-import { useAuthStore } from '@/store/authStore';
-import { setPendingSignupCredentials, useEmailVerificationStore } from '@/store/emailVerificationStore';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { Ionicons } from '@expo/vector-icons';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React, { useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { Animated, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
-import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
-import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
-import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
+import ErrorBanner from "@/_components/common/ErrorBanner";
+import FormField from "@/_components/common/FormField";
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import * as authApi from "@/services/authApi";
+import { normalizeAuthErrorMessage } from "@/services/authApi";
+import { useAuthStore } from "@/store/authStore";
+import {
+  setPendingSignupCredentials,
+  useEmailVerificationStore,
+} from "@/store/emailVerificationStore";
+import { useFeedbackStore } from "@/store/feedbackStore";
+import { Ionicons } from "@expo/vector-icons";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  Animated,
+  LayoutChangeEvent,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PasswordStrengthGuide } from "../../../_components/auth/PasswordStrengthGuide";
+import {
+  type AppRole,
+  ROLE_LABEL,
+  ROLE_SETTINGS,
+} from "../../../constants/roles";
+import { usePasswordStrength } from "../../../hooks/usePasswordStrength";
+import { type SignUpFormValues, signUpSchema } from "../../../utils/validation";
 
 export default function SignUpPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [activeRole, setActiveRole] = useState<AppRole>('user');
+  const [activeRole, setActiveRole] = useState<AppRole>("user");
   const register = useAuthStore((state) => state.register);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
   const [registerError, setRegisterError] = useState<string | null>(null);
@@ -46,19 +61,22 @@ export default function SignUpPage() {
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
-  const passwordValue = watch('password') ?? '';
+  const passwordValue = watch("password") ?? "";
   const passwordStrength = usePasswordStrength(passwordValue);
   const showPasswordGuidance = isPasswordFocused;
   const showPasswordError =
-    wasPasswordBlurred && !isPasswordFocused && passwordValue.trim().length > 0 && !passwordStrength.isValid;
+    wasPasswordBlurred &&
+    !isPasswordFocused &&
+    passwordValue.trim().length > 0 &&
+    !passwordStrength.isValid;
 
   const handleTabsLayout = (e: LayoutChangeEvent) => {
     setTabsWidth(e.nativeEvent.layout.width);
@@ -67,7 +85,7 @@ export default function SignUpPage() {
   const selectRole = (role: AppRole) => {
     setActiveRole(role);
     Animated.timing(slideAnim, {
-      toValue: role === 'user' ? 0 : 1,
+      toValue: role === "user" ? 0 : 1,
       duration: 250,
       useNativeDriver: true,
     }).start();
@@ -87,16 +105,20 @@ export default function SignUpPage() {
         values.lastName,
         values.email,
         values.password,
-        activeRole === 'admin' ? 'Admin' : 'User',
+        activeRole === "admin" ? "Admin" : "User",
       );
 
-      useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+      useEmailVerificationStore
+        .getState()
+        .setPendingVerification(values.email, activeRole);
       setPendingSignupCredentials(values.email, values.password);
 
-      useFeedbackStore.getState().showToast('Account created. Verify your email to continue', 'success');
+      useFeedbackStore
+        .getState()
+        .showToast("Account created. Verify your email to continue", "success");
 
       router.push({
-        pathname: '/_login/_signup/VerifyEmailInstruction',
+        pathname: "/_login/_signup/VerifyEmailInstruction",
         params: { role: activeRole, email: values.email },
       });
     } catch (error) {
@@ -107,25 +129,33 @@ export default function SignUpPage() {
             lastName: values.lastName,
             email: values.email,
             password: values.password,
-            role: activeRole === 'admin' ? 'Admin' : 'User',
+            role: activeRole === "admin" ? "Admin" : "User",
           },
           error,
         );
 
         if (resumed) {
-          useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+          useEmailVerificationStore
+            .getState()
+            .setPendingVerification(values.email, activeRole);
           setPendingSignupCredentials(values.email, values.password);
-          useFeedbackStore.getState().showToast('Verification email resent', 'success');
+          useFeedbackStore
+            .getState()
+            .showToast("Verification email resent", "success");
           router.push({
-            pathname: '/_login/_signup/VerifyEmailInstruction',
+            pathname: "/_login/_signup/VerifyEmailInstruction",
             params: { role: activeRole, email: values.email },
           });
           return;
         }
-      } catch {
-      }
+      } catch {}
 
-      setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
+      setRegisterError(
+        normalizeAuthErrorMessage(
+          error instanceof Error ? error.message : error,
+          values.email,
+        ) || "Unable to create your account.",
+      );
     }
   };
 
@@ -137,13 +167,17 @@ export default function SignUpPage() {
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.8}
-          onPress={() => router.push('/_login/GetStarted')}
+          onPress={() => router.push("/_login/GetStarted")}
         >
           <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
         </TouchableOpacity>
 
-        <Text allowFontScaling={false} style={styles.title}>Set Up Your Account</Text>
-        <Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.subtitle}</Text>
+        <Text allowFontScaling={false} style={styles.title}>
+          Set Up Your Account
+        </Text>
+        <Text allowFontScaling={false} style={styles.subtitle}>
+          {roleConfig.subtitle}
+        </Text>
       </View>
 
       <KeyboardAwareScrollView
@@ -172,11 +206,14 @@ export default function SignUpPage() {
             <TouchableOpacity
               style={styles.roleTab}
               activeOpacity={0.8}
-              onPress={() => selectRole('user')}
+              onPress={() => selectRole("user")}
             >
               <Text
                 allowFontScaling={false}
-                style={[styles.roleTabText, activeRole === 'user' && styles.roleTabTextActive]}
+                style={[
+                  styles.roleTabText,
+                  activeRole === "user" && styles.roleTabTextActive,
+                ]}
               >
                 {ROLE_LABEL.user}
               </Text>
@@ -185,11 +222,14 @@ export default function SignUpPage() {
             <TouchableOpacity
               style={styles.roleTab}
               activeOpacity={0.8}
-              onPress={() => selectRole('admin')}
+              onPress={() => selectRole("admin")}
             >
               <Text
                 allowFontScaling={false}
-                style={[styles.roleTabText, activeRole === 'admin' && styles.roleTabTextActive]}
+                style={[
+                  styles.roleTabText,
+                  activeRole === "admin" && styles.roleTabTextActive,
+                ]}
               >
                 {ROLE_LABEL.admin}
               </Text>
@@ -279,7 +319,7 @@ export default function SignUpPage() {
                     autoComplete="new-password"
                     rightIcon={
                       <Ionicons
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
                         size={20}
                         color={colors.textTertiary}
                       />
@@ -314,12 +354,16 @@ export default function SignUpPage() {
                   error={errors.confirmPassword?.message}
                   rightIcon={
                     <Ionicons
-                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      name={
+                        showConfirmPassword ? "eye-off-outline" : "eye-outline"
+                      }
                       size={20}
                       color={colors.textTertiary}
                     />
                   }
-                  onRightIconPress={() => setShowConfirmPassword((prev) => !prev)}
+                  onRightIconPress={() =>
+                    setShowConfirmPassword((prev) => !prev)
+                  }
                 />
               )}
             />
@@ -331,7 +375,7 @@ export default function SignUpPage() {
         <ErrorBanner message={registerError} />
 
         <PrimaryButton
-          label={isAuthenticating ? 'Creating account…' : 'Continue'}
+          label={isAuthenticating ? "Creating account…" : "Continue"}
           onPress={handleSubmit(handleContinue)}
           loading={isAuthenticating}
           disabled={isAuthenticating}
@@ -339,9 +383,16 @@ export default function SignUpPage() {
         />
 
         <View style={styles.footerRow}>
-          <Text allowFontScaling={false} style={styles.footerPrompt}>Already have an account? </Text>
-          <TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/_login/SignInPage')}>
-            <Text allowFontScaling={false} style={styles.footerLink}>Sign in</Text>
+          <Text allowFontScaling={false} style={styles.footerPrompt}>
+            Already have an account?{" "}
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => router.push("/_login/SignInPage")}
+          >
+            <Text allowFontScaling={false} style={styles.footerLink}>
+              Sign in
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -376,16 +427,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.heroIconButtonBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
-    ...getTypographyStyle('t1Title'),
+    ...getTypographyStyle("t1Title"),
     color: colors.primaryText,
     marginTop: 20,
   },
   subtitle: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.heroSubtitleText,
     marginTop: 4,
   },
@@ -400,15 +451,15 @@ const styles = StyleSheet.create({
     minHeight: 360,
   },
   roleTabsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: colors.background,
     borderRadius: 18,
     padding: 4,
     marginBottom: 24,
-    position: 'relative',
+    position: "relative",
   },
   rolePill: {
-    position: 'absolute',
+    position: "absolute",
     top: 4,
     left: 4,
     bottom: 4,
@@ -419,18 +470,18 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 14,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 1,
   },
   roleTabText: {
-    ...getTypographyStyle('b3Button'),
+    ...getTypographyStyle("b3Button"),
     color: colors.textSecondary,
   },
   roleTabTextActive: {
     color: colors.primaryText,
   },
   nameRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
   halfField: {
@@ -448,17 +499,17 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 14,
   },
   footerPrompt: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.textSecondary,
   },
   footerLink: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.primary,
   },
 });

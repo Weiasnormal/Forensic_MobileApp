@@ -64,13 +64,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       user?.roles.some((role) => role.toLowerCase().includes("admin")) ?? false;
     const hasTenant = Boolean(user?.tenantId?.trim());
     const isUserRoute = currentSegment === "User";
+    const isSignupFlowRoute = segments.some(
+      (segment) =>
+        segment === "_signup" ||
+        segment === "OrganizationCreate" ||
+        segment === "User&AdminCodepage" ||
+        segment === "VerifyEmailInstruction" ||
+        segment === "PendingUser&Admin" ||
+        segment === "GetStarted",
+    );
 
     if (!isAuthenticated && !isPublicRoute) {
       router.replace("/_login/GetStarted");
       return;
     }
 
-    if (isAuthenticated && !isPublicRoute && !hasTenant) {
+    if (isAuthenticated && !isPublicRoute && !hasTenant && !isSignupFlowRoute) {
       router.replace(
         isAdmin
           ? "/_login/_signup/OrganizationCreate"
@@ -79,12 +88,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (isAuthenticated && isAdminRoute && !isAdmin) {
+    if (isAuthenticated && isAdminRoute && !isAdmin && !isSignupFlowRoute) {
       router.replace("/User/user_dashboard");
       return;
     }
 
-    if (isAuthenticated && isUserRoute && isAdmin) {
+    if (isAuthenticated && isUserRoute && isAdmin && !isSignupFlowRoute) {
       router.replace("/Admin/admin_dashboard");
       return;
     }
@@ -121,16 +130,16 @@ export default function RootLayout() {
         <AuthGate>
           <NotificationSignalRListener />
           <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: "ios_from_right",
-              }}
-            >
-              <Stack.Screen
-                name="_login/OnBoardingpage"
-                options={{ animation: "none" }}
-              />
-            </Stack>
+            screenOptions={{
+              headerShown: false,
+              animation: "ios_from_right",
+            }}
+          >
+            <Stack.Screen
+              name="_login/OnBoardingpage"
+              options={{ animation: "none" }}
+            />
+          </Stack>
         </AuthGate>
         <GlobalToast />
       </UserProvider>
