@@ -1,29 +1,20 @@
-import { NOTIFICATION_HUB_URL } from "@/constants/api";
+import { createNotificationConnection } from "@/services/notificationHub";
 import { useAuthStore } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
-import {
-    HubConnectionBuilder,
-    HubConnectionState,
-    LogLevel,
-} from "@microsoft/signalr";
+import { HubConnectionState } from "@microsoft/signalr";
 import { useEffect } from "react";
 
 export default function NotificationSignalRListener() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const tenantId = useAuthStore((state) => state.user?.tenantId?.trim() ?? "");
+  const isTokenExpired = useAuthStore((state) => state.isTokenExpired);
 
   useEffect(() => {
     // NotificationHub requires TenantId in the JWT. Users receive that claim
     // only after successfully joining an organization.
-    if (!accessToken) return;
+    if (!accessToken || !tenantId || isTokenExpired()) return;
 
-    const connection = new HubConnectionBuilder()
-      .withUrl(NOTIFICATION_HUB_URL, {
-        accessTokenFactory: () => useAuthStore.getState().accessToken ?? "",
-      })
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
-      .build();
+    const connection = createNotificationConnection();
     let isDisposed = false;
 
     const handleMemberRequestStatus = (payload?: {
@@ -80,7 +71,7 @@ export default function NotificationSignalRListener() {
         });
       }
     };
-  }, [accessToken, tenantId]);
+  }, [accessToken, isTokenExpired, tenantId]);
 
   return null;
 }

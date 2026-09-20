@@ -201,7 +201,9 @@ export default function AdminDashboard() {
           <View style={styles.homeHeaderTop}>
             <View>
               <Text style={styles.homeOrgText}>
-                {user?.organization || "PNP Crime Laboratory"}
+                {tenantProfile?.name ||
+                  user?.organization ||
+                  "Organization unavailable"}
               </Text>
               <Text style={styles.homeGreeting}>
                 Hello, Admin {user?.lastName}
@@ -264,7 +266,11 @@ export default function AdminDashboard() {
             `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Admin"
           }
           role="Admin"
-          organization={user?.organization || "PNP Crime Laboratory"}
+          organization={
+            tenantProfile?.name ||
+            user?.organization ||
+            "Organization unavailable"
+          }
           appVersion="v1.0.0"
           notificationsEnabled={notificationsEnabled}
           onEditProfilePress={() =>

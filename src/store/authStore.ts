@@ -1,8 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { jwtDecode } from 'jwt-decode';
-import * as authApi from '@/services/authApi';
+import * as authApi from "@/services/authApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 interface AuthUser {
   userId: string;
@@ -25,10 +25,13 @@ interface AuthState {
     lastName: string,
     email: string,
     password: string,
-    role: 'User' | 'Admin',
+    role: "User" | "Admin",
   ) => Promise<void>;
   logout: () => Promise<void>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
   deleteAccount: () => Promise<void>;
   clearAuthError: () => void;
   isTokenExpired: () => boolean;
@@ -43,27 +46,41 @@ function decodeToken(token: string): AuthUser {
 
   const userId =
     decoded.nameid ??
-    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ??
-    decoded.sub ?? '';
+    decoded[
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+    ] ??
+    decoded.sub ??
+    "";
 
   const tenantId =
     decoded.TenantId ??
     decoded.tenantId ??
     decoded.groupsid ??
-    decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/groupsid'] ?? '';
+    decoded[
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/groupsid"
+    ] ??
+    "";
 
   const email =
     decoded.email ??
-    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ?? '';
+    decoded[
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+    ] ??
+    "";
 
   const rawRole =
     decoded.role ??
-    decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'] ??
-    decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"] ??
+    decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
 
   const roles = Array.isArray(rawRole) ? rawRole : rawRole ? [rawRole] : [];
 
   return { userId, tenantId, email, roles };
+}
+
+function getTokenExpiry(token: string): string | undefined {
+  const { exp } = jwtDecode<{ exp?: number }>(token);
+  return exp ? new Date(exp * 1000).toISOString() : undefined;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -77,27 +94,34 @@ export const useAuthStore = create<AuthState>()(
       hasHydrated: false,
 
       applyNewAccessToken: (accessToken: string, expiresAt?: string) => {
-      // createTenant (POST /tenants) returns a freshly-issued JWT that now carries
-      // the TenantId claim — this MUST replace the session token, or every
-      // tenant-scoped request afterwards will fail with Tenant.NotMember.
-      set({
-        accessToken,
-        user: decodeToken(accessToken),
-        expiresAt: expiresAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
-    },
+        // createTenant (POST /tenants) returns a freshly-issued JWT that now carries
+        // the TenantId claim — this MUST replace the session token, or every
+        // tenant-scoped request afterwards will fail with Tenant.NotMember.
+        set({
+          accessToken,
+          user: decodeToken(accessToken),
+          expiresAt: expiresAt ?? getTokenExpiry(accessToken) ?? null,
+        });
+      },
 
       login: async (email, password) => {
         set({ isAuthenticating: true, authError: null });
         try {
-          const { accessToken, expiresAt } = await authApi.login({ email, password });
+          const { accessToken, expiresAt } = await authApi.login({
+            email,
+            password,
+          });
           const tokenClaims = jwtDecode<{ exp?: number }>(accessToken);
-          const normalizedExpiresAt = expiresAt ?? (
-            tokenClaims.exp ? new Date(tokenClaims.exp * 1000).toISOString() : null
-          );
+          const normalizedExpiresAt =
+            expiresAt ??
+            (tokenClaims.exp
+              ? new Date(tokenClaims.exp * 1000).toISOString()
+              : null);
 
           if (!normalizedExpiresAt) {
-            throw new Error('Sign-in response did not include a valid token expiry.');
+            throw new Error(
+              "Sign-in response did not include a valid token expiry.",
+            );
           }
 
           set({
@@ -106,11 +130,12 @@ export const useAuthStore = create<AuthState>()(
             user: decodeToken(accessToken),
             isAuthenticating: false,
           });
-            console.log(JSON.stringify(jwtDecode(accessToken), null, 2));
+          console.log(JSON.stringify(jwtDecode(accessToken), null, 2));
         } catch (error) {
           set({
             isAuthenticating: false,
-            authError: error instanceof Error ? error.message : 'Unable to sign in.',
+            authError:
+              error instanceof Error ? error.message : "Unable to sign in.",
           });
           throw error;
         }
@@ -119,12 +144,19 @@ export const useAuthStore = create<AuthState>()(
       register: async (firstName, lastName, email, password, role) => {
         set({ isAuthenticating: true, authError: null });
         try {
-          await authApi.register({ firstName, lastName, email, password, role });
+          await authApi.register({
+            firstName,
+            lastName,
+            email,
+            password,
+            role,
+          });
           set({ isAuthenticating: false });
         } catch (error) {
           set({
             isAuthenticating: false,
-            authError: error instanceof Error ? error.message : 'Unable to register.',
+            authError:
+              error instanceof Error ? error.message : "Unable to register.",
           });
           throw error;
         }
@@ -144,24 +176,31 @@ export const useAuthStore = create<AuthState>()(
 
       changePassword: async (currentPassword, newPassword) => {
         const token = get().accessToken;
-        if (!token) throw new Error('Not authenticated.');
+        if (!token) throw new Error("Not authenticated.");
         await authApi.changePassword(token, { currentPassword, newPassword });
       },
 
       joinInviteCode: async (inviteCode: string) => {
         const token = get().accessToken;
-        if (!token) throw new Error('You must be signed in to join an organization.');
-        const refreshedSession = await authApi.joinInviteCode(token, inviteCode);
+        if (!token)
+          throw new Error("You must be signed in to join an organization.");
+        const refreshedSession = await authApi.joinInviteCode(
+          token,
+          inviteCode,
+        );
         if (refreshedSession?.accessToken) {
-          get().applyNewAccessToken(refreshedSession.accessToken, refreshedSession.expiresAt);
+          get().applyNewAccessToken(
+            refreshedSession.accessToken,
+            refreshedSession.expiresAt,
+          );
         }
       },
 
       deleteAccount: async () => {
-      const token = get().accessToken;
-      if (!token) throw new Error('Not authenticated.');
-      await authApi.deleteAccount(token);
-      set({ accessToken: null, expiresAt: null, user: null });
+        const token = get().accessToken;
+        if (!token) throw new Error("Not authenticated.");
+        await authApi.deleteAccount(token);
+        set({ accessToken: null, expiresAt: null, user: null });
       },
 
       clearAuthError: () => set({ authError: null }),
@@ -171,17 +210,17 @@ export const useAuthStore = create<AuthState>()(
         if (!expiresAt) return true;
         return new Date(expiresAt).getTime() <= Date.now();
       },
-     setHasHydrated: (value) => set({ hasHydrated: value }),
+      setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
-      name: 'avera_auth_store',
+      name: "avera_auth_store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         accessToken: state.accessToken,
         expiresAt: state.expiresAt,
         user: state.user,
       }),
-      onRehydrateStorage: () => (state) => {   
+      onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
     },
@@ -194,7 +233,9 @@ export function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function handleUnauthorizedResponse(response: Response): Promise<boolean> {
+export async function handleUnauthorizedResponse(
+  response: Response,
+): Promise<boolean> {
   if (response.status === 401 || response.status === 403) {
     await useAuthStore.getState().logout();
     return true;
