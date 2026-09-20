@@ -94,4 +94,7 @@ export const colors = {
   suspectBackground: "#FFFBEB",
   suspectBackgroundFilled: "#FFFBEB",
   suspectSubtext: "#D97706",
+
+  heroIconButtonBorder: '#FFFFFF',
+  heroSubtitleText: 'rgba(255,255,255,0.85)',
 };

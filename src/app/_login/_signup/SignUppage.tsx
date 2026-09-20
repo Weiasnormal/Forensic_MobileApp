@@ -1,5 +1,6 @@
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import * as authApi from '@/services/authApi';
@@ -14,6 +15,7 @@ import React, { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Animated, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PasswordStrengthGuide } from '../../../_components/auth/PasswordStrengthGuide';
 import { type AppRole, ROLE_LABEL, ROLE_SETTINGS } from '../../../constants/roles';
 import { usePasswordStrength } from '../../../hooks/usePasswordStrength';
@@ -21,6 +23,7 @@ import { type SignUpFormValues, signUpSchema } from '../../../utils/validation';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [activeRole, setActiveRole] = useState<AppRole>('user');
   const register = useAuthStore((state) => state.register);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
@@ -33,8 +36,6 @@ export default function SignUpPage() {
 
   const [tabsWidth, setTabsWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current; // 0 = analyst, 1 = admin
-
-  //const login = useAuthStore((state) => state.login);
 
   const roleConfig = ROLE_SETTINGS[activeRole].signUp;
   const {
@@ -78,80 +79,81 @@ export default function SignUpPage() {
     outputRange: [0, pillWidth],
   });
 
-const handleContinue = async (values: SignUpFormValues) => {
-  setRegisterError(null);
-  try {
-    await register(
-      values.firstName,
-      values.lastName,
-      values.email,
-      values.password,
-      activeRole === 'admin' ? 'Admin' : 'User',
-    );
-
-    useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
-      setPendingSignupCredentials(values.email, values.password);
-
-    useFeedbackStore.getState().showToast('Account created — verify your email to continue', 'success');
-
-    router.push({
-      pathname: '/_login/_signup/VerifyEmailInstruction',
-      params: { role: activeRole, email: values.email },
-    });
-  } catch (error) {
+  const handleContinue = async (values: SignUpFormValues) => {
+    setRegisterError(null);
     try {
-      const resumed = await authApi.resumeUnverifiedRegistration(
-        {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email,
-          password: values.password,
-          role: activeRole === 'admin' ? 'Admin' : 'User',
-        },
-        error,
+      await register(
+        values.firstName,
+        values.lastName,
+        values.email,
+        values.password,
+        activeRole === 'admin' ? 'Admin' : 'User',
       );
 
-      if (resumed) {
-        useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
-        setPendingSignupCredentials(values.email, values.password);
-        useFeedbackStore.getState().showToast('Verification email resent', 'success');
-        router.push({
-          pathname: '/_login/_signup/VerifyEmailInstruction',
-          params: { role: activeRole, email: values.email },
-        });
-        return;
-      }
-    } catch {
-    }
+      useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+      setPendingSignupCredentials(values.email, values.password);
 
-    setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
-  }
-};
+      useFeedbackStore.getState().showToast('Account created — verify your email to continue', 'success');
+
+      router.push({
+        pathname: '/_login/_signup/VerifyEmailInstruction',
+        params: { role: activeRole, email: values.email },
+      });
+    } catch (error) {
+      try {
+        const resumed = await authApi.resumeUnverifiedRegistration(
+          {
+            firstName: values.firstName,
+            lastName: values.lastName,
+            email: values.email,
+            password: values.password,
+            role: activeRole === 'admin' ? 'Admin' : 'User',
+          },
+          error,
+        );
+
+        if (resumed) {
+          useEmailVerificationStore.getState().setPendingVerification(values.email, activeRole);
+          setPendingSignupCredentials(values.email, values.password);
+          useFeedbackStore.getState().showToast('Verification email resent', 'success');
+          router.push({
+            pathname: '/_login/_signup/VerifyEmailInstruction',
+            params: { role: activeRole, email: values.email },
+          });
+          return;
+        }
+      } catch {
+      }
+
+      setRegisterError(error instanceof Error ? error.message : 'Unable to create your account.');
+    }
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" translucent backgroundColor={colors.primary} />
 
-      
-        <View style={styles.hero}>
-          <TouchableOpacity
-            style={styles.backButton}
-            activeOpacity={0.8}
-            onPress={() => router.push('/_login/GetStarted')}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
-          </TouchableOpacity>
+      <View style={styles.hero}>
+        <TouchableOpacity
+          style={styles.backButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/_login/GetStarted')}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
+        </TouchableOpacity>
 
-          <Text allowFontScaling={false} style={styles.title}>Set Up Your Account</Text>
-          <Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.subtitle}</Text>
-        </View>
-	  <KeyboardAwareScrollView
+        <Text allowFontScaling={false} style={styles.title}>Set Up Your Account</Text>
+        <Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.subtitle}</Text>
+      </View>
+
+      <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         bounces={false}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         extraScrollHeight={24}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.formArea}>
           <View style={styles.roleTabsContainer} onLayout={handleTabsLayout}>
@@ -323,28 +325,27 @@ const handleContinue = async (values: SignUpFormValues) => {
               )}
             />
           </View>
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            activeOpacity={0.85}
-            onPress={handleSubmit(handleContinue)}
-            disabled={isAuthenticating}
-          >
-            <Text allowFontScaling={false} style={styles.primaryButtonText}>
-              {isAuthenticating ? 'Creating account…' : 'Continue'}
-            </Text>
-          </TouchableOpacity>
-          
-          <ErrorBanner message={registerError} />
-
-          <View style={styles.footerRow}>
-            <Text allowFontScaling={false} style={styles.footerPrompt}>Already have an account? </Text>
-            <TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/_login/SignInPage')}>
-              <Text allowFontScaling={false} style={styles.footerLink}>Sign in</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </KeyboardAwareScrollView>
+
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+        <ErrorBanner message={registerError} />
+
+        <PrimaryButton
+          label={isAuthenticating ? 'Creating account…' : 'Continue'}
+          onPress={handleSubmit(handleContinue)}
+          loading={isAuthenticating}
+          disabled={isAuthenticating}
+          size="large"
+        />
+
+        <View style={styles.footerRow}>
+          <Text allowFontScaling={false} style={styles.footerPrompt}>Already have an account? </Text>
+          <TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/_login/SignInPage')}>
+            <Text allowFontScaling={false} style={styles.footerLink}>Sign in</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
@@ -375,21 +376,18 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderColor: colors.heroIconButtonBorder, 
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     ...getTypographyStyle('t1Title'),
-    fontSize: 28,
     color: colors.primaryText,
     marginTop: 20,
   },
   subtitle: {
-    ...getTypographyStyle('body'),
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
+    ...getTypographyStyle('c1Caption', 'regular'),
+    color: colors.heroSubtitleText,
     marginTop: 4,
   },
   formArea: {
@@ -445,25 +443,16 @@ const styles = StyleSheet.create({
   noMargin: {
     marginBottom: 0,
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  primaryButtonText: {
-    ...getTypographyStyle('b1Button'),
-    color: colors.primaryText,
+  footer: {
+    backgroundColor: colors.background2,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 14,
-    paddingBottom: 20,
   },
   footerPrompt: {
     ...getTypographyStyle('c1Caption'),

@@ -120,7 +120,17 @@ export default function RootLayout() {
       <UserProvider>
         <AuthGate>
           <NotificationSignalRListener />
-          <Stack screenOptions={{ headerShown: false }} />
+          <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "ios_from_right",
+              }}
+            >
+              <Stack.Screen
+                name="_login/OnBoardingpage"
+                options={{ animation: "none" }}
+              />
+            </Stack>
         </AuthGate>
         <GlobalToast />
       </UserProvider>

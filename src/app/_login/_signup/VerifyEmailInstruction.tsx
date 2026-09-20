@@ -110,18 +110,16 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: { 
 		flexGrow: 1, 
-		paddingHorizontal: 24, 
-		paddingTop: 12, 
+		paddingHorizontal: 24,  
 		alignItems: 'center' 
 	},
 	illustrationWrap: { 
 		width: '100%', 
 		alignItems: 'center', 
-		marginVertical: 20 
 	},
 	illustration: { 
-		width: 260, 
-		height: 200 
+		width: 300, 
+		height: 300 
 	},
 	title: { 
 		...getTypographyStyle('t1Title'), 
@@ -129,7 +127,7 @@ const styles = StyleSheet.create({
 		textAlign: 'center' 
 	},
 	subtitle: {
-		...getTypographyStyle('body'), 
+		...getTypographyStyle('c1Caption', 'regular'), 
 		fontSize: 14, 
 		color: colors.textSecondary,
 		textAlign: 'center', 
@@ -163,7 +161,7 @@ const styles = StyleSheet.create({
 		borderColor: colors.statusGenuine 
 	},
 	stepText: { 
-		...getTypographyStyle('body'), 
+		...getTypographyStyle('c1Caption', 'regular'), 
 		color: colors.textPrimary 
 	},
 	bottomActions: { 

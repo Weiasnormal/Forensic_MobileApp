@@ -9,11 +9,14 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type InviteCodeFormValues, inviteCodeSchema } from '../../../utils/validation';
 
 export default function UserAndAdminCodePage() {
 	const router = useRouter();
+	const insets = useSafeAreaInsets();
 	const params = useLocalSearchParams<{ role?: string }>();
 	const activeRole = resolveRole(params.role);
 	const roleConfig = ROLE_SETTINGS[activeRole].signUpCode;
@@ -84,6 +87,8 @@ export default function UserAndAdminCodePage() {
 		}
 	};
 
+	const isCodeComplete = codeValues.join('').length === 7;
+
 	return (
 		<KeyboardAvoidingView
 			style={styles.container}
@@ -96,6 +101,7 @@ export default function UserAndAdminCodePage() {
 				contentContainerStyle={styles.scrollContent}
 				bounces={false}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
 				<View style={styles.hero}>
 					<TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.back()}>
@@ -106,13 +112,15 @@ export default function UserAndAdminCodePage() {
 					<Text allowFontScaling={false} style={styles.subtitle}>{roleConfig.subtitle}</Text>
 				</View>
 
-				<View style={styles.formArea}>
+				<View style={[styles.formArea, { paddingBottom: insets.bottom + 12 }]}>
 					<Text allowFontScaling={false} style={styles.label}>Invite code</Text>
 
 					<View style={styles.codeInputContainer}>
 						{codeValues.map((value, index) => (
-							<View key={index}>
-								{index === 3 && <Text allowFontScaling={false} style={styles.codeHyphen}>-</Text>}
+							<React.Fragment key={index}>
+								{index === 3 && (
+									<Text allowFontScaling={false} style={styles.codeHyphen}>-</Text>
+								)}
 								<TextInput
 									ref={(ref): void => {
 										inputRefs.current[index] = ref;
@@ -127,7 +135,7 @@ export default function UserAndAdminCodePage() {
 									placeholder=""
 									placeholderTextColor={colors.textTertiary}
 								/>
-							</View>
+							</React.Fragment>
 						))}
 					</View>
 
@@ -137,16 +145,14 @@ export default function UserAndAdminCodePage() {
 
 					<Text allowFontScaling={false} style={styles.helperText}>{roleConfig.noCodeText}</Text>
 
-					<TouchableOpacity
-						style={[styles.primaryButton, (codeValues.join('').length !== 7 || isSubmitting) && styles.primaryButtonDisabled]}
-						activeOpacity={0.85}
+					<PrimaryButton
+						label={isSubmitting ? 'Verifying…' : 'Verify & continue'}
 						onPress={handleSubmit(handleVerify)}
-						disabled={codeValues.join('').length !== 7 || isSubmitting}
-						>
-						<Text allowFontScaling={false} style={styles.primaryButtonText}>
-							{isSubmitting ? 'Verifying…' : 'Verify & continue'}
-						</Text>
-					</TouchableOpacity>
+						loading={isSubmitting}
+						disabled={!isCodeComplete || isSubmitting}
+						size="large"
+						style={styles.primaryButtonSpacing}
+					/>
 				</View>
 			</ScrollView>
 		</KeyboardAvoidingView>
@@ -164,7 +170,6 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
-		paddingBottom: 10,
 		backgroundColor: colors.background2,
 	},
 	hero: {
@@ -180,21 +185,18 @@ const styles = StyleSheet.create({
 		height: 36,
 		borderRadius: 10,
 		borderWidth: 1,
-		borderColor: 'rgba(255,255,255,0.5)',
-		backgroundColor: 'rgba(255,255,255,0.15)',
+		borderColor: colors.heroIconButtonBorder, 
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	title: {
 		...getTypographyStyle('t1Title'),
-		fontSize: 28,
 		color: colors.primaryText,
 		marginTop: 20,
 	},
 	subtitle: {
 		...getTypographyStyle('body'),
-		fontSize: 14,
-		color: 'rgba(255,255,255,0.85)',
+		color: colors.heroSubtitleText,
 		marginTop: 4,
 	},
 	formArea: {
@@ -202,10 +204,9 @@ const styles = StyleSheet.create({
 		backgroundColor: colors.background2,
 		paddingHorizontal: 20,
 		paddingTop: 32,
-		paddingBottom: 22,
 	},
 	label: {
-		...getTypographyStyle('c1Caption'),
+		...getTypographyStyle('c1Caption', 'regular'),
 		color: colors.textSecondary,
 		marginBottom: 8,
 		textAlign: 'center',
@@ -213,17 +214,17 @@ const styles = StyleSheet.create({
 	codeInputContainer: {
 		flexDirection: 'row',
 		justifyContent: 'center',
+		alignItems: 'center',
 		gap: 8,
 		marginBottom: 16,
-		alignItems: 'center',
 	},
 	codeInput: {
-		width: 44,
-		height: 50,
+		width: 35,
+		height: 45,
 		borderRadius: 12,
 		borderWidth: 1,
 		borderColor: colors.inputBorder,
-		backgroundColor: colors.background,
+		backgroundColor: colors.background2,
 		textAlign: 'center',
 		...getTypographyStyle('t3Title'),
 		color: colors.textPrimary,
@@ -232,12 +233,8 @@ const styles = StyleSheet.create({
 		borderColor: colors.danger,
 	},
 	codeHyphen: {
-		position: 'absolute',
-		top: -7,
+		...getTypographyStyle('t3Title'),
 		color: colors.textSecondary,
-		fontSize: 22,
-		fontWeight: '300',
-		right: -16,
 	},
 	helperText: {
 		...getTypographyStyle('c2Caption'),
@@ -251,20 +248,7 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		marginBottom: 10,
 	},
-	primaryButton: {
-		backgroundColor: colors.primary,
-		borderRadius: 12,
-		paddingVertical: 15,
-		alignItems: 'center',
-		justifyContent: 'center',
+	primaryButtonSpacing: {
 		marginTop: 'auto',
-		marginBottom: 12,
-	},
-	primaryButtonDisabled: {
-		backgroundColor: colors.primaryDisabled,
-	},
-	primaryButtonText: {
-		...getTypographyStyle('b1Button'),
-		color: colors.primaryText,
 	},
 });

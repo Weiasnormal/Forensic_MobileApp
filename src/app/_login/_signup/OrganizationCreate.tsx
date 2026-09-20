@@ -1,5 +1,6 @@
 import ErrorBanner from '@/_components/common/ErrorBanner';
 import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useAdminStore } from '@/store/adminStore';
@@ -12,6 +13,7 @@ import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
 const organizationSchema = z.object({
@@ -20,6 +22,7 @@ const organizationSchema = z.object({
 
 export default function SignUpPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const createTenant = useAdminStore((state) => state.createTenant);
   const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
   const isCreatingTenant = useAdminStore((state) => state.isCreatingTenant);
@@ -34,56 +37,55 @@ export default function SignUpPage() {
       organizationName: '',
     },
   });
-  
 
-
-const handleContinue = async (values: { organizationName: string }) => {
-  const organizationName = values.organizationName?.trim() ?? '';
-  if (!organizationName) {
-    setOrganizationError('Organization name is required.');
-    return;
-  }
-
-  setOrganizationError(null);
-  try {
-    const tenantId = await createTenant(organizationName);
-    if (!tenantId) {
-      setOrganizationError(createTenantError ?? 'Unable to create organization.');
+  const handleContinue = async (values: { organizationName: string }) => {
+    const organizationName = values.organizationName?.trim() ?? '';
+    if (!organizationName) {
+      setOrganizationError('Organization name is required.');
       return;
     }
 
-    await fetchTenantProfile();
-    useEmailVerificationStore.getState().reset();
-    router.replace('/Admin/admin_dashboard');
-  } catch (error) {
-    setOrganizationError(error instanceof Error ? error.message : 'Unable to create organization.');
-  }
+    setOrganizationError(null);
+    try {
+      const tenantId = await createTenant(organizationName);
+      if (!tenantId) {
+        setOrganizationError(createTenantError ?? 'Unable to create organization.');
+        return;
+      }
+
+      await fetchTenantProfile();
+      useEmailVerificationStore.getState().reset();
+      router.replace('/Admin/admin_dashboard');
+    } catch (error) {
+      setOrganizationError(error instanceof Error ? error.message : 'Unable to create organization.');
+    }
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" translucent backgroundColor={colors.primary} />
 
-      
-        <View style={styles.hero}>
-          <TouchableOpacity
-            style={styles.backButton}
-            activeOpacity={0.8}
-            onPress={() => router.push('/_login/GetStarted')}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
-          </TouchableOpacity>
+      <View style={styles.hero}>
+        <TouchableOpacity
+          style={styles.backButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/_login/GetStarted')}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
+        </TouchableOpacity>
 
-          <Text allowFontScaling={false} style={styles.title}>Set Up Your Account</Text>
-          <Text allowFontScaling={false} style={styles.subtitle}>Set up your organization to continue</Text>
-        </View>
-	  <KeyboardAwareScrollView
+        <Text allowFontScaling={false} style={styles.title}>Set Up Your Account</Text>
+        <Text allowFontScaling={false} style={styles.subtitle}>Set up your organization to continue</Text>
+      </View>
+
+      <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         bounces={false}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         extraScrollHeight={24}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.formArea}>
           <View style={styles.formBody}>
@@ -102,21 +104,21 @@ const handleContinue = async (values: { organizationName: string }) => {
               )}
             />
           </View>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            activeOpacity={0.85}
-            onPress={handleSubmit(handleContinue)}
-            disabled={isCreatingTenant}
-          >
-            <Text allowFontScaling={false} style={styles.primaryButtonText}>
-              {isCreatingTenant ? 'Creating organization…' : 'Continue'}
-            </Text>
-          </TouchableOpacity>
-            <ErrorBanner message={organizationError} />
-            <ErrorBanner message={createTenantError && !organizationError ? createTenantError : null} />
-        
         </View>
       </KeyboardAwareScrollView>
+
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+        <ErrorBanner message={organizationError} />
+        <ErrorBanner message={createTenantError && !organizationError ? createTenantError : null} />
+
+        <PrimaryButton
+          label={isCreatingTenant ? 'Creating organization…' : 'Continue'}
+          onPress={handleSubmit(handleContinue)}
+          loading={isCreatingTenant}
+          disabled={isCreatingTenant}
+          size="large"
+        />
+      </View>
     </View>
   );
 }
@@ -147,21 +149,18 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderColor: colors.heroIconButtonBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     ...getTypographyStyle('t1Title'),
-    fontSize: 28,
     color: colors.primaryText,
     marginTop: 20,
   },
   subtitle: {
-    ...getTypographyStyle('body'),
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
+    ...getTypographyStyle('c1Caption', 'regular'),
+    color: colors.heroSubtitleText,
     marginTop: 4,
   },
   formArea: {
@@ -174,75 +173,9 @@ const styles = StyleSheet.create({
   formBody: {
     minHeight: 360,
   },
-  roleTabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-    borderRadius: 18,
-    padding: 4,
-    marginBottom: 24,
-    position: 'relative',
-  },
-  rolePill: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    bottom: 4,
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-  },
-  roleTab: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  roleTabText: {
-    ...getTypographyStyle('b3Button'),
-    color: colors.textSecondary,
-  },
-  roleTabTextActive: {
-    color: colors.primaryText,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  halfField: {
-    flex: 1,
-  },
-  fieldGroup: {
-    marginBottom: 16,
-  },
-  noMargin: {
-    marginBottom: 0,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  primaryButtonText: {
-    ...getTypographyStyle('b1Button'),
-    color: colors.primaryText,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 14,
-    paddingBottom: 20,
-  },
-  footerPrompt: {
-    ...getTypographyStyle('c1Caption'),
-    color: colors.textSecondary,
-  },
-  footerLink: {
-    ...getTypographyStyle('c1Caption'),
-    color: colors.primary,
+  footer: {
+    backgroundColor: colors.background2,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
 });

@@ -226,13 +226,12 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     alignItems: "center",
-    paddingTop: 50,
+    paddingTop: 30,
   },
   illustrationWrap: {
-    width: 320,
-    height: 270,
+    width: 300,
+    height: 300,
     marginTop: 6,
-    marginBottom: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -242,13 +241,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...getTypographyStyle("t1Title"),
-    lineHeight: 28,
     textAlign: "center",
   },
   subtitle: {
     marginTop: 8,
     color: colors.textSecondary,
-    ...getTypographyStyle("body", "regular"),
+    ...getTypographyStyle("c1Caption", "regular"),
     lineHeight: 20,
     textAlign: "center",
     marginBottom: 12,
@@ -286,7 +284,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 4,
     color: colors.textSecondary,
-    ...getTypographyStyle("body", "regular"),
+    ...getTypographyStyle("c1Caption", "regular"),
     lineHeight: 20,
   },
   bottomActions: {
