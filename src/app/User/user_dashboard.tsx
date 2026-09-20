@@ -13,21 +13,21 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CaseCard from "../../_components/caseCards";
 import PendingCard from "../../_components/pendingCards";
 import {
-    getPendingCards,
-    type SavedCase,
-    useCaseStore,
+  getPendingCards,
+  type SavedCase,
+  useCaseStore,
 } from "../../store/caseStore";
 import Navbar, { type TabKey } from "../_navbar/nav_bar";
 import ProfileScreen from "./user_profile";
@@ -325,6 +325,7 @@ function HomeTab({
               hasHiddenPending ? `View all (${pendingCards.length})` : undefined
             }
             onActionPress={onViewAllPendingPress}
+            style={styles.listSectionHeader}
           />
 
           <View style={styles.pendingList}>
@@ -364,6 +365,7 @@ function HomeTab({
             title="Recent Cases"
             actionLabel="View all"
             onActionPress={onViewAllPress}
+            style={styles.listSectionHeader}
           />
 
           <View style={styles.recentList}>
@@ -565,5 +567,8 @@ const styles = StyleSheet.create({
   },
   recentList: {
     marginBottom: 8,
+  },
+  listSectionHeader: {
+    marginHorizontal: 16,
   },
 });

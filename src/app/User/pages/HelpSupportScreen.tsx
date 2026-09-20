@@ -15,29 +15,34 @@ interface FAQEntry {
 
 const FAQ_ITEMS: FAQEntry[] = [
     {
-        question: 'How do I add analysts to my org?',
+        question: 'How does the AI signature analysis work?',
         answer:
-            'Go to Manage Team & Approvals from your profile, then tap Invite Analyst. Share the generated org invite code with the person you want to add — they\'ll enter it during sign up to join your organization.',
+            'Avera compares stroke patterns, pressure curves, and spatial features using a deep learning model, then returns a confidence score and heatmap.',
     },
     {
-        question: 'What does Suspected mean?',
+        question: 'What file formats are accepted?',
         answer:
-            'A case is marked Suspected when the signature verification model detects significant deviation from the reference signature beyond the configured confidence threshold. It flags the case for closer manual review, not a final determination.',
+            'PNG and JPEG are supported. Images are scanned on device using Google ML Kit and automatically flagged if quality is too low before analysis begins.',
     },
     {
-        question: "Can I restrict an analyst's workload?",
+        question: "How do I read the confidence score?",
         answer:
-            'Yes. From Manage Team & Approvals, open an analyst\'s profile and set a maximum active case limit. New cases won\'t be auto-assigned to them once that limit is reached.',
+            'The percentage shows how confident the model is in its verdict, whether Genuine or Suspected. The higher the score, the more certain the result. The heatmap shows where divergence was detected.',
     },
     {
-        question: 'How do I export a case report?',
+        question: 'Can results be used as court evidence?',
         answer:
-            'Open the case, then tap the export icon in the top right of the case detail screen. Reports export as PDF and include the comparison images, confidence score, and analyst notes.',
+            'Avera is a decision-support tool. Results must be reviewed and attested by a certified forensic examiner before any legal submission.',
     },
     {
-        question: 'How is analyst accuracy calculated?',
+        question: 'How is my case data secured?',
         answer:
-            'Accuracy is calculated as the percentage of an analyst\'s case decisions that match the final verified outcome, tracked over their last 90 days of closed cases.',
+            'All data is encrypted at rest and in transit. Case data is scoped to your organization only.',
+    },
+    {
+        question: 'How does the approval process work?',
+        answer:
+            'After registration, your account is pending until your organization supervisor approves your request. You will be notified once access is granted.',
     },
 ];
 
