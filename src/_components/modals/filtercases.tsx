@@ -31,7 +31,7 @@ interface FilterCasesModalProps {
 }
 
 const sortOptions = ['Newest first', 'Oldest first', 'Suspected first', 'Genuine first'];
-const verdictOptions = ['All', 'Pending', 'Genuine', 'Suspected', 'Processing'];
+const verdictOptions = ['All', 'Genuine', 'Suspected', 'Processing'];
 const priorityOptions = ['All', 'Low', 'Medium', 'High', 'Urgent'];
 
 const DEFAULT_SORT = sortOptions[0];

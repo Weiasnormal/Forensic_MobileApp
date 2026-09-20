@@ -1,26 +1,28 @@
+import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import ErrorBanner from "@/_components/common/ErrorBanner";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
-import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
 import { formatRelativeTime, useAdminStore } from "@/store/adminStore";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-	ActivityIndicator,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
+  ActivityIndicator,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-	MemberRequestCard,
-	TeamOverviewCard,
-	type MemberRequestData,
-	type TeamOverviewData,
+  MemberRequestCard,
+  TeamOverviewCard,
+  type MemberRequestData,
+  type TeamOverviewData,
 } from "./cards";
 
 const sortOptions = [
@@ -92,7 +94,9 @@ export default function AdminTeamScreen() {
       <ScreenStatusBar variant="onLight" />
 
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Team Management</Text>
+        <Text allowFontScaling={false} style={styles.pageTitle}>
+          Team Management
+        </Text>
 
         {teamLoadError ? (
           <ErrorBanner
@@ -112,8 +116,14 @@ export default function AdminTeamScreen() {
           />
         </View>
 
-        <View style={styles.chipsRow}>
-          {sortOptions.map((option) => {
+        <FlatList
+          data={sortOptions}
+          keyExtractor={(item) => item}
+          style={styles.chipsScroller}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => {
+            const option = item;
             const active = sortBy === option;
             return (
               <TouchableOpacity
@@ -123,21 +133,25 @@ export default function AdminTeamScreen() {
                 activeOpacity={0.86}
               >
                 <Text
+                  allowFontScaling={false}
                   style={[styles.chipText, active && styles.chipTextActive]}
                 >
                   {option}
                 </Text>
               </TouchableOpacity>
             );
-          })}
-        </View>
+          }}
+          contentContainerStyle={styles.chipsContent}
+        />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionLabel}>Member Requests</Text>
+        <Text allowFontScaling={false} style={styles.sectionLabel}>
+          Member Requests
+        </Text>
 
         {isLoadingTeam ? (
           <View style={styles.loadingRow}>
@@ -155,15 +169,15 @@ export default function AdminTeamScreen() {
             ))}
           </View>
         ) : (
-          <View>
-            <EmptyStateCard
-              title="No pending requests"
-              icon={require("../../../assets/images/member_request.png")}
-            />
-          </View>
+          <EmptyStateCard
+            title="No pending requests"
+            icon={require("../../../assets/images/member_request.png")}
+          />
         )}
 
-        <Text style={styles.sectionLabel}>Team Overview</Text>
+        <Text allowFontScaling={false} style={styles.sectionLabel}>
+          Team Overview
+        </Text>
 
         {isLoadingTeam ? (
           <View style={styles.loadingRow}>
@@ -186,13 +200,11 @@ export default function AdminTeamScreen() {
             ))}
           </View>
         ) : (
-          <View>
-            <EmptyStateCard
-              title="No analysts yet"
-              subtitle="Share your invite code to add analysts."
-              icon={require("../../../assets/images/no_analyst.png")}
-            />
-          </View>
+          <EmptyStateCard
+            title="No analysts yet"
+            subtitle="Share your invite code to add analysts."
+            icon={require("../../../assets/images/no_analyst.png")}
+          />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -211,12 +223,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.disabledBorder,
   },
   pageTitle: {
+    ...getTypographyStyle("t1Title"),
     color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "900",
     letterSpacing: -0.6,
     marginBottom: 12,
   },
@@ -229,26 +240,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.searchBorder,
     marginBottom: 12,
   },
   searchInput: {
     flex: 1,
-    color: "#757575",
-    fontSize: 14,
-    fontWeight: "500",
+    ...getTypographyStyle("body", "medium"),
+    color: colors.textPrimary,
   },
-  chipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  chipsContent: {
+    paddingLeft: 16,
+    paddingBottom: 10,
     gap: 8,
+  },
+  chipsScroller: {
+    marginHorizontal: -16,
   },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.searchBorder,
     backgroundColor: colors.background2,
   },
   chipActive: {
@@ -256,9 +269,8 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   chipText: {
-    color: "#64748B",
-    fontSize: 12,
-    fontWeight: "700",
+    ...getTypographyStyle("b3Button"),
+    color: colors.chipTextInactive,
   },
   chipTextActive: {
     color: colors.primaryText,
@@ -266,12 +278,11 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 120,
+    paddingBottom: 24,
   },
   sectionLabel: {
+    ...getTypographyStyle("l1List"),
     color: colors.label,
-    fontSize: 13,
-    fontWeight: "800",
     letterSpacing: 0.3,
     marginBottom: 10,
   },
