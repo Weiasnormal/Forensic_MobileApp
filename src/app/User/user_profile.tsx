@@ -1,4 +1,3 @@
-import DangerRow from "@/_components/admin/DangerRow";
 import Avatar from "@/_components/common/Avatar";
 import Divider from "@/_components/common/Divider";
 import GroupedCard from "@/_components/common/GroupedCard";
@@ -6,8 +5,10 @@ import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import SectionLabel from "@/_components/common/SectionLabel";
 import SettingsRow from "@/_components/common/SettingsRow";
 import SignOutButton from "@/_components/common/SignOutButton";
+import TertiaryButton from "@/_components/common/TertiaryButton";
 import ToggleRow from "@/_components/common/ToggleRow";
 import DefaultResultViewModal from "@/_components/modals/default_result_view";
+import DeleteAccountModal from "@/_components/modals/delete_account";
 import ErrorModal from "@/_components/modals/error_modal";
 import LogoutModal from "@/_components/modals/logout";
 import TypeToConfirmModal from "@/_components/modals/type_to_confirm";
@@ -23,18 +24,12 @@ import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import {
-  Bell,
-  FileText,
-  Grid,
-  Info,
-  Lock,
-  User,
-  UserX,
-} from "lucide-react-native";
+import { Bell, FileText, Grid, Info, Lock, User } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+type DeleteStep = "closed" | "confirm" | "type";
 
 export default function UserProfileScreen() {
   const router = useRouter();
@@ -48,7 +43,7 @@ export default function UserProfileScreen() {
       load();
     }, [load]),
   );
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<DeleteStep>("closed");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const [showDefaultResultViewModal, setShowDefaultResultViewModal] =
@@ -90,6 +85,23 @@ export default function UserProfileScreen() {
     setLogoutModalVisible(false);
     await logout();
     router.replace("/_login/SignInPage");
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await useAuthStore.getState().deleteAccount();
+      setDeleteStep("closed");
+      useFeedbackStore
+        .getState()
+        .showToast("Account deleted successfully", "success");
+      router.replace("/_login/SignInPage");
+    } catch {
+      setDeleteStep("closed");
+      setDeleteError(true);
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -186,42 +198,34 @@ export default function UserProfileScreen() {
           style={styles.signOutSpacing}
           onPress={() => setLogoutModalVisible(true)}
         />
+        <TertiaryButton
+          label="Delete Account"
+          onPress={() => setDeleteStep("confirm")}
+          textColor={colors.danger}
+          size="medium"
+          style={styles.deleteSpacing}
+        />
+
         <LogoutModal
           visible={logoutModalVisible}
           onCancel={() => setLogoutModalVisible(false)}
           onLogout={handleConfirmSignOut}
         />
-        <Divider />
-        <DangerRow
-          icon={UserX}
-          title="Delete Account"
-          subtitle="Permanently remove your login access"
-          onPress={() => setShowDeleteAccountModal(true)}
+        <DeleteAccountModal
+          visible={deleteStep === "confirm"}
+          variant="user"
+          onCancel={() => setDeleteStep("closed")}
+          onConfirm={() => setDeleteStep("type")}
         />
         <TypeToConfirmModal
-          visible={showDeleteAccountModal}
-          title="Delete Account"
-          message="This will permanently delete your login credentials and personal profile information. Forensic case records you submitted are retained for chain-of-custody purposes. Type DELETE to confirm."
+          visible={deleteStep === "type"}
+          title="Type DELETE to continue"
+          message="This confirms you want to permanently delete your account and all associated data."
           confirmWord="DELETE"
-          confirmLabel={isDeletingAccount ? "Deleting..." : "Delete My Account"}
+          confirmLabel={isDeletingAccount ? "Deleting..." : "Delete Account"}
           isLoading={isDeletingAccount}
-          onCancel={() => setShowDeleteAccountModal(false)}
-          onConfirm={async () => {
-            setIsDeletingAccount(true);
-            try {
-              await useAuthStore.getState().deleteAccount();
-              setShowDeleteAccountModal(false);
-              useFeedbackStore
-                .getState()
-                .showToast("Account deleted successfully", "success");
-              router.replace("/_login/SignInPage");
-            } catch {
-              setShowDeleteAccountModal(false);
-              setDeleteError(true);
-            } finally {
-              setIsDeletingAccount(false);
-            }
-          }}
+          onCancel={() => setDeleteStep("closed")}
+          onConfirm={handleDeleteAccount}
         />
         <ErrorModal
           visible={deleteError}
@@ -350,5 +354,8 @@ const styles = StyleSheet.create({
   },
   signOutSpacing: {
     marginTop: 12,
+  },
+  deleteSpacing: {
+    marginTop: 8,
   },
 });

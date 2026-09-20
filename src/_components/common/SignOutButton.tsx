@@ -15,7 +15,7 @@ const SignOutButton: React.FC<SignOutButtonProps> = ({ onPress, style }) => {
       onPress={onPress}
       style={style}
       backgroundColor={colors.dangerLight}
-      borderColor={colors.dangerBorder}
+      borderColor={colors.dangerLight}
       textColor={colors.danger}
       textVariant="b1Button"
     />

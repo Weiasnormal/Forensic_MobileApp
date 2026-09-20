@@ -5,42 +5,54 @@ import SecondaryButton from '@/_components/common/SecondaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 
+export type DeleteAccountVariant = 'user' | 'admin';
+
+const COPY: Record<DeleteAccountVariant, { title: string; message: string }> = {
+  user: {
+    title: 'Delete your account?',
+    message:
+      'This action cannot be undone. All your personal data and account history will be permanently deleted from Avera.',
+  },
+  admin: {
+    title: 'Delete your Avera Admin account?',
+    message:
+      'This action cannot be undone. You will permanently lose admin access to Avera and all associated account data.',
+  },
+};
+
 interface DeleteAccountModalProps {
   visible: boolean;
+  variant?: DeleteAccountVariant;
   onConfirm: () => void;
   onCancel: () => void;
-  isDeleting?: boolean;
 }
 
 export default function DeleteAccountModal({
   visible,
+  variant = 'user',
   onConfirm,
   onCancel,
-  isDeleting = false,
 }: DeleteAccountModalProps) {
+  const { title, message } = COPY[variant];
+
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onCancel}
+    >
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Delete Account</Text>
-
-          <Text style={styles.message}>
-            This will permanently delete your login credentials and personal
-            profile information. You will not be able to sign in again.
-          </Text>
-
-          <Text style={styles.retentionNote}>
-            Forensic case records you submitted will be retained as required
-            for chain-of-custody and legal evidentiary purposes, but will no
-            longer be linked to your personal account.
-          </Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
 
           <PrimaryButton
-            label={isDeleting ? 'Deleting...' : 'Delete My Account'}
+            label="Delete Account"
             onPress={onConfirm}
-            loading={isDeleting}
-            backgroundColor={colors.danger}
-            textColor="#FFFFFF"
+            size="large"
+            backgroundColor={colors.dangerButton}
             style={styles.button}
           />
 
@@ -48,6 +60,9 @@ export default function DeleteAccountModal({
             label="Cancel"
             onPress={onCancel}
             size="large"
+            backgroundColor={colors.background2}
+            borderColor={colors.inputBorder}
+            textColor={colors.textSecondary}
             style={styles.button}
           />
         </View>
@@ -69,31 +84,25 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     backgroundColor: colors.background2,
     borderRadius: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+    paddingHorizontal: 28,
+    paddingVertical: 30,
     alignItems: 'center',
   },
   title: {
-    ...getTypographyStyle('t1Title'),
+    ...getTypographyStyle('t3Title'),
     color: colors.textPrimary,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  message: {
-    ...getTypographyStyle('body'),
-    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 12,
   },
-  retentionNote: {
-    ...getTypographyStyle('c1Caption', 'regular'),
-    color: colors.textTertiary,
+  message: {
+    ...getTypographyStyle('headline', 'regular'),
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 22,
-    lineHeight: 16,
+    lineHeight: 21,
+    marginBottom: 24,
   },
   button: {
     width: '100%',
-    marginTop: 10,
+    marginTop: 12,
   },
 });
