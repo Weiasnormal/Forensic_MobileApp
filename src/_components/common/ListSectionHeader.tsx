@@ -34,7 +34,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 10,
-    marginHorizontal: 16,
   },
   title: {
     ...getTypographyStyle('headline'),

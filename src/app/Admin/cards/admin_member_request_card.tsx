@@ -1,10 +1,9 @@
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// Deliberately its own minimal shape rather than importing MockMemberRequest
-// or TeamMember directly — any caller (mock data today, real /admin/team
-// data tomorrow) just needs to map into this before rendering.
 export interface MemberRequestData {
 	id: string;
 	firstName: string;
@@ -26,12 +25,18 @@ export default function MemberRequestCard({ request, onApprove, onReject }: Memb
 	return (
 		<View style={styles.row}>
 			<View style={styles.avatar}>
-				<Text style={styles.avatarText}>{getInitials(request.firstName, request.lastName)}</Text>
+				<Text allowFontScaling={false} style={styles.avatarText}>
+					{getInitials(request.firstName, request.lastName)}
+				</Text>
 			</View>
 
 			<View style={styles.info}>
-				<Text style={styles.name}>{request.firstName} {request.lastName}</Text>
-				<Text style={styles.timeAgo}>{request.timeAgo}</Text>
+				<Text allowFontScaling={false} style={styles.name}>
+					{request.firstName} {request.lastName}
+				</Text>
+				<Text allowFontScaling={false} style={styles.timeAgo}>
+					{request.timeAgo}
+				</Text>
 			</View>
 
 			<View style={styles.actions}>
@@ -40,14 +45,14 @@ export default function MemberRequestCard({ request, onApprove, onReject }: Memb
 					onPress={() => onApprove(request.id)}
 					activeOpacity={0.8}
 				>
-					<Ionicons name="checkmark" size={18} color="#16A34A" />
+					<Ionicons name="checkmark" size={18} color={colors.labelsuccess} />
 				</TouchableOpacity>
 				<TouchableOpacity
 					style={[styles.iconButton, styles.iconButtonReject]}
 					onPress={() => onReject(request.id)}
 					activeOpacity={0.8}
 				>
-					<Ionicons name="close" size={18} color="#EF4444" />
+					<Ionicons name="close" size={18} color={colors.danger} />
 				</TouchableOpacity>
 			</View>
 		</View>
@@ -59,37 +64,35 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 10,
-		backgroundColor: '#FFFFFF',
-		borderRadius: 14,
+		backgroundColor: colors.cardBackground,
+		borderRadius: 16,
 		borderWidth: 1,
-		borderColor: '#E3EAF3',
-		padding: 12,
+		borderColor: colors.cardBorderMuted, // FLAG — was '#E3EAF3', unconfirmed exact match
+		paddingHorizontal: 14,
+		paddingVertical: 12,
 	},
 	avatar: {
 		width: 38,
 		height: 38,
 		borderRadius: 19,
-		backgroundColor: '#EAF3FF',
+		backgroundColor: colors.badgeBackground, // FLAG — was '#EAF3FF', unconfirmed exact match
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	avatarText: {
-		color: '#1E6FD9',
-		fontWeight: '800',
-		fontSize: 13,
+		...getTypographyStyle('l1List'), // FLAG — was fontSize:13, fontWeight:'800' (no '800' token exists; using bold)
+		color: colors.primary,
 	},
 	info: {
 		flex: 1,
 	},
 	name: {
-		color: '#0F172A',
-		fontSize: 13,
-		fontWeight: '800',
+		...getTypographyStyle('l1List'), // FLAG — same '800'→bold note as above
+		color: colors.textPrimary,
 	},
 	timeAgo: {
-		color: '#94A3B8',
-		fontSize: 11,
-		fontWeight: '600',
+		...getTypographyStyle('c2Caption'),
+		color: colors.textTertiary, // FLAG — was '#94A3B8', unconfirmed exact match
 		marginTop: 1,
 	},
 	actions: {
@@ -104,9 +107,9 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	iconButtonAccept: {
-		backgroundColor: '#ECFDF3',
+		backgroundColor: colors.successBg, // FLAG — was '#ECFDF3', unconfirmed exact match
 	},
 	iconButtonReject: {
-		backgroundColor: '#FEF1F1',
+		backgroundColor: colors.dangerBgAlt, // FLAG — was '#FEF1F1', unconfirmed exact match (dangerLight is the alt candidate)
 	},
 });

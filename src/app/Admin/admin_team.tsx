@@ -1,5 +1,6 @@
 import ErrorBanner from "@/_components/common/ErrorBanner";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
+import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import { colors } from "@/constants/colors";
 import { formatRelativeTime, useAdminStore } from "@/store/adminStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -154,10 +155,11 @@ export default function AdminTeamScreen() {
             ))}
           </View>
         ) : (
-          <View style={styles.emptyMini}>
-            <Text style={styles.emptyMiniText}>
-              No pending member requests.
-            </Text>
+          <View>
+            <EmptyStateCard
+              title="No pending requests"
+              icon={require("../../../assets/images/member_request.png")}
+            />
           </View>
         )}
 
@@ -184,10 +186,12 @@ export default function AdminTeamScreen() {
             ))}
           </View>
         ) : (
-          <View style={styles.emptyMini}>
-            <Text style={styles.emptyMiniText}>
-              No analysts match your search.
-            </Text>
+          <View>
+            <EmptyStateCard
+              title="No analysts yet"
+              subtitle="Share your invite code to add analysts."
+              icon={require("../../../assets/images/no_analyst.png")}
+            />
           </View>
         )}
       </ScrollView>
@@ -282,20 +286,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     marginBottom: 22,
     overflow: "hidden",
-  },
-  emptyMini: {
-    backgroundColor: colors.background2,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    alignItems: "center",
-    marginBottom: 22,
-  },
-  emptyMiniText: {
-    color: colors.label,
-    fontSize: 12,
-    fontWeight: "600",
   },
   loadingRow: {
     paddingVertical: 20,

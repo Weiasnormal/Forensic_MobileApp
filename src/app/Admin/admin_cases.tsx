@@ -1,6 +1,7 @@
 import CaseCard from "@/_components/caseCards";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import FilterCasesModal from "@/_components/modals/filtercases";
+import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import { colors } from "@/constants/colors";
 import {
     formatCaseDateLabel,
@@ -175,23 +176,6 @@ export default function AdminCasesScreen() {
               Search covers case ID, subject, examiner, analysis type, and
               priority across the whole organization.
             </Text>
-
-            <View style={styles.searchMetaRow}>
-              <Text style={styles.searchMetaText}>
-                {hasSearchQuery
-                  ? `Showing ${visibleCaseCount} of ${casesToUse.length} cases for “${debouncedQuery.trim()}”`
-                  : `Showing all ${casesToUse.length} cases`}
-              </Text>
-              {hasSearchQuery ? (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => setQuery("")}
-                  style={styles.clearSearchButton}
-                >
-                  <Text style={styles.clearSearchText}>Clear</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
           </>
         ) : null}
 
@@ -221,18 +205,12 @@ export default function AdminCasesScreen() {
       </View>
 
       {totalCases === 0 ? (
-        <View style={styles.emptyArea}>
-          <View style={styles.emptyBadge}>
-            <Ionicons
-              name="document-text-outline"
-              size={34}
-              color={colors.label}
-            />
-          </View>
-          <Text style={styles.emptyTitle}>No cases yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Cases submitted by your analysts will appear here.
-          </Text>
+        <View style={[styles.emptyArea, { marginTop: headerHeight }]}>
+          <EmptyStateCard
+            title="No cases yet"
+            subtitle="Cases submitted by analysts will appear here."
+            icon={require("../../../assets/images/no_cases.png")}
+          />
         </View>
       ) : sections.length === 0 ? (
         <View style={styles.emptySearchArea}>
@@ -411,10 +389,10 @@ const styles = StyleSheet.create({
   },
   searchHint: {
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 10,
     fontSize: 12,
     lineHeight: 16,
-    color: "#64748B",
+    color: "Tertiary",
   },
   searchMetaRow: {
     flexDirection: "row",
@@ -431,33 +409,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   emptyArea: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingTop: 160,
-    gap: 10,
-  },
-  emptyBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  emptySubtitle: {
-    color: "#64748B",
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 17,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   clearSearchButton: {
     paddingHorizontal: 10,

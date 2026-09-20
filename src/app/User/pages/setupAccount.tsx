@@ -194,7 +194,6 @@ export default function SetupAccount() {
               label="Email"
               value={email}
               style={styles.formField}
-              disabled
               rightIcon={
                 <Ionicons
                   name="chevron-forward"
