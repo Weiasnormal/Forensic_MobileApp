@@ -35,10 +35,25 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-splash-screen", { "backgroundColor": "#208AEF", "android": { "image": "./assets/images/splash-icon.png", "imageWidth": 76 } }],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#208AEF",
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 76
+          }
+        }
+      ],
       "expo-font",
       "expo-web-browser",
-      ["expo-camera", { "cameraPermission": "Allow Forensic to access your camera for signature analysis.", "microphonePermission": "Allow Forensic to access your microphone." }],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Forensic to access your camera for signature analysis.",
+          "microphonePermission": "Allow Forensic to access your microphone."
+        }
+      ],
       "expo-asset",
       [
         "expo-build-properties",
@@ -55,10 +70,11 @@
         "projectId": "941bc4fe-82f8-42c3-83c9-9e48bd50bd30"
       }
     },
-    "owner": "averaapp"
-  },
-  "experiments": {
-    "typedRoutes": true,
-    "reactCompiler": true
+    "owner": "averaapp",
+
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
   }
 }
