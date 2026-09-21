@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
 		marginBottom: 18,
 	},
 	illustration: {
-		width: 300,
-		height: 300,
+		width: 350,
+		height: 350,
 	},
 	title: {
 		...getTypographyStyle('t1Title'),

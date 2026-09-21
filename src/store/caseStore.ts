@@ -1,16 +1,16 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { CASES_PAGE_SIZE, fetchBackendCases } from "@/services/backendCases";
 import {
-  notifyProcessingComplete,
-  notifyProcessingFailed,
+    notifyProcessingComplete,
+    notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-  OverlayImageRef,
-  OverlaySlot,
-  OverlayVariant,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisConfidence,
-  type SignatureAnalysisResult,
+    OverlayImageRef,
+    OverlaySlot,
+    OverlayVariant,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisConfidence,
+    type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import { getServerErrorMessage } from "@/utils/networkError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,9 +19,9 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-  getAuthHeader,
-  handleUnauthorizedResponse,
-  useAuthStore,
+    getAuthHeader,
+    handleUnauthorizedResponse,
+    useAuthStore,
 } from "./authStore";
 
 const VALID_SLOTS: OverlaySlot[] = [
@@ -255,7 +255,7 @@ interface CaseStore {
     index: number,
     uri: string | null,
   ) => void;
-  submitNewCase: () => Promise<SavedCase>;
+  submitNewCase: (onCaseCreated?: (caseId: string) => void) => Promise<SavedCase>;
 
   submissionStatus: "idle" | "submitting" | "success" | "error";
   submissionStep: string;
@@ -786,7 +786,7 @@ export const useCaseStore = create<CaseStore>()(
           });
         },
 
-        submitNewCase: async () => {
+        submitNewCase: async (onCaseCreated) => {
           caseLog.info("CaseStore:Submit", "Submitting new case (networked)");
 
           const startTime = Date.now();
@@ -923,6 +923,7 @@ export const useCaseStore = create<CaseStore>()(
                 activeSignatureCaseId: caseId,
               };
             });
+            onCaseCreated?.(caseId);
 
             caseLog.info("CaseStore:Submit", "Uploading images for case", {
               caseId,

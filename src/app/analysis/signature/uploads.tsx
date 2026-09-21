@@ -185,9 +185,13 @@ export default function SignatureUploadsRoute() {
   const handleSubmit = async () => {
     if (!canRun || isSubmitting) return;
     resetSubmissionState();
-    nav.replace("/analysis/signature/processing");
     try {
-      await submitNewCase();
+      await submitNewCase((caseId) => {
+        nav.replace({
+          pathname: "/analysis/signature/processing",
+          params: { caseId },
+        });
+      });
     } catch (error) {
       console.warn("Unable to submit new case:", error);
     }

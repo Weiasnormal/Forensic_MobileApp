@@ -8,7 +8,7 @@
     "scheme": "avera",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "We need camera access to scan forensic signatures."
       }
@@ -35,12 +35,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#208AEF"
-        }
-      ],
       "expo-font",
       "expo-web-browser",
       [
