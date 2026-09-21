@@ -19,16 +19,16 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 interface EditProfileScreenProps {
@@ -145,10 +145,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         organization,
         avatarUri: avatarUri || undefined,
       });
-
-      useFeedbackStore
-        .getState()
-        .showToast("Profile updated successfully", "success");
 
       // Keep the pending verification controls visible until the new email is confirmed.
       if (pendingNewEmail) return;

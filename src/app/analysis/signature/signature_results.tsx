@@ -8,17 +8,16 @@ import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { createNotificationConnection } from "@/services/notificationHub";
 import {
-  findOverlayImage,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisVerdictLabel,
-  REFERENCE_SLOTS,
-  resolveCaseVerdict,
-  type OverlayVariant,
-  type SignatureAnalysisResult,
-  type SignatureAnalysisViewMode,
+    findOverlayImage,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisVerdictLabel,
+    REFERENCE_SLOTS,
+    resolveCaseVerdict,
+    type OverlayVariant,
+    type SignatureAnalysisResult,
+    type SignatureAnalysisViewMode,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
-import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
@@ -27,17 +26,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "../../../constants/api";
 import { useAnalysisFlowStore } from "../../../store/analysisFlowStore";
@@ -45,9 +44,9 @@ import { useCaseStore, type CaseStatus } from "../../../store/caseStore";
 
 import VerdictCard from "@/_components/common/VerdIctCard";
 import {
-  fetchCaseForReview,
-  FinalVerdict,
-  type AdminCaseDetail,
+    fetchCaseForReview,
+    FinalVerdict,
+    type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 
@@ -310,24 +309,12 @@ export function SignatureResultsScreen() {
           "[SignatureResults] Review notification connection closed:",
           error.message,
         );
-        useFeedbackStore
-          .getState()
-          .showToast(
-            "Live review updates are temporarily unavailable. The case result is still available.",
-            "infoLight",
-          );
       }
     });
 
     void connection.start().catch((error) => {
       if (isDisposed) return;
       console.warn("Unable to connect to notification hub:", error);
-      useFeedbackStore
-        .getState()
-        .showToast(
-          "Live review updates are unavailable. Refresh the case to check for changes.",
-          "infoLight",
-        );
     });
 
     return () => {

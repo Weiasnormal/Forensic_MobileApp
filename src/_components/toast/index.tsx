@@ -3,6 +3,7 @@ import { getTypographyStyle } from "@/constants/typography";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type ToastVariant =
   | "neutral"
@@ -68,6 +69,7 @@ const Toast: React.FC<ToastProps> = ({
   style,
   variant = "neutral",
 }) => {
+  const insets = useSafeAreaInsets();
   const [isMounted, setIsMounted] = useState(visible);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(8)).current;
@@ -119,7 +121,10 @@ const Toast: React.FC<ToastProps> = ({
     variant === "error";
 
   return (
-    <View pointerEvents="none" style={[styles.wrap, style]}>
+    <View
+      pointerEvents="none"
+      style={[styles.wrap, { bottom: Math.max(18, insets.bottom + 12) }, style]}
+    >
       <Animated.View
         style={[
           styles.toast,

@@ -7,10 +7,9 @@ import * as authApi from "@/services/authApi";
 import { normalizeAuthErrorMessage } from "@/services/authApi";
 import { useAuthStore } from "@/store/authStore";
 import {
-  setPendingSignupCredentials,
-  useEmailVerificationStore,
+    setPendingSignupCredentials,
+    useEmailVerificationStore,
 } from "@/store/emailVerificationStore";
-import { useFeedbackStore } from "@/store/feedbackStore";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -18,20 +17,20 @@ import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-  Animated,
-  LayoutChangeEvent,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    LayoutChangeEvent,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PasswordStrengthGuide } from "../../../_components/auth/PasswordStrengthGuide";
 import {
-  type AppRole,
-  ROLE_LABEL,
-  ROLE_SETTINGS,
+    type AppRole,
+    ROLE_LABEL,
+    ROLE_SETTINGS,
 } from "../../../constants/roles";
 import { usePasswordStrength } from "../../../hooks/usePasswordStrength";
 import { type SignUpFormValues, signUpSchema } from "../../../utils/validation";
@@ -113,10 +112,6 @@ export default function SignUpPage() {
         .setPendingVerification(values.email, activeRole);
       setPendingSignupCredentials(values.email, values.password);
 
-      useFeedbackStore
-        .getState()
-        .showToast("Account created. Verify your email to continue", "success");
-
       router.push({
         pathname: "/_login/_signup/VerifyEmailInstruction",
         params: { role: activeRole, email: values.email },
@@ -139,9 +134,6 @@ export default function SignUpPage() {
             .getState()
             .setPendingVerification(values.email, activeRole);
           setPendingSignupCredentials(values.email, values.password);
-          useFeedbackStore
-            .getState()
-            .showToast("Verification email resent", "success");
           router.push({
             pathname: "/_login/_signup/VerifyEmailInstruction",
             params: { role: activeRole, email: values.email },

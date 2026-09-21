@@ -3,7 +3,6 @@ import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { normalizeInviteCodeErrorMessage } from "@/services/authApi";
 import { useAuthStore } from "@/store/authStore";
-import { useFeedbackStore } from "@/store/feedbackStore";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -12,21 +11,21 @@ import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { resolveRole, ROLE_SETTINGS } from "../../../constants/roles";
 import {
-  type InviteCodeFormValues,
-  inviteCodeSchema,
+    type InviteCodeFormValues,
+    inviteCodeSchema,
 } from "../../../utils/validation";
 
 export default function UserAndAdminCodePage() {
@@ -117,7 +116,6 @@ export default function UserAndAdminCodePage() {
       shouldDirty: true,
     });
     setIsScannerVisible(false);
-    useFeedbackStore.getState().showToast("Invite code scanned", "success");
   };
 
   const handleVerify = async (values: InviteCodeFormValues) => {
@@ -129,7 +127,6 @@ export default function UserAndAdminCodePage() {
     setIsSubmitting(true);
     try {
       await joinInviteCode(formattedCode);
-      useFeedbackStore.getState().showToast("Invite code submitted", "success");
       router.replace({
         pathname: "/_login/_signup/PendingUser&Admin",
         params: { role: activeRole },
