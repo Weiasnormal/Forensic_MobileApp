@@ -16,6 +16,7 @@ import {
   caseMatchesSearch,
   normalizeCaseSearchQuery,
 } from "@/utils/caseSearch";
+import { normalizePersonDisplay } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
@@ -32,10 +33,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const quickFilters = ["All", "Pending","Genuine", "Suspected"];
+const quickFilters = ["All", "Pending", "Genuine", "Suspected"];
 const DEFAULT_HEADER_HEIGHT = 140;
 
-export default function AdminCasesScreen() {
+interface AdminCasesScreenProps {
+  memberId?: string;
+  memberName?: string;
+}
+
+export default function AdminCasesScreen({
+  memberId,
+  memberName,
+}: AdminCasesScreenProps) {
   const router = useRouter();
   const nav = router as any;
   const [query, setQuery] = useState("");
@@ -64,8 +73,19 @@ export default function AdminCasesScreen() {
   );
 
   useEffect(() => {
-    refreshCasesFromBackend();
-  }, [refreshCasesFromBackend]);
+    let isCancelled = false;
+
+    void (async () => {
+      const refreshed = await refreshCasesFromBackend();
+      if (!isCancelled && memberId && refreshed) {
+        await loadAllCases();
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [loadAllCases, memberId, refreshCasesFromBackend]);
 
   useEffect(() => {
     const debounceId = setTimeout(() => {
@@ -79,11 +99,11 @@ export default function AdminCasesScreen() {
     if (debouncedQuery.trim() || activeFilter !== "All" || advancedFilters) {
       void loadAllCases();
     }
-  }, [activeFilter, advancedFilters, debouncedQuery, loadAllCases]);
+  }, [activeFilter, advancedFilters, debouncedQuery, loadAllCases, memberId]);
 
   const casesToUse = advancedFilters ? advancedFilters.filteredCases : cases;
 
-  const sections = useMemo(() => {
+  const { sections } = useMemo(() => {
     const normalizedQuery = normalizeCaseSearchQuery(debouncedQuery);
     const sortedCases = [...casesToUse].sort((left, right) => {
       return (
@@ -92,6 +112,14 @@ export default function AdminCasesScreen() {
     });
 
     const filteredCases = sortedCases.filter((item) => {
+      const matchesMember =
+        (!memberId && !memberName) ||
+        (item.ownerUserId &&
+          String(item.ownerUserId).toLowerCase() === memberId?.toLowerCase()) ||
+        (!item.ownerUserId &&
+          memberName &&
+          normalizePersonDisplay(item.examiner) ===
+            normalizePersonDisplay(memberName));
       const matchesQuery = caseMatchesSearch(item, normalizedQuery);
 
       const matchesFilter =
@@ -102,7 +130,7 @@ export default function AdminCasesScreen() {
         item.documentType === activeFilter ||
         item.priority === activeFilter;
 
-      return matchesQuery && matchesFilter;
+      return matchesMember && matchesQuery && matchesFilter;
     });
 
     const grouped = filteredCases.reduce<Record<string, SavedCase[]>>(
@@ -118,8 +146,13 @@ export default function AdminCasesScreen() {
       {},
     );
 
-    return Object.entries(grouped).map(([title, data]) => ({ title, data }));
-  }, [activeFilter, casesToUse, debouncedQuery]);
+    return {
+      sections: Object.entries(grouped).map(([title, data]) => ({
+        title,
+        data,
+      })),
+    };
+  }, [activeFilter, casesToUse, debouncedQuery, memberId, memberName]);
 
   const totalCases = totalCaseCount || getCaseSummary(cases).totalCases;
   const showSearchFeedback = isSearchFocused || query.trim().length > 0;
@@ -138,8 +171,8 @@ export default function AdminCasesScreen() {
         }}
       >
         <View style={styles.headerRow}>
-          <Text allowFontScaling={false} style={styles.pageTitle}>
-            All Cases
+          <Text style={styles.pageTitle}>
+            {memberId ? "Analyst Cases" : "All Cases"}
           </Text>
           <View style={styles.countBadge}>
             <Text allowFontScaling={false} style={styles.countBadgeText}>

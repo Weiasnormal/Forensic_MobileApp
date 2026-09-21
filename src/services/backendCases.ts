@@ -1,6 +1,7 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { getAuthHeader, handleUnauthorizedResponse } from "@/store/authStore";
 import { getServerErrorMessage } from "@/utils/networkError";
+import { normalizePersonDisplay } from "@/utils/validation";
 
 import type {
   AnalysisPriority,
@@ -65,7 +66,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function normalizeCreatedByUser(value: unknown): string {
-  if (typeof value === "string") return value.trim();
+  if (typeof value === "string") return normalizePersonDisplay(value);
   if (!isRecord(value)) return "";
 
   const displayName =
@@ -75,7 +76,7 @@ function normalizeCreatedByUser(value: unknown): string {
     value.username ??
     value.email;
   return typeof displayName === "string" && displayName.trim()
-    ? displayName.trim()
+    ? normalizePersonDisplay(displayName)
     : "";
 }
 

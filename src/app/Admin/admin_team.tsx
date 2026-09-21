@@ -8,21 +8,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+	ActivityIndicator,
+	FlatList,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  MemberRequestCard,
-  TeamOverviewCard,
-  type MemberRequestData,
-  type TeamOverviewData,
+	MemberRequestCard,
+	TeamOverviewCard,
+	type MemberRequestData,
+	type TeamOverviewData,
 } from "./cards";
 
 const sortOptions = [
@@ -62,8 +62,8 @@ export default function AdminTeamScreen() {
   const roster: TeamOverviewData[] = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    const activeMembers = teamMembers
-      .filter((member) => member.status === "active")
+    const visibleMembers = teamMembers
+      .filter((member) => member.status !== "pending")
       .filter((member) => {
         if (!normalizedQuery) return true;
         return `${member.firstName} ${member.lastName}`
@@ -71,7 +71,7 @@ export default function AdminTeamScreen() {
           .includes(normalizedQuery);
       });
 
-    const sorted = [...activeMembers].sort((left, right) => {
+    const sorted = [...visibleMembers].sort((left, right) => {
       if (sortBy === "Most Cases")
         return right.casesHandled - left.casesHandled;
       if (sortBy === "Least Cases")
@@ -86,6 +86,7 @@ export default function AdminTeamScreen() {
       firstName: member.firstName,
       lastName: member.lastName,
       casesHandled: member.casesHandled,
+      status: member.status === "suspended" ? "suspended" : "active",
     }));
   }, [teamMembers, query, sortBy]);
 

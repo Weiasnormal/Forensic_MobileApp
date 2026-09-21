@@ -8,6 +8,7 @@ import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useAuthStore } from "@/store/authStore";
 import { useUser } from "@/store/userStore";
+import { limitDashboardName } from "@/utils/validation";
 import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
@@ -158,7 +159,7 @@ export default function UserDashboardScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.5}
               >
-                Hello, Analyst {user?.lastName}
+                Hello, Analyst {limitDashboardName(user?.lastName || "")}
               </Text>
             </View>
             <View style={styles.homeHeaderActions}>

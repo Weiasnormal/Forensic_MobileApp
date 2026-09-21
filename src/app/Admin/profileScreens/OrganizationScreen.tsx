@@ -3,7 +3,7 @@ import ScreenHeader from "@/_components/common/ScreenHeader";
 import Toast from "@/_components/toast";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
-import { useAdminStore } from "@/store/adminStore";
+import { getTeamSummary, useAdminStore } from "@/store/adminStore";
 import { useUser } from "@/store/userStore";
 import * as Clipboard from "expo-clipboard";
 import { ChevronRight, Copy, X } from "lucide-react-native";
@@ -40,6 +40,7 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
 }) => {
   const { user, setUser } = useUser();
   const tenantProfile = useAdminStore((state) => state.tenantProfile);
+  const teamMembers = useAdminStore((state) => state.teamMembers);
   const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
   const renameTenant = useAdminStore((state) => state.renameTenant);
 
@@ -54,7 +55,8 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     "Organization unavailable";
   const resolvedOrganizationCode =
     tenantProfile?.inviteCode || organizationCode || "—";
-  const resolvedMemberCount = tenantProfile?.memberCount ?? memberCount ?? 0;
+  const { totalAnalysts } = getTeamSummary(teamMembers);
+  const resolvedMemberCount = totalAnalysts;
   const resolvedCreatedDate = tenantProfile?.createdAt
     ? new Date(tenantProfile.createdAt).toLocaleDateString("en-US", {
         month: "short",

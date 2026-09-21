@@ -22,6 +22,7 @@ import {
 } from "@/store/caseStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
+import { limitDashboardName } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -64,7 +65,11 @@ function getInitials(first = "", last = "") {
 }
 
 export default function AdminDashboard() {
-  const params = useLocalSearchParams<{ tab?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    tab?: string | string[];
+    memberId?: string | string[];
+    memberName?: string | string[];
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<AdminTabKey>(
@@ -153,6 +158,16 @@ export default function AdminDashboard() {
   const { totalCases, suspectCount } = getCaseSummary(cases);
   const { activeCount } = getTeamSummary(teamMembers);
 
+  const handleTabChange = (tab: AdminTabKey) => {
+    setActiveTab(tab);
+    if (params.memberId && tab !== "cases") {
+      router.replace({
+        pathname: "/Admin/admin_dashboard",
+        params: { tab },
+      });
+    }
+  };
+
   const memberRequests: MemberRequestData[] = useMemo(
     () =>
       pendingApprovals.map((member) => ({
@@ -213,7 +228,7 @@ export default function AdminDashboard() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.5}
               >
-                Hello, Admin {user?.lastName}
+                Hello, Admin {limitDashboardName(user?.lastName || "")}
               </Text>
             </View>
             <View style={styles.homeHeaderActions}>
@@ -249,8 +264,8 @@ export default function AdminDashboard() {
             memberRequests={memberRequests}
             onApproveRequest={approveTeamMember}
             onRejectRequest={rejectTeamMember}
-            onViewTeam={() => setActiveTab("team")}
-            onViewAllCases={() => setActiveTab("cases")}
+            onViewTeam={() => handleTabChange("team")}
+            onViewAllCases={() => handleTabChange("cases")}
             onViewCase={(caseId) =>
               router.push({
                 pathname: "/Admin/CaseResultAdmin",
@@ -260,7 +275,18 @@ export default function AdminDashboard() {
           />
         </ScrollView>
       ) : activeTab === "cases" ? (
-        <AdminCasesScreen />
+        <AdminCasesScreen
+          memberId={
+            Array.isArray(params.memberId)
+              ? params.memberId[0]
+              : params.memberId
+          }
+          memberName={
+            Array.isArray(params.memberName)
+              ? params.memberName[0]
+              : params.memberName
+          }
+        />
       ) : activeTab === "team" ? (
         <AdminTeamScreen />
       ) : activeTab === "stats" ? (
@@ -292,8 +318,8 @@ export default function AdminDashboard() {
           onOrgInviteCodePress={() =>
             router.push("/Admin/profileScreens/OrgInviteCodeScreen")
           }
-          onManageTeamPress={() => setActiveTab("team")}
-          onOrganizationStatsPress={() => setActiveTab("stats")}
+          onManageTeamPress={() => handleTabChange("team")}
+          onOrganizationStatsPress={() => handleTabChange("stats")}
           onToggleNotifications={handleToggleNotifications}
           onHelpSupportPress={() =>
             router.push("/Admin/profileScreens/HelpSupportScreen")
@@ -305,7 +331,7 @@ export default function AdminDashboard() {
         />
       )}
 
-      <AdminNavbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <AdminNavbar activeTab={activeTab} onTabChange={handleTabChange} />
     </SafeAreaView>
   );
 }
@@ -376,13 +402,13 @@ function AdminHomeTab({
             label="Pending Review"
             value={String(pendingReviews.length)}
             icon="shield-checkmark-outline"
-            tint="#D97706" 
+            tint="#D97706"
           />
           <StatCard
             label="Suspected Cases"
             value={String(suspectCount)}
             icon="reader-outline"
-            tint="#E24B4A" 
+            tint="#E24B4A"
           />
         </View>
       </View>
@@ -557,7 +583,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   statValue: {
-    ...getTypographyStyle("t2Title"), 
+    ...getTypographyStyle("t2Title"),
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
