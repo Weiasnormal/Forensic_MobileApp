@@ -4,12 +4,12 @@ import { getServerErrorMessage } from "@/utils/networkError";
 import { normalizePersonDisplay } from "@/utils/validation";
 
 import type {
-  AnalysisPriority,
-  AnalysisType,
-  CaseStatus,
-  CaseWorkflowStatus,
-  DocumentType,
-  SavedCase,
+    AnalysisPriority,
+    AnalysisType,
+    CaseStatus,
+    CaseWorkflowStatus,
+    DocumentType,
+    SavedCase,
 } from "@/store/caseStore";
 
 type BackendCaseRecord = {
@@ -41,6 +41,8 @@ type BackendCaseRecord = {
   finalVerdict?: unknown;
   isFlaggedForInternalReview?: unknown;
   IsFlaggedForInternalReview?: unknown;
+  resultViewed?: unknown;
+  ResultViewed?: unknown;
 };
 
 const DEFAULT_DOCUMENT_TYPE = "Bank cheque";
@@ -63,6 +65,10 @@ export interface FetchCasesResult {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function normalizeBoolean(value: unknown): boolean {
+  return value === true || value === 1 || value === "1" || value === "true";
 }
 
 function normalizeCreatedByUser(value: unknown): string {
@@ -269,8 +275,30 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     isFlaggedForInternalReview: Boolean(
       record.isFlaggedForInternalReview ?? record.IsFlaggedForInternalReview,
     ),
-    resultViewed: workflowStatus !== "Processing" ? false : undefined,
+    resultViewed:
+      workflowStatus !== "Processing"
+        ? normalizeBoolean(record.resultViewed ?? record.ResultViewed)
+        : undefined,
   };
+}
+
+export async function markBackendCaseViewed(caseId: string): Promise<void> {
+  const response = await fetch(
+    buildApiUrl(API_ENDPOINTS.cases.viewed(caseId)),
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "X-Api-Key": API_KEY || "",
+        ...getAuthHeader(),
+      },
+    },
+  );
+
+  if (!response.ok) {
+    await handleUnauthorizedResponse(response);
+    throw new Error(`Unable to mark case ${caseId} as viewed.`);
+  }
 }
 
 export async function fetchBackendCases({

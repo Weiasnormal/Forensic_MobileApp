@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import CaseCard from "../../_components/caseCards";
 import PendingCard from "../../_components/pendingCards";
+import { markBackendCaseViewed } from "../../services/backendCases";
 import {
     getPendingCards,
     type SavedCase,
@@ -248,6 +249,9 @@ function HomeTab({
   const markViewed = (item: SavedCase) => {
     if (!item.resultViewed) {
       markCaseResultViewed(item.caseId);
+      void markBackendCaseViewed(item.caseId).catch((error) => {
+        console.warn("Unable to persist case viewed state:", error);
+      });
     }
   };
 

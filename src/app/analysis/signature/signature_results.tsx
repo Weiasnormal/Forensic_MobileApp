@@ -3,18 +3,19 @@ import SecondaryButton from "@/_components/common/SecondaryButton";
 import ZoomableImageModal from "@/_components/common/ZoomableImageModal";
 import ErrorModal from "@/_components/modals/error_modal";
 import KeyFindingsModal from "@/_components/modals/key_findingsmodal";
+import SuccessModal from "@/_components/modals/success_modal";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { createNotificationConnection } from "@/services/notificationHub";
 import {
-    findOverlayImage,
-    getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisVerdictLabel,
-    REFERENCE_SLOTS,
-    resolveCaseVerdict,
-    type OverlayVariant,
-    type SignatureAnalysisResult,
-    type SignatureAnalysisViewMode,
+  findOverlayImage,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisVerdictLabel,
+  REFERENCE_SLOTS,
+  resolveCaseVerdict,
+  type OverlayVariant,
+  type SignatureAnalysisResult,
+  type SignatureAnalysisViewMode,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
@@ -26,17 +27,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "../../../constants/api";
 import { useAnalysisFlowStore } from "../../../store/analysisFlowStore";
@@ -44,9 +45,9 @@ import { useCaseStore, type CaseStatus } from "../../../store/caseStore";
 
 import VerdictCard from "@/_components/common/VerdIctCard";
 import {
-    fetchCaseForReview,
-    FinalVerdict,
-    type AdminCaseDetail,
+  fetchCaseForReview,
+  FinalVerdict,
+  type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 
@@ -204,6 +205,8 @@ export function SignatureResultsScreen() {
     (state) => state.setActiveSignatureCaseId,
   );
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
     if (params.caseId) {
@@ -558,6 +561,10 @@ export function SignatureResultsScreen() {
   };
 
   const handleExportPdf = async () => {
+    if (isExportingPdf) {
+      return;
+    }
+
     if (!currentCaseId) {
       setExportError("Case ID is missing.");
       return;
@@ -566,6 +573,8 @@ export function SignatureResultsScreen() {
       setExportError("PDF export has not been enabled by an administrator.");
       return;
     }
+
+    setIsExportingPdf(true);
     try {
       const reportPdfUrl = buildApiUrl(`/cases/${currentCaseId}/results`);
       const localUri =
@@ -604,7 +613,7 @@ export function SignatureResultsScreen() {
         await FileSystem.writeAsStringAsync(savedFileUri, pdfBase64, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        setExportError("PDF report saved to your selected phone folder.");
+        setExportSuccess("PDF report saved to your selected phone folder.");
         return;
       }
 
@@ -614,6 +623,7 @@ export function SignatureResultsScreen() {
           dialogTitle: "Export Forensic PDF Report",
           UTI: "com.adobe.pdf",
         });
+        setExportSuccess("PDF report exported successfully.");
       } else {
         setExportError(`File saved to: ${uri}`);
       }
@@ -622,6 +632,8 @@ export function SignatureResultsScreen() {
       setExportError(
         "The PDF report is either still generating or unavailable.",
       );
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -924,51 +936,53 @@ export function SignatureResultsScreen() {
           )}
         </View>
 
-        <View style={styles.findingsContainer}>
-          <View style={styles.findingsHeaderRow}>
-            <Text style={styles.findingsTitle}>Key Findings</Text>
-            <Text style={styles.findingsTap}>Tap for detail</Text>
-          </View>
-          <View style={styles.findingsList}>
-            {payloadRows.map((item) => {
-              const findingTone = displayedIsSuspected
-                ? { line: colors.danger, text: colors.danger }
-                : { line: colors.statusGenuine, text: colors.statusGenuine };
+        {false ? (
+          <View style={styles.findingsContainer}>
+            <View style={styles.findingsHeaderRow}>
+              <Text style={styles.findingsTitle}>Key Findings</Text>
+              <Text style={styles.findingsTap}>Tap for detail</Text>
+            </View>
+            <View style={styles.findingsList}>
+              {payloadRows.map((item) => {
+                const findingTone = displayedIsSuspected
+                  ? { line: colors.danger, text: colors.danger }
+                  : { line: colors.statusGenuine, text: colors.statusGenuine };
 
-              return (
-                <Pressable
-                  key={item.metric}
-                  style={styles.findingItem}
-                  onPress={() => openFinding(item)}
-                >
-                  <View
-                    style={[
-                      styles.findingIndicator,
-                      { backgroundColor: findingTone.line },
-                    ]}
-                  />
-                  <View style={styles.findingTextCol}>
-                    <Text style={styles.findingMain}>{item.metric}</Text>
-                    <Text
-                      style={[styles.findingSub, { color: findingTone.text }]}
-                    >
-                      {item.value}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={colors.label}
-                  />
-                </Pressable>
-              );
-            })}
+                return (
+                  <Pressable
+                    key={item.metric}
+                    style={styles.findingItem}
+                    onPress={() => openFinding(item)}
+                  >
+                    <View
+                      style={[
+                        styles.findingIndicator,
+                        { backgroundColor: findingTone.line },
+                      ]}
+                    />
+                    <View style={styles.findingTextCol}>
+                      <Text style={styles.findingMain}>{item.metric}</Text>
+                      <Text
+                        style={[styles.findingSub, { color: findingTone.text }]}
+                      >
+                        {item.value}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.label}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        ) : null}
       </ScrollView>
 
       <KeyFindingsModal
-        visible={selectedFinding !== null}
+        visible={false}
         onClose={closeFinding}
         title={selectedFinding?.metric ?? "Finding"}
         badgeLabel={selectedFinding?.value ?? ""}
@@ -1105,11 +1119,25 @@ export function SignatureResultsScreen() {
         onPrimaryPress={() => setExportError(null)}
       />
 
+      <SuccessModal
+        visible={!!exportSuccess}
+        title="Export Complete"
+        message={exportSuccess ?? ""}
+        onPrimaryPress={() => setExportSuccess(null)}
+      />
+
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
         <PrimaryButton
-          label={isPdfExportAllowed ? "Export as PDF" : "PDF Export Disabled"}
+          label={
+            isExportingPdf
+              ? "Exporting PDF..."
+              : isPdfExportAllowed
+                ? "Export as PDF"
+                : "PDF Export Disabled"
+          }
           onPress={handleExportPdf}
-          disabled={!isPdfExportAllowed}
+          disabled={!isPdfExportAllowed || isExportingPdf}
+          loading={isExportingPdf}
           size="medium"
         />
         <SecondaryButton

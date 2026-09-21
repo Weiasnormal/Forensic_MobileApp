@@ -1,5 +1,6 @@
 export const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL;
-export const API_BASE_URL = process.env.EXPO_PUBLIC_AVERA_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL;
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_AVERA_API_BASE_URL?.trim() || DEFAULT_API_BASE_URL;
 
 export const API_KEY = process.env.EXPO_PUBLIC_AVERA_API_KEY;
 
@@ -8,58 +9,64 @@ export function buildApiUrl(path: string) {
     return path;
   }
 
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return new URL(normalizedPath, API_BASE_URL).toString();
 }
 
-export const NOTIFICATION_HUB_URL = buildApiUrl('/hubs/notification');
+export const NOTIFICATION_HUB_URL = buildApiUrl("/hubs/notification");
 
 export const API_ENDPOINTS = {
   auth: {
-    login: '/auth/login',
-    profile: '/auth/me',
-    register: '/auth/register',
-    logout: '/auth/logout',
-    changePassword: '/auth/change-password',
-    changeEmail: '/auth/change-email',
-    resendVerificationEmail: '/auth/resend-verification-email',
+    login: "/auth/login",
+    profile: "/auth/me",
+    register: "/auth/register",
+    logout: "/auth/logout",
+    changePassword: "/auth/change-password",
+    changeEmail: "/auth/change-email",
+    resendVerificationEmail: "/auth/resend-verification-email",
 
-    forgotPassword: '/auth/forgot-password',
-    resetPassword: '/auth/reset-password',
+    forgotPassword: "/auth/forgot-password",
+    resetPassword: "/auth/reset-password",
 
     //google: '/auth/google',
-    verifySignupCode: '/auth/verify-email',
+    verifySignupCode: "/auth/verify-email",
 
-    verifyResetCode: '/auth/password/verify-code',
-    verifyEmail: '/auth/verify-email',
-    emailVerificationStatus: '/auth/email-verification-status',
-    joinInviteCode: '/auth/join-invite-code',
-    
+    verifyResetCode: "/auth/password/verify-code",
+    verifyEmail: "/auth/verify-email",
+    emailVerificationStatus: "/auth/email-verification-status",
+    joinInviteCode: "/auth/join-invite-code",
   },
   cases: {
-    list: '/cases',
-    create: '/cases',
+    list: "/cases",
+    create: "/cases",
     get: (caseId: string) => `/cases/${caseId}`,
     update: (caseId: string) => `/cases/${caseId}`,
 
     updateStatus: (caseId: string) => `/cases/${caseId}/status`,
     delete: (caseId: string) => `/cases/${caseId}`,
     review: (caseId: string) => `/cases/${caseId}/review`,
+    viewed: (caseId: string) => `/cases/${caseId}/viewed`,
     toggleInternalReviewFlag: (caseId: string) => `/cases/${caseId}/flag`,
   },
   signatures: {
-    uploadReference: (caseId: string) => `/cases/${caseId}/signatures/reference`,
-    uploadSuspected: (caseId: string) => `/cases/${caseId}/signatures/suspected`,
-    getReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
-    getSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
+    uploadReference: (caseId: string) =>
+      `/cases/${caseId}/signatures/reference`,
+    uploadSuspected: (caseId: string) =>
+      `/cases/${caseId}/signatures/suspected`,
+    getReference: (caseId: string, index: number) =>
+      `/cases/${caseId}/signatures/reference/${index}`,
+    getSuspected: (caseId: string, index: number) =>
+      `/cases/${caseId}/signatures/suspected/${index}`,
 
-    deleteReference: (caseId: string, index: number) => `/cases/${caseId}/signatures/reference/${index}`,
-    deleteSuspected: (caseId: string, index: number) => `/cases/${caseId}/signatures/suspected/${index}`,
+    deleteReference: (caseId: string, index: number) =>
+      `/cases/${caseId}/signatures/reference/${index}`,
+    deleteSuspected: (caseId: string, index: number) =>
+      `/cases/${caseId}/signatures/suspected/${index}`,
   },
   analysis: {
     start: (caseId: string) => `/cases/${caseId}/analysis`,
     getStatus: () => `/ml/health`,
-    getResults: (caseId: string) => `/cases/${caseId}/results`
+    getResults: (caseId: string) => `/cases/${caseId}/results`,
     //updateResults: (caseId: string) => `/cases/${caseId}/analysis/results`,
   },
   ml: {
@@ -67,8 +74,9 @@ export const API_ENDPOINTS = {
       `/cases/${caseId}/images/${imageId}`,
   },
   notifications: {
-    list: '/notifications/',
-    markAsRead: (notificationId: string) => `/notifications/${notificationId}/read`,
-    markAllAsRead: '/notifications/read-all',
+    list: "/notifications/",
+    markAsRead: (notificationId: string) =>
+      `/notifications/${notificationId}/read`,
+    markAllAsRead: "/notifications/read-all",
   },
 } as const;

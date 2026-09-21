@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import CaseCard from "../../_components/caseCards";
 import FilterCasesModal from "../../_components/modals/filtercases";
+import { markBackendCaseViewed } from "../../services/backendCases";
 import {
   formatCaseDateLabel,
   getCaseSummary,
@@ -46,6 +47,7 @@ export default function UserCasesScreen({
   const nav = router as any;
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const hasSearchQuery = debouncedQuery.trim().length > 0;
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [showFilter, setShowFilter] = useState(false);
@@ -88,10 +90,10 @@ export default function UserCasesScreen({
   }, [query]);
 
   useEffect(() => {
-    if (debouncedQuery.trim() || activeFilter !== "All" || advancedFilters) {
+    if (hasSearchQuery || activeFilter !== "All" || advancedFilters) {
       void loadAllCases();
     }
-  }, [activeFilter, advancedFilters, debouncedQuery, loadAllCases]);
+  }, [activeFilter, advancedFilters, hasSearchQuery, loadAllCases]);
 
   // Use advanced filtered cases if applied, otherwise use all cases
   const casesToUse = advancedFilters ? advancedFilters.filteredCases : cases;
@@ -141,7 +143,6 @@ export default function UserCasesScreen({
     };
   }, [activeFilter, casesToUse, debouncedQuery]);
   const totalCases = totalCaseCount || getCaseSummary(cases).totalCases;
-  const hasSearchQuery = debouncedQuery.trim().length > 0;
   const showSearchFeedback = isSearchFocused || query.trim().length > 0;
 
   const openCase = (item: SavedCase) => {
@@ -172,6 +173,9 @@ export default function UserCasesScreen({
     // The result has now been seen, so it leaves the Pending list.
     if (!item.resultViewed) {
       markCaseResultViewed(item.caseId);
+      void markBackendCaseViewed(item.caseId).catch((error) => {
+        console.warn("Unable to persist case viewed state:", error);
+      });
     }
   };
 
@@ -259,6 +263,12 @@ export default function UserCasesScreen({
           )}
           contentContainerStyle={styles.chipsContent}
         />
+
+        <Text allowFontScaling={false} style={styles.resultCountText}>
+          {hasSearchQuery || activeFilter !== "All"
+            ? `${visibleCaseCount} matching case${visibleCaseCount === 1 ? "" : "s"}`
+            : `${visibleCaseCount} case${visibleCaseCount === 1 ? "" : "s"}`}
+        </Text>
       </View>
 
       {totalCases === 0 ? (
@@ -438,6 +448,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
     gap: 8,
+  },
+  resultCountText: {
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.textMuted,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   chip: {
     paddingHorizontal: 16,
