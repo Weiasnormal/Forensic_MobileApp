@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
-import { Text, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import FAQAccordionItem from '@/_components/admin/FAQAccordionItem';
 import ScreenHeader from '@/_components/common/ScreenHeader';
 import SectionLabel from '@/_components/common/SectionLabel';
-import FAQAccordionItem from '@/_components/admin/FAQAccordionItem';
-import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface FAQEntry {
     question: string;
@@ -48,12 +47,10 @@ const FAQ_ITEMS: FAQEntry[] = [
 
 interface HelpSupportScreenProps {
     onBackPress?: () => void;
-    onContactSupportPress?: () => void;
 }
 
 const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
     onBackPress,
-    onContactSupportPress,
 }) => {
     const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
 
@@ -81,9 +78,6 @@ const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
                     </FAQAccordionItem>
                 ))}
 
-                <Text allowFontScaling={false} style={styles.stillNeedHelp}>Still need help?</Text>
-
-                <PrimaryButton label="Contact Support" onPress={onContactSupportPress} size="large" />
             </ScrollView>
         </SafeAreaView>
     );
@@ -102,13 +96,6 @@ const styles = StyleSheet.create({
         fontSize: 13.5,
         lineHeight: 20,
         color: colors.textSecondary,
-    },
-    stillNeedHelp: {
-        ...getTypographyStyle('c1Caption'),
-        textAlign: 'center',
-        color: colors.textTertiary,
-        marginTop: 4,
-        marginBottom: 14,
     },
 });
 

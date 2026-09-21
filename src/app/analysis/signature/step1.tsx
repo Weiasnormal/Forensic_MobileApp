@@ -1,6 +1,7 @@
 import {
   type AnalysisPriority,
   type DocumentType,
+  hasDraftProgress,
   useCaseStore,
 } from "@/store/caseStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -62,8 +63,12 @@ export default function SignatureStep1Route() {
   const insets = useSafeAreaInsets();
 
   const confirmSaveDraft = useCallback(() => {
+    if (!hasDraftProgress(draftCase)) {
+      nav.back();
+      return;
+    }
     setShowDraftSavedModal(true);
-  }, []);
+  }, [draftCase, nav]);
 
   useFocusEffect(
     useCallback(() => {

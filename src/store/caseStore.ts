@@ -1626,7 +1626,7 @@ export interface PendingCardEntry {
   sortKey: number;
 }
 
-function hasDraftProgress(draft: DraftCase) {
+export function hasDraftProgress(draft: DraftCase) {
   return Boolean(
     draft.subjectName.trim() ||
     draft.documentType.trim() !== DEFAULT_DOCUMENT_TYPE ||

@@ -29,13 +29,13 @@ interface ToastVariantConfig {
 
 const VARIANT_CONFIG: Record<ToastVariant, ToastVariantConfig> = {
   neutral: {
-    backgroundColor: "#0F172A",
+    backgroundColor: colors.primary,
     textColor: colors.primaryText,
     icon: null,
     iconColor: colors.primaryText,
   },
   success: {
-    backgroundColor: "#0F172A",
+    backgroundColor: colors.primary,
     textColor: colors.primaryText,
     icon: "checkmark-circle",
     iconColor: colors.statusGenuine,

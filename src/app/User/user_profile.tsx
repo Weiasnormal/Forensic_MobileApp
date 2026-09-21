@@ -176,7 +176,7 @@ export default function UserProfileScreen() {
               user.defaultResultView === "Bounding Box"
                 ? "Bounding Box"
                 : user.defaultResultView === "Stroke Diff"
-                  ? "Stroke Difference"
+                  ? "Stroke Diff"
                   : "Heatmap"
             }
             onPress={() => setShowDefaultResultViewModal(true)}
