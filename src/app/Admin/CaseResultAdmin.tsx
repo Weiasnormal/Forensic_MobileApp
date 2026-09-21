@@ -11,6 +11,7 @@ import {
   fetchCaseForReview,
   FinalVerdict,
   submitCaseReview,
+  toggleCaseInternalReviewFlag,
   type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import {
@@ -27,6 +28,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -65,6 +67,9 @@ export default function CaseResultAdmin() {
     "suspected" | "genuine" | null
   >(null);
   const [pdfExportPermission, setPdfExportPermission] = useState(false);
+  const [isFlaggedForInternalReview, setIsFlaggedForInternalReview] =
+    useState(false);
+  const [isTogglingFlag, setIsTogglingFlag] = useState(false);
   const [reviewNote, setReviewNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -91,6 +96,7 @@ export default function CaseResultAdmin() {
       const detail = await fetchCaseForReview(caseId);
       setCaseDetail(detail);
       setPdfExportPermission(detail.isPdfExportAllowed);
+      setIsFlaggedForInternalReview(detail.isFlaggedForInternalReview);
       setReviewNote(detail.reviewNote ?? "");
       if (detail.finalVerdict === FinalVerdict.Genuine)
         setReviewDecision("genuine");
@@ -238,6 +244,30 @@ export default function CaseResultAdmin() {
     }
   };
 
+  const handleToggleInternalReviewFlag = async (value: boolean) => {
+    setIsTogglingFlag(true);
+    try {
+      await toggleCaseInternalReviewFlag(caseId, value);
+      setIsFlaggedForInternalReview(value);
+      useFeedbackStore
+        .getState()
+        .showToast(
+          value
+            ? "Case flagged for internal review"
+            : "Internal review flag removed",
+          "success",
+        );
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Unable to update the internal review flag.",
+      );
+    } finally {
+      setIsTogglingFlag(false);
+    }
+  };
+
   const handleExportReport = async () => {
     try {
       // Same GET /cases/{id}/results endpoint used in signature_results.tsx
@@ -250,6 +280,38 @@ export default function CaseResultAdmin() {
       const { uri } = await FileSystem.downloadAsync(reportPdfUrl, localUri, {
         headers: { "X-Api-Key": API_KEY || "", ...getAuthHeader() },
       });
+
+      if (Platform.OS === "android") {
+        const directoryPermission =
+          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(
+            FileSystem.StorageAccessFramework.getUriForDirectoryInRoot(
+              "Download",
+            ),
+          );
+
+        if (!directoryPermission.granted) {
+          setSaveError("Choose a folder to save the PDF report.");
+          return;
+        }
+
+        const savedFileUri =
+          await FileSystem.StorageAccessFramework.createFileAsync(
+            directoryPermission.directoryUri,
+            `AVERA_Forensic_Report_${caseId}.pdf`,
+            "application/pdf",
+          );
+        const pdfBase64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        await FileSystem.writeAsStringAsync(savedFileUri, pdfBase64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        useFeedbackStore
+          .getState()
+          .showToast("PDF report saved to your selected phone folder.", "success");
+        return;
+      }
+
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
           mimeType: "application/pdf",
@@ -702,6 +764,30 @@ export default function CaseResultAdmin() {
                   trackColor={{
                     false: colors.inputBorder,
                     true: colors.primary,
+                  }}
+                />
+              </View>
+              <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}> 
+                <View style={styles.radioIconWrap}>
+                  <Ionicons
+                    name="flag-outline"
+                    size={24}
+                    color={colors.suspectSubtext}
+                  />
+                </View>
+                <View style={styles.radioTextWrap}>
+                  <Text style={styles.radioTitle}>Flag for Internal Review</Text>
+                  <Text style={styles.radioDesc}>
+                    Show this case as flagged to admins
+                  </Text>
+                </View>
+                <Switch
+                  value={isFlaggedForInternalReview}
+                  onValueChange={handleToggleInternalReviewFlag}
+                  disabled={isTogglingFlag}
+                  trackColor={{
+                    false: colors.inputBorder,
+                    true: colors.suspectAccent,
                   }}
                 />
               </View>

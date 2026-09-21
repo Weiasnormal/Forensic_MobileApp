@@ -18,7 +18,12 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-const PUBLIC_SEGMENTS = ["_login", "_introPage", "_devscan"];
+const PUBLIC_SEGMENTS = [
+  "_login",
+  "_introPage",
+  "_devscan",
+  "_sucessPage",
+];
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const segments = useSegments();

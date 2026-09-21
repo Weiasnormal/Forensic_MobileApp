@@ -13,21 +13,21 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CaseCard from "../../_components/caseCards";
 import PendingCard from "../../_components/pendingCards";
 import {
-  getPendingCards,
-  type SavedCase,
-  useCaseStore,
+    getPendingCards,
+    type SavedCase,
+    useCaseStore,
 } from "../../store/caseStore";
 import Navbar, { type TabKey } from "../_navbar/nav_bar";
 import ProfileScreen from "./user_profile";
@@ -118,7 +118,6 @@ export default function UserDashboardScreen() {
     if (!hasTenant) return;
     if (Platform.OS !== "android") return;
 
-    NavigationBar.setBackgroundColorAsync(colors.background2).catch(() => {});
     NavigationBar.setButtonStyleAsync("dark").catch(() => {});
   }, [activeTab, hasTenant]);
 
@@ -133,11 +132,6 @@ export default function UserDashboardScreen() {
   };
 
   const handleViewAllCases = () => handleTabChange("cases");
-
-  const handleViewAllPending = () => {
-    setCasesInitialFilter("Pending");
-    setActiveTab("cases");
-  };
 
   if (!hasTenant) return null;
 
@@ -196,7 +190,6 @@ export default function UserDashboardScreen() {
             onStartAnalysis={handleNewAnalysisPress}
             cases={cases}
             onViewAllPress={handleViewAllCases}
-            onViewAllPendingPress={handleViewAllPending}
           />
         </ScrollView>
       ) : activeTab === "cases" ? (
@@ -220,12 +213,10 @@ function HomeTab({
   onStartAnalysis,
   cases,
   onViewAllPress,
-  onViewAllPendingPress,
 }: {
   onStartAnalysis: () => void;
   cases: SavedCase[];
   onViewAllPress: () => void;
-  onViewAllPendingPress: () => void;
 }) {
   const router = useRouter();
   const nav = router as any;
@@ -238,11 +229,11 @@ function HomeTab({
   const markCaseResultViewed = useCaseStore(
     (state) => state.markCaseResultViewed,
   );
+  const [showAllPending, setShowAllPending] = useState(false);
   const pendingCards = getPendingCards(cases, draftSignatureCase, savedDrafts);
-  const visiblePendingCards = selectPendingPreview(
-    pendingCards,
-    PENDING_PREVIEW_LIMIT,
-  );
+  const visiblePendingCards = showAllPending
+    ? pendingCards
+    : selectPendingPreview(pendingCards, PENDING_PREVIEW_LIMIT);
   const hasHiddenPending = pendingCards.length > PENDING_PREVIEW_LIMIT;
   const latestCases = [...cases]
     .sort(
@@ -322,9 +313,13 @@ function HomeTab({
           <ListSectionHeader
             title="Pending Cases"
             actionLabel={
-              hasHiddenPending ? `View all (${pendingCards.length})` : undefined
+              hasHiddenPending
+                ? showAllPending
+                  ? "Show less"
+                  : `View all (${pendingCards.length})`
+                : undefined
             }
-            onActionPress={onViewAllPendingPress}
+            onActionPress={() => setShowAllPending((expanded) => !expanded)}
             style={styles.listSectionHeader}
           />
 

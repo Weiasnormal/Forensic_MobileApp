@@ -1,13 +1,14 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { getAuthHeader, handleUnauthorizedResponse } from "@/store/authStore";
+import { getServerErrorMessage } from "@/utils/networkError";
 
 import type {
-    AnalysisPriority,
-    AnalysisType,
-    CaseStatus,
-    CaseWorkflowStatus,
-    DocumentType,
-    SavedCase,
+  AnalysisPriority,
+  AnalysisType,
+  CaseStatus,
+  CaseWorkflowStatus,
+  DocumentType,
+  SavedCase,
 } from "@/store/caseStore";
 
 type BackendCaseRecord = {
@@ -37,6 +38,8 @@ type BackendCaseRecord = {
   isDeleted?: boolean;
   mlResponse?: unknown;
   finalVerdict?: unknown;
+  isFlaggedForInternalReview?: unknown;
+  IsFlaggedForInternalReview?: unknown;
 };
 
 const DEFAULT_DOCUMENT_TYPE = "Bank cheque";
@@ -262,6 +265,9 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
     analysisType: normalizeAnalysisType(record.analysisType),
     verdict: typeof rawVerdict === "string" ? rawVerdict : undefined,
     confidence: Number.isFinite(confidence) ? confidence : undefined,
+    isFlaggedForInternalReview: Boolean(
+      record.isFlaggedForInternalReview ?? record.IsFlaggedForInternalReview,
+    ),
     resultViewed: workflowStatus !== "Processing" ? false : undefined,
   };
 }
@@ -298,7 +304,7 @@ export async function fetchBackendCases({
     if (await handleUnauthorizedResponse(response)) {
       throw new Error("Session expired. Please sign in again.");
     }
-    throw new Error(`Unable to load cases from backend (${response.status})`);
+    throw new Error(getServerErrorMessage(response.status));
   }
 
   const rawText = await response.text();

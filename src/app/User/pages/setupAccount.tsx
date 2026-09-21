@@ -8,7 +8,7 @@ import ProfileSaveModal from "@/_components/modals/profile_save";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useResendCooldown } from "@/hooks/useResendCooldown";
-import { resendVerificationEmail } from "@/services/emailVerificationApi";
+import { resendEmailChangeVerification } from "@/services/emailVerificationApi";
 import { useAuthStore } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
@@ -19,16 +19,16 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 export default function SetupAccount() {
@@ -218,7 +218,10 @@ export default function SetupAccount() {
                 onPress={async () => {
                   if (isCoolingDown) return;
                   startCooldown();
-                  const { ok } = await resendVerificationEmail(pendingNewEmail);
+                  const { ok } = await resendEmailChangeVerification(
+                    email,
+                    pendingNewEmail,
+                  );
                   useFeedbackStore
                     .getState()
                     .showToast(

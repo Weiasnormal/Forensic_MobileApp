@@ -1,5 +1,6 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
 import { getAuthHeader, handleUnauthorizedResponse } from '@/store/authStore';
+import { getServerErrorMessage } from '@/utils/networkError';
 
 export interface BackendNotification {
   id: string;
@@ -36,7 +37,7 @@ async function ensureOk(response: Response) {
   if (await handleUnauthorizedResponse(response)) {
     throw new Error('Session expired. Please sign in again.');
   }
-  throw new Error(`Unable to load notifications (${response.status})`);
+  throw new Error(getServerErrorMessage(response.status));
 }
 
 export async function fetchNotifications(): Promise<BackendNotification[]> {

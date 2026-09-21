@@ -5,6 +5,7 @@ import {
   useAuthStore,
 } from "@/store/authStore";
 import type { AnalysisPriority, DocumentType } from "@/store/caseStore";
+import { getServerErrorMessage } from "@/utils/networkError";
 
 /** Mirrors Avera.Domain/Cases/FinalVerdict.cs — do not reorder, values match backend exactly. */
 export enum FinalVerdict {
@@ -80,6 +81,12 @@ function normalizeOverlayVariant(value: unknown): string {
   return "";
 }
 
+function normalizeBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().toLowerCase() === "true";
+  return Boolean(value);
+}
+
 function parseGradCamResults(raw: unknown): GradCamDto[] {
   if (!Array.isArray(raw)) return [];
 
@@ -127,6 +134,7 @@ export interface AdminCaseDetail {
   reviewNote: string | null;
   finalVerdict: FinalVerdict | null;
   isPdfExportAllowed: boolean;
+  isFlaggedForInternalReview: boolean;
 }
 
 export class CaseReviewApiError extends Error {
@@ -153,10 +161,10 @@ async function parseProblem(res: Response) {
     const json = await res.json();
     return {
       code: json?.title as string | undefined,
-      message: json?.detail || json?.title || `Request failed (${res.status})`,
+      message: getServerErrorMessage(res.status, json?.detail || json?.title),
     };
   } catch {
-    return { code: undefined, message: `Request failed (${res.status})` };
+    return { code: undefined, message: getServerErrorMessage(res.status) };
   }
 }
 
@@ -309,8 +317,11 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     reviewedAt: raw?.reviewedAt ?? raw?.ReviewedAt ?? null,
     reviewNote: raw?.reviewNote ?? raw?.ReviewNote ?? null,
     finalVerdict: normalizeFinalVerdict(raw?.finalVerdict ?? raw?.FinalVerdict),
-    isPdfExportAllowed: Boolean(
+    isPdfExportAllowed: normalizeBoolean(
       raw?.isPdfExportAllowed ?? raw?.IsPdfExportAllowed,
+    ),
+    isFlaggedForInternalReview: normalizeBoolean(
+      raw?.isFlaggedForInternalReview ?? raw?.IsFlaggedForInternalReview,
     ),
   };
 }
@@ -383,6 +394,33 @@ export async function submitCaseReview(
       isPdfExportAllowed: payload.isPdfExportAllowed,
     }),
   });
+
+  if (!res.ok && res.status !== 204) {
+    if (await handleUnauthorizedResponse(res)) {
+      throw new CaseReviewApiError(
+        res.status,
+        "Unauthorized",
+        "Session expired. Please sign in again.",
+      );
+    }
+    const { code, message } = await parseProblem(res);
+    throw new CaseReviewApiError(res.status, code, message);
+  }
+}
+
+/** POST /cases/{id}/flag — Avera.WebApi/Endpoints/Cases/ToggleFlag.cs (Admin only). */
+export async function toggleCaseInternalReviewFlag(
+  caseId: string,
+  isFlagged: boolean,
+): Promise<void> {
+  const res = await fetch(
+    buildApiUrl(API_ENDPOINTS.cases.toggleInternalReviewFlag(caseId)),
+    {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ isFlagged }),
+    },
+  );
 
   if (!res.ok && res.status !== 204) {
     if (await handleUnauthorizedResponse(res)) {

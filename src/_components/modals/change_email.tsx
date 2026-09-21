@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomSheetTransition } from '@/_components/transition';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
@@ -16,6 +17,7 @@ interface ChangeEmailModalProps {
 }
 
 export default function ChangeEmailModal({ visible, currentEmail, onClose, onSent }: ChangeEmailModalProps) {
+	const insets = useSafeAreaInsets();
 	const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } = useBottomSheetTransition({
 		visible,
 		onClose,
@@ -51,12 +53,20 @@ export default function ChangeEmailModal({ visible, currentEmail, onClose, onSen
 
 	return (
 		<Modal visible={isMounted} transparent onRequestClose={onClose} statusBarTranslucent>
-			<View style={styles.root}>
+			<KeyboardAvoidingView
+				style={styles.root}
+				behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+			>
 				<Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
 					<Animated.View pointerEvents="none" style={[styles.backdrop, { opacity: backdropOpacity }]} />
 				</Pressable>
 
-				<Animated.View style={[styles.sheet, { transform: [{ translateY: sheetY }] }]}>
+				<Animated.View
+					style={[
+						styles.sheet,
+						{ paddingBottom: insets.bottom + 24, transform: [{ translateY: sheetY }] },
+					]}
+				>
 					<View style={styles.dragHandleWrap} {...dragHandlePanHandlers}>
 						<View style={styles.dragHandle} />
 					</View>
@@ -116,7 +126,7 @@ export default function ChangeEmailModal({ visible, currentEmail, onClose, onSen
 						/>
 					</View>
 				</Animated.View>
-			</View>
+			</KeyboardAvoidingView>
 		</Modal>
 	);
 }
@@ -130,7 +140,6 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 22,
 		paddingHorizontal: 20,
 		paddingTop: 10,
-		paddingBottom: 28,
 		borderWidth: 1,
 		borderColor: colors.sheetBorder,
 	},

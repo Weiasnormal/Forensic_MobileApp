@@ -1,28 +1,28 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { CASES_PAGE_SIZE, fetchBackendCases } from "@/services/backendCases";
 import {
-  notifyProcessingComplete,
-  notifyProcessingFailed,
+    notifyProcessingComplete,
+    notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-  OverlayImageRef,
-  OverlaySlot,
-  OverlayVariant,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisConfidence,
-  type SignatureAnalysisResult,
+    OverlayImageRef,
+    OverlaySlot,
+    OverlayVariant,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisConfidence,
+    type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
+import { getServerErrorMessage } from "@/utils/networkError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-  getAuthHeader,
-  handleUnauthorizedResponse,
-  useAuthStore,
+    getAuthHeader,
+    handleUnauthorizedResponse,
+    useAuthStore,
 } from "./authStore";
-import { useFeedbackStore } from "./feedbackStore";
 
 const VALID_SLOTS: OverlaySlot[] = [
   "Reference1",
@@ -199,6 +199,7 @@ export interface SavedCase extends DraftCase {
   Verdict?: string;
   confidence?: number;
   Confidence?: number;
+  isFlaggedForInternalReview?: boolean;
 }
 
 type DraftEditableField =
@@ -688,14 +689,30 @@ export const useCaseStore = create<CaseStore>()(
             "CaseStore:Action",
             "Discarding current signature draft",
           );
-          set((state) => ({
-            savedDrafts: state.savedDrafts.filter(
-              (draft) => draft.caseId !== state.draftSignatureCase.caseId,
-            ),
-            draftSignatureCase: createDraftCase(
-              state.draftSignatureCase.caseId,
-            ),
-          }));
+          set((state) => {
+            const currentCaseId = state.draftSignatureCase.caseId;
+            const sequenceMatch = currentCaseId.match(/-(\d{3})$/);
+            const currentSequence = sequenceMatch
+              ? Number(sequenceMatch[1])
+              : null;
+            const isExistingCase = state.cases.some(
+              (item) => item.caseId === currentCaseId,
+            );
+            const canReleaseReservedNumber =
+              currentSequence !== null &&
+              currentSequence === state.nextCaseNumber - 1 &&
+              !isExistingCase;
+
+            return {
+              savedDrafts: state.savedDrafts.filter(
+                (draft) => draft.caseId !== currentCaseId,
+              ),
+              draftSignatureCase: createDraftCase(currentCaseId),
+              nextCaseNumber: canReleaseReservedNumber
+                ? state.nextCaseNumber - 1
+                : state.nextCaseNumber,
+            };
+          });
         },
 
         updateDraftCase: (field, value) => {
@@ -820,7 +837,7 @@ export const useCaseStore = create<CaseStore>()(
               }
               const message = await parseBackendError(
                 createRes,
-                `Create case failed (${createRes.status})`,
+                  getServerErrorMessage(createRes.status),
               );
               throw new Error(message);
             }
@@ -892,10 +909,6 @@ export const useCaseStore = create<CaseStore>()(
                 activeSignatureCaseId: caseId,
               };
             });
-
-            useFeedbackStore
-              .getState()
-              .showToast("Case created — running analysis", "success");
 
             caseLog.info("CaseStore:Submit", "Uploading images for case", {
               caseId,
@@ -993,7 +1006,7 @@ export const useCaseStore = create<CaseStore>()(
                 }
                 const message = await parseBackendError(
                   upRes,
-                  `Reference upload failed (${upRes.status})`,
+                  getServerErrorMessage(upRes.status),
                 );
                 throw new Error(message);
               }
@@ -1048,7 +1061,7 @@ export const useCaseStore = create<CaseStore>()(
                 }
                 const message = await parseBackendError(
                   upRes,
-                  `Suspect upload failed (${upRes.status})`,
+                  getServerErrorMessage(upRes.status),
                 );
                 throw new Error(message);
               }
@@ -1187,7 +1200,7 @@ export const useCaseStore = create<CaseStore>()(
                 );
                 if (!statusResponse.ok) {
                   throw new Error(
-                    `Case workflow status update failed (${statusResponse.status})`,
+                    getServerErrorMessage(statusResponse.status),
                   );
                 }
               } catch (statusError) {
@@ -1338,7 +1351,7 @@ export const useCaseStore = create<CaseStore>()(
               }
               const message = await parseBackendError(
                 analysisRes,
-                `Analysis retry failed (${analysisRes.status})`,
+                getServerErrorMessage(analysisRes.status),
               );
               throw new Error(message);
             }
@@ -1414,7 +1427,7 @@ export const useCaseStore = create<CaseStore>()(
               );
               if (!statusResponse.ok) {
                 throw new Error(
-                  `Case workflow status update failed (${statusResponse.status})`,
+                    getServerErrorMessage(statusResponse.status),
                 );
               }
             } catch (statusError) {

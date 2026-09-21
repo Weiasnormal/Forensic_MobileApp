@@ -249,6 +249,7 @@ export default function AdminCasesScreen() {
                     ? item.status
                     : "Processing"
               }
+                    isFlaggedForInternalReview={item.isFlaggedForInternalReview}
               onPress={() => {
                 setActiveSignatureCaseId(item.caseId);
 

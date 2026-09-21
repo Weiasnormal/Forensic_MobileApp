@@ -1,8 +1,8 @@
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
 
 interface PermissionDisclosureProps {
   message?: string;
@@ -10,8 +10,7 @@ interface PermissionDisclosureProps {
 }
 
 const DEFAULT_MESSAGE =
-  'Avera needs camera access to scan and digitize handwritten signatures for forensic analysis. Photos are used only for this case and are not shared outside your organization.';
-
+  'Camera access is needed to scan signatures. Photos are used only for this case.'
 export default function PermissionDisclosure({
   message = DEFAULT_MESSAGE,
   icon = 'shield-checkmark-outline',

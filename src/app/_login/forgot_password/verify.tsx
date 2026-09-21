@@ -5,31 +5,37 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
+import { useResendCooldown } from "@/hooks/useResendCooldown";
+import { forgotPassword } from "@/services/authApi";
 import { resolveRole, ROLE_SETTINGS } from "../../../constants/roles";
 import {
-    type VerificationCodeFormValues,
-    verificationCodeSchema,
+  type VerificationCodeFormValues,
+  verificationCodeSchema,
 } from "../../../utils/validation";
 
 export default function VerifyPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ role?: string; email?: string }>();
+  const params = useLocalSearchParams<{
+    role?: string;
+    email?: string;
+    expiresAt?: string;
+  }>();
   const activeRole = resolveRole(params.role);
   const roleConfig = ROLE_SETTINGS[activeRole].forgotPassword;
   const email = params.email ?? roleConfig.verificationEmail;
@@ -37,6 +43,18 @@ export default function VerifyPage() {
   const [codeValues, setCodeValues] = useState(Array(6).fill(""));
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [expiresAt, setExpiresAt] = useState(
+    params.expiresAt ?? getFallbackExpiry(),
+  );
+  const [secondsRemaining, setSecondsRemaining] = useState(() =>
+    getSecondsRemaining(params.expiresAt),
+  );
+  const {
+    secondsRemaining: resendSecondsRemaining,
+    isCoolingDown,
+    startCooldown,
+  } = useResendCooldown();
   const codeRefs = useRef<(TextInput | null)[]>([]);
   const {
     setValue,
@@ -46,6 +64,16 @@ export default function VerifyPage() {
     resolver: zodResolver(verificationCodeSchema),
     defaultValues: { code: "" },
   });
+
+  useEffect(() => {
+    const updateRemaining = () => {
+      setSecondsRemaining(getSecondsRemaining(expiresAt));
+    };
+
+    updateRemaining();
+    const timer = setInterval(updateRemaining, 1000);
+    return () => clearInterval(timer);
+  }, [expiresAt]);
 
   const handleCodeChange = (index: number, value: string) => {
     const nextValue = value.replace(/\D/g, "").slice(-1);
@@ -97,6 +125,32 @@ export default function VerifyPage() {
       setVerifyError("Unable to verify the code right now. Please try again.");
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (isResending || isCoolingDown) return;
+
+    setVerifyError(null);
+    setIsResending(true);
+    try {
+      const result = await forgotPassword(email);
+      if (!result.implemented) {
+        setVerifyError("Unable to resend the code right now. Please try again.");
+        return;
+      }
+
+      const nextExpiresAt = result.expiresAt ?? getFallbackExpiry();
+      setExpiresAt(nextExpiresAt);
+      setSecondsRemaining(getSecondsRemaining(nextExpiresAt));
+      setCodeValues(Array(6).fill(""));
+      setValue("code", "", { shouldValidate: false });
+      startCooldown();
+      codeRefs.current[0]?.focus();
+    } catch {
+      setVerifyError("Unable to resend the code right now. Please try again.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -179,10 +233,32 @@ export default function VerifyPage() {
             </Text>
           ) : null}
 
-          <View style={styles.metaColumn}>
+          <View style={styles.metaRow}>
             <Text allowFontScaling={false} style={styles.metaText}>
-              Code expiration is managed by the server.
+              {secondsRemaining > 0
+                ? `Code expires in ${formatDuration(secondsRemaining)}`
+                : "This code has expired."}
             </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleResend}
+              disabled={isResending || isCoolingDown}
+            >
+              <Text
+                allowFontScaling={false}
+                style={[
+                  styles.metaAction,
+                  (isResending || isCoolingDown) &&
+                    styles.metaActionDisabled,
+                ]}
+              >
+                {isResending
+                  ? "Sending new code…"
+                  : isCoolingDown
+                    ? `Resend (${resendSecondsRemaining}s)`
+                    : "Resend code"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -284,18 +360,24 @@ const styles = StyleSheet.create({
     color: colors.danger,
     textAlign: "center",
   },
-  metaColumn: {
+  metaRow: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "space-between",
     marginTop: 14,
+    gap: 12,
   },
   metaText: {
     ...getTypographyStyle("c2Caption"),
     color: colors.textSecondary,
+    flexShrink: 1,
   },
   metaAction: {
     ...getTypographyStyle("c2Caption", "bold"),
     color: colors.primary,
+  },
+  metaActionDisabled: {
+    color: colors.textMuted,
   },
   bottomActions: {
     paddingHorizontal: 20,
@@ -303,3 +385,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background2,
   },
 });
+
+function getSecondsRemaining(expiresAt: string | undefined | null) {
+  if (!expiresAt) return 0;
+  const expiry = new Date(expiresAt).getTime();
+  if (!Number.isFinite(expiry)) return 0;
+  return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+}
+
+function getFallbackExpiry() {
+  return new Date(Date.now() + 10 * 60 * 1000).toISOString();
+}
+
+function formatDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}

@@ -2,7 +2,7 @@ import PrimaryButton from "@/_components/common/PrimaryButton";
 import { useBottomSheetTransition } from "@/_components/transition";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
-import { Ionicons } from "@expo/vector-icons";
+import { Check } from "lucide-react-native";
 import React from "react";
 import {
 	Animated,
@@ -12,6 +12,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ChangeEmailSuccessModalProps {
   visible: boolean;
@@ -24,6 +25,7 @@ export default function ChangeEmailSuccessModal({
   newEmail,
   onDone,
 }: ChangeEmailSuccessModalProps) {
+  const insets = useSafeAreaInsets();
   const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } =
     useBottomSheetTransition({
       visible,
@@ -48,14 +50,17 @@ export default function ChangeEmailSuccessModal({
         </Pressable>
 
         <Animated.View
-          style={[styles.sheet, { transform: [{ translateY: sheetY }] }]}
+          style={[
+            styles.sheet,
+            { paddingBottom: insets.bottom + 24, transform: [{ translateY: sheetY }] },
+          ]}
         >
           <View style={styles.dragHandleWrap} {...dragHandlePanHandlers}>
             <View style={styles.dragHandle} />
           </View>
 
           <View style={styles.iconCircle}>
-            <Ionicons name="checkmark" size={28} color={colors.statusGenuine} />
+            <Check size={28} color={colors.statusGenuine} />
           </View>
 
           <Text allowFontScaling={false} style={styles.title}>
@@ -89,7 +94,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 22,
     paddingHorizontal: 24,
     paddingTop: 10,
-    paddingBottom: 28,
     alignItems: "center",
     borderWidth: 1,
     borderColor: colors.sheetBorder,

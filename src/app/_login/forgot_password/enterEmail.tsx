@@ -1,3 +1,8 @@
+import ErrorBanner from '@/_components/common/ErrorBanner';
+import FormField from '@/_components/common/FormField';
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -6,15 +11,10 @@ import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import FormField from '@/_components/common/FormField';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import ErrorBanner from '@/_components/common/ErrorBanner';
 
+import { forgotPassword } from '@/services/authApi';
 import { resolveRole, ROLE_SETTINGS } from '../../../constants/roles';
 import { type ForgotPasswordFormValues, forgotPasswordSchema } from '../../../utils/validation';
-import { forgotPassword } from '@/services/authApi';
 
 export default function EnterEmailPage() {
 	const router = useRouter();
@@ -36,7 +36,7 @@ export default function EnterEmailPage() {
 
 	const handleSendCode = async (values: ForgotPasswordFormValues) => {
 		setRequestError(null);
-		const { implemented } = await forgotPassword(values.email);
+		const { implemented, expiresAt } = await forgotPassword(values.email);
 		if (!implemented) {
 			setRequestError('Password recovery is temporarily unavailable. Please try again later.');
 			return;
@@ -44,7 +44,7 @@ export default function EnterEmailPage() {
 
 		router.push({
 			pathname: '/_login/forgot_password/verify',
-			params: { role: activeRole, email: values.email },
+			params: { role: activeRole, email: values.email, expiresAt },
 		});
 	};
 
@@ -94,7 +94,7 @@ export default function EnterEmailPage() {
 							)}
 						/>
 						<Text allowFontScaling={false} style={styles.helperText}>
-							We&apos;ll send a 6-digit code to {roleConfig.verificationEmail}.
+							We&apos;ll send a 6-digit code to your email.
 						</Text>
 					</View>
 				</View>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import { colors } from '@/constants/colors';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { getTypographyStyle } from '../../constants/typography';
 
 interface FormFieldProps {
@@ -11,6 +11,7 @@ interface FormFieldProps {
   onBlur?: () => void;
   onFocus?: () => void;
   disabled?: boolean;
+  disabledStyle?: ViewStyle;
   placeholder?: string;
   style?: ViewStyle;
   secureTextEntry?: boolean;
@@ -32,6 +33,7 @@ const FormField: React.FC<FormFieldProps> = ({
   onBlur,
   onFocus,
   disabled = false,
+  disabledStyle,
   placeholder,
   style,
   secureTextEntry = false,
@@ -64,6 +66,7 @@ const FormField: React.FC<FormFieldProps> = ({
         style={[
           styles.inputWrap,
           disabled && styles.inputDisabled,
+          disabled && disabledStyle,
           showFocused && styles.inputFocused,
           !!error && styles.inputErrorBorder,
         ]}

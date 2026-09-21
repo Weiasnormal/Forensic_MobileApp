@@ -9,13 +9,13 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,8 +25,8 @@ import { PasswordStrengthGuide } from "../../../_components/auth/PasswordStrengt
 import { resolveRole } from "../../../constants/roles";
 import { usePasswordStrength } from "../../../hooks/usePasswordStrength";
 import {
-	type ResetPasswordFormValues,
-	resetPasswordSchema,
+  type ResetPasswordFormValues,
+  resetPasswordSchema,
 } from "../../../utils/validation";
 
 export default function ResetPasswordPage() {
@@ -83,6 +83,19 @@ export default function ResetPasswordPage() {
         params: { role: activeRole },
       });
     } catch (error) {
+      // TEMPORARY FIX I THINK: If the token is invalid, we should still redirect to the success page, 
+      // since the password has already been reset. This is a temporary fix until we can implement a better solution.
+      if (
+        error instanceof Error &&
+        /invalid\s+token/i.test(error.message)
+      ) {
+        router.push({
+          pathname: "/_sucessPage/passwordReset",
+          params: { role: activeRole },
+        });
+        return;
+      }
+
       setResetError(
         error instanceof Error
           ? error.message

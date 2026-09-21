@@ -1,5 +1,6 @@
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import { Flag } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export type CaseStatus = "Suspected" | "Genuine" | "Processing";
@@ -15,6 +16,7 @@ interface CaseCardProps {
   examiner?: string;
   confidence?: number;
   adminStatus?: string;
+  isFlaggedForInternalReview?: boolean;
   onPress?: () => void;
 }
 
@@ -65,6 +67,7 @@ export default function CaseCard({
   examiner,
   confidence,
   adminStatus,
+  isFlaggedForInternalReview = false,
   onPress,
 }: CaseCardProps) {
   const style = statusStyles[status] ?? statusStyles.Processing;
@@ -104,27 +107,38 @@ export default function CaseCard({
             </Text>
           )}
         </View>
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: isAdminCard
-                ? adminBadgeStyle.backgroundColor
-                : style.badgeBgColor,
-            },
-          ]}
-        >
-          <Text
-            allowFontScaling={false}
+        <View style={styles.badgeGroup}>
+          {isAdminCard && isFlaggedForInternalReview ? (
+            <View style={styles.flaggedBadge}>
+              <Flag size={12} color={colors.suspectSubtext} strokeWidth={2.5} />
+              <Text allowFontScaling={false} style={styles.flaggedText}>
+                Flagged
+              </Text>
+            </View>
+          ) : (
+          <View
             style={[
-              styles.badgeText,
+              styles.badge,
               {
-                color: isAdminCard ? adminBadgeStyle.color : style.badgeColor,
+                backgroundColor: isAdminCard
+                  ? adminBadgeStyle.backgroundColor
+                  : style.badgeBgColor,
               },
             ]}
           >
-            {isAdminCard ? adminStatus || "Review" : style.badgeText}
-          </Text>
+            <Text
+              allowFontScaling={false}
+              style={[
+                styles.badgeText,
+                {
+                  color: isAdminCard ? adminBadgeStyle.color : style.badgeColor,
+                },
+              ]}
+            >
+                {isAdminCard ? adminStatus || "Review" : style.badgeText}
+            </Text>
+          </View>
+          )}
         </View>
       </View>
       {isAdminCard ? (
@@ -167,6 +181,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 4,
   },
+  badgeGroup: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
   id: {
     ...getTypographyStyle("headline"),
     color: colors.textPrimary,
@@ -188,6 +206,19 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     ...getTypographyStyle("l2List"),
+  },
+  flaggedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.suspectBackground,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  flaggedText: {
+    ...getTypographyStyle("c2Caption", "bold"),
+    color: colors.suspectSubtext,
   },
   nameLabel: {
     ...getTypographyStyle("c1Caption", "regular"),

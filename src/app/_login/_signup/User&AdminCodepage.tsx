@@ -6,25 +6,27 @@ import { useAuthStore } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { resolveRole, ROLE_SETTINGS } from "../../../constants/roles";
 import {
-	type InviteCodeFormValues,
-	inviteCodeSchema,
+  type InviteCodeFormValues,
+  inviteCodeSchema,
 } from "../../../utils/validation";
 
 export default function UserAndAdminCodePage() {
@@ -37,6 +39,9 @@ export default function UserAndAdminCodePage() {
   const joinInviteCode = useAuthStore((state) => state.joinInviteCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const hasScannedRef = useRef(false);
 
   const [codeValues, setCodeValues] = useState(Array(7).fill(""));
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -81,6 +86,40 @@ export default function UserAndAdminCodePage() {
     }
   };
 
+  const handleOpenScanner = async () => {
+    setSubmitError(null);
+
+    if (!cameraPermission?.granted) {
+      const permission = await requestCameraPermission();
+      if (!permission.granted) {
+        setSubmitError("Camera access is required to scan the invite QR code.");
+        return;
+      }
+    }
+
+    hasScannedRef.current = false;
+    setIsScannerVisible(true);
+  };
+
+  const handleBarcodeScanned = (data: string) => {
+    if (hasScannedRef.current) return;
+
+    const normalizedCode = data.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (!/^[A-Z]{3}[A-Z0-9]{4}$/.test(normalizedCode)) {
+      setSubmitError("That QR code does not contain a valid invite code.");
+      return;
+    }
+
+    hasScannedRef.current = true;
+    setCodeValues(normalizedCode.split(""));
+    setValue("code", normalizedCode, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setIsScannerVisible(false);
+    useFeedbackStore.getState().showToast("Invite code scanned", "success");
+  };
+
   const handleVerify = async (values: InviteCodeFormValues) => {
     setSubmitError(null);
 
@@ -101,7 +140,6 @@ export default function UserAndAdminCodePage() {
       );
 
       setSubmitError(friendlyMessage);
-      useFeedbackStore.getState().showToast(friendlyMessage, "infoLight");
     } finally {
       setIsSubmitting(false);
     }
@@ -180,6 +218,18 @@ export default function UserAndAdminCodePage() {
             ))}
           </View>
 
+          <TouchableOpacity
+            style={styles.scanButton}
+            activeOpacity={0.8}
+            onPress={() => void handleOpenScanner()}
+            disabled={isSubmitting}
+          >
+            <Ionicons name="scan-outline" size={20} color={colors.primary} />
+            <Text allowFontScaling={false} style={styles.scanButtonText}>
+              Scan QR code 
+            </Text>
+          </TouchableOpacity>
+
           {submitError ? (
             <Text allowFontScaling={false} style={styles.errorText}>
               {submitError}
@@ -200,6 +250,38 @@ export default function UserAndAdminCodePage() {
           />
         </View>
       </ScrollView>
+
+      <Modal
+        visible={isScannerVisible}
+        animationType="slide"
+        onRequestClose={() => setIsScannerVisible(false)}
+      >
+        <View style={styles.scannerScreen}>
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={({ data }) => handleBarcodeScanned(data)}
+          />
+          <View style={styles.scannerOverlay}>
+            <View style={styles.scannerHeader}>
+              <Text allowFontScaling={false} style={styles.scannerTitle}>
+                Scan invite QR code
+              </Text>
+              <TouchableOpacity
+                style={styles.closeScannerButton}
+                onPress={() => setIsScannerVisible(false)}
+              >
+                <Ionicons name="close" size={24} color={colors.primaryText} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.scanFrame} />
+            <Text allowFontScaling={false} style={styles.scannerHint}>
+              Point your camera at the QR code shared by the administrator.
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -281,6 +363,19 @@ const styles = StyleSheet.create({
     ...getTypographyStyle("t3Title"),
     color: colors.textSecondary,
   },
+  scanButton: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  scanButtonText: {
+    ...getTypographyStyle("c1Caption", "medium"),
+    color: colors.primary,
+  },
   helperText: {
     ...getTypographyStyle("c2Caption"),
     color: colors.textSecondary,
@@ -295,5 +390,47 @@ const styles = StyleSheet.create({
   },
   primaryButtonSpacing: {
     marginTop: "auto",
+  },
+  scannerScreen: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+  scannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 24,
+    paddingTop: 60,
+    paddingBottom: 48,
+  },
+  scannerHeader: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  scannerTitle: {
+    ...getTypographyStyle("t3Title"),
+    color: colors.primaryText,
+  },
+  closeScannerButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+  },
+  scanFrame: {
+    width: 250,
+    height: 250,
+    borderWidth: 3,
+    borderColor: colors.primaryText,
+    borderRadius: 18,
+  },
+  scannerHint: {
+    ...getTypographyStyle("body"),
+    color: colors.primaryText,
+    textAlign: "center",
   },
 });

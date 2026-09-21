@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
 
     verifyResetCode: '/auth/password/verify-code',
     verifyEmail: '/auth/verify-email',
+    emailVerificationStatus: '/auth/email-verification-status',
     joinInviteCode: '/auth/join-invite-code',
     
   },
@@ -44,6 +45,7 @@ export const API_ENDPOINTS = {
     updateStatus: (caseId: string) => `/cases/${caseId}/status`,
     delete: (caseId: string) => `/cases/${caseId}`,
     review: (caseId: string) => `/cases/${caseId}/review`,
+    toggleInternalReviewFlag: (caseId: string) => `/cases/${caseId}/flag`,
   },
   signatures: {
     uploadReference: (caseId: string) => `/cases/${caseId}/signatures/reference`,

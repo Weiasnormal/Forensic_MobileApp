@@ -12,12 +12,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Folder, MinusCircle, UserX } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -110,18 +110,18 @@ const MemberDetailsScreen: React.FC = () => {
               Daily Case Limit
             </Text>
             <Text allowFontScaling={false} style={styles.limitSubtitle}>
-              Not provided by backend
+              Cases allowed per day
             </Text>
           </View>
-          <Text allowFontScaling={false} style={styles.unavailableText}>
-            Unavailable
+          <Text allowFontScaling={false} style={styles.limitValue}>
+            {memberDetail.dailyCaseLimit ?? "—"}
           </Text>
         </View>
         <Divider />
 
         <ToggleRow
           title="Case Submission"
-          subtitle="Not provided by backend"
+          subtitle="Submission status is not provided by backend"
           value={false}
           disabled
         />
@@ -215,6 +215,10 @@ const styles = StyleSheet.create({
     ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  limitValue: {
+    ...getTypographyStyle("body", "semiBold"),
+    color: colors.textPrimary,
   },
   unavailableText: {
     ...getTypographyStyle("c1Caption", "regular"),

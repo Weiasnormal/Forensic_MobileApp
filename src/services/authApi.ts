@@ -1,4 +1,8 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
+import {
+  getServerErrorMessage,
+  NETWORK_ERROR_MESSAGE,
+} from "@/utils/networkError";
 
 export interface LoginRequest {
   email: string;
@@ -70,7 +74,7 @@ export function normalizeAuthErrorMessage(
   const trimmed = rawMessage.trim();
 
   if (!trimmed) {
-    return "Request failed";
+    return NETWORK_ERROR_MESSAGE;
   }
 
   const emailValue = email?.trim();
@@ -121,6 +125,14 @@ export function normalizeInviteCodeErrorMessage(message: unknown): string {
   }
 
   if (
+    /(already.*(pending|request|member|organization|tenant)|pending.*request|request.*already)/i.test(
+      trimmed,
+    )
+  ) {
+    return "You already have a pending request for this organization.";
+  }
+
+  if (
     /(organization.*(not found|missing)|tenant.*(not found|missing))/i.test(
       trimmed,
     )
@@ -135,10 +147,10 @@ async function parseProblem(response: Response) {
   try {
     const json = await response.json();
     return normalizeAuthErrorMessage(
-      json?.detail || json?.title || `Request failed (${response.status})`,
+      getServerErrorMessage(response.status, json?.detail || json?.title),
     );
   } catch {
-    return `Request failed (${response.status})`;
+    return getServerErrorMessage(response.status);
   }
 }
 
@@ -408,14 +420,54 @@ export async function joinInviteCode(
 }
 export async function forgotPassword(
   email: string,
-): Promise<{ implemented: boolean }> {
+): Promise<{ implemented: boolean; expiresAt?: string }> {
   try {
     const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.forgotPassword), {
       method: "POST",
       headers: baseHeaders(),
       body: JSON.stringify({ email }),
     });
-    return { implemented: res.ok };
+
+    if (!res.ok) return { implemented: false };
+
+    const expiresAtHeader = res.headers.get("x-code-expires-at");
+    const retryAfter = Number(res.headers.get("retry-after"));
+
+    try {
+      const body = await res.json();
+      const bodyExpiresAt =
+        body?.expiresAt ??
+        body?.ExpiresAt ??
+        body?.codeExpiresAt ??
+        body?.CodeExpiresAt ??
+        body?.expiration ??
+        body?.Expiration;
+      const expiresInSeconds = Number(
+        body?.expiresInSeconds ?? body?.ExpiresInSeconds ?? body?.expiresIn,
+      );
+
+      return {
+        implemented: true,
+        expiresAt:
+          typeof bodyExpiresAt === "string"
+            ? bodyExpiresAt
+            : Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+              ? new Date(Date.now() + expiresInSeconds * 1000).toISOString()
+              : expiresAtHeader ??
+                (Number.isFinite(retryAfter) && retryAfter > 0
+                  ? new Date(Date.now() + retryAfter * 1000).toISOString()
+                  : undefined),
+      };
+    } catch {
+      return {
+        implemented: true,
+        expiresAt:
+          expiresAtHeader ??
+          (Number.isFinite(retryAfter) && retryAfter > 0
+            ? new Date(Date.now() + retryAfter * 1000).toISOString()
+            : undefined),
+      };
+    }
   } catch {
     return { implemented: false };
   }

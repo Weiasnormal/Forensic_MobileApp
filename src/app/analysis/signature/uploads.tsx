@@ -2,16 +2,13 @@ import ErrorBanner from "@/_components/common/ErrorBanner";
 import PermissionDisclosure from "@/_components/common/PermissionDisclosure";
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import ErrorModal from "@/_components/modals/error_modal";
-import MediaSourcePicker, {
-  scanForensicDocument,
-} from "@/_components/modals/media_source_picker";
+import { scanForensicDocument } from "@/_components/modals/media_source_picker";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { hasCompleteUploads, useCaseStore } from "@/store/caseStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import * as FileSystem from "expo-file-system/legacy";
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
@@ -43,12 +40,6 @@ function getFileExtension(uri: string): string {
 
   const extension = lastSegment.slice(lastDot + 1).toLowerCase();
   return /^[a-z0-9]+$/.test(extension) ? extension : "jpg";
-}
-
-function addFingerprint(uri: string, identifier?: string): string {
-  if (!identifier) return uri;
-  const separator = uri.includes("?") ? "&" : "?";
-  return `${uri}${separator}id=${encodeURIComponent(identifier)}`;
 }
 
 async function persistUploadUri(
@@ -94,13 +85,6 @@ export default function SignatureUploadsRoute() {
   const router = useRouter();
   const nav = router as any;
   const insets = useSafeAreaInsets();
-  const [currentUploadTarget, setCurrentUploadTarget] = useState<
-    "reference" | "suspect" | null
-  >(null);
-  const [currentReferenceIndex, setCurrentReferenceIndex] = useState<
-    number | null
-  >(null);
-  const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewLabel, setPreviewLabel] = useState("");
   const [showPermissionModal, setShowPermissionModal] = useState(true);
@@ -181,9 +165,7 @@ export default function SignatureUploadsRoute() {
     target: "reference" | "suspect",
     refIndex?: number,
   ) => {
-    setCurrentUploadTarget(target);
-    setCurrentReferenceIndex(refIndex ?? null);
-    setShowSourcePicker(true);
+    handleCameraPress(target, refIndex);
   };
 
   useFocusEffect(
@@ -395,142 +377,6 @@ export default function SignatureUploadsRoute() {
           size="medium"
         />
       </View>
-      <MediaSourcePicker
-        visible={showSourcePicker}
-        onCancel={() => setShowSourcePicker(false)}
-        onSelect={async (choice) => {
-          setShowSourcePicker(false);
-
-          try {
-            if (choice === "camera") {
-              handleCameraPress(
-                currentUploadTarget ?? "suspect",
-                currentReferenceIndex ?? undefined,
-              );
-              return;
-            }
-
-            const isDuplicate = (asset: any) => {
-              const identifier =
-                asset.assetId || asset.fileName || String(asset.fileSize);
-              if (!identifier) return false;
-
-              const searchStr = `?id=${encodeURIComponent(identifier)}`;
-
-              const isRefDup = uploads.references.some((uri) =>
-                uri?.includes(searchStr),
-              );
-              const isSuspectDup = uploads.suspect?.includes(searchStr);
-
-              return isRefDup || isSuspectDup;
-            };
-
-            if (
-              currentUploadTarget === "reference" &&
-              currentReferenceIndex !== null
-            ) {
-              const remainingSlots = 4 - currentReferenceIndex;
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ["images"],
-                allowsMultipleSelection: true,
-                allowsEditing: false,
-                selectionLimit: Math.max(1, remainingSlots),
-                quality: 0.9,
-              });
-
-              if (result && !result.canceled) {
-                const assets = result.assets || [];
-                let addedCount = 0;
-                let duplicateCount = 0;
-
-                for (let i = 0; i < assets.length; i++) {
-                  const asset = assets[i];
-                  if (!asset || !asset.uri) continue;
-
-                  if (isDuplicate(asset)) {
-                    duplicateCount++;
-                    continue;
-                  }
-
-                  const slotIndex = currentReferenceIndex + addedCount;
-                  if (slotIndex > 3) break;
-
-                  const identifier =
-                    asset.assetId || asset.fileName || String(asset.fileSize);
-                  const persistedUri = await persistUploadUri(
-                    asset.uri,
-                    `reference-${slotIndex + 1}`,
-                  );
-                  const finalUri = addFingerprint(
-                    persistedUri,
-                    identifier ?? undefined,
-                  );
-
-                  setDraftUpload("reference", slotIndex, finalUri);
-                  addedCount++;
-                }
-
-                if (duplicateCount > 0) {
-                  setErrorModal({
-                    title: "Duplicate Detected",
-                    message: `${duplicateCount} image(s) were skipped because they are already selected in this case.`,
-                  });
-                }
-              }
-              return;
-            }
-
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ["images"],
-              allowsEditing: false,
-              quality: 0.9,
-            });
-
-            if (result && !result.canceled) {
-              const asset = result.assets?.[0];
-              if (asset && asset.uri) {
-                if (isDuplicate(asset)) {
-                  setErrorModal({
-                    title: "Already Selected",
-                    message:
-                      "This image is already being used as a reference signature.",
-                  });
-                  return;
-                }
-
-                const identifier =
-                  asset.assetId || asset.fileName || String(asset.fileSize);
-                const targetLabel =
-                  currentUploadTarget === "suspect" ? "suspect" : "reference";
-                const persistedUri = await persistUploadUri(
-                  asset.uri,
-                  targetLabel,
-                );
-                const finalUri = addFingerprint(
-                  persistedUri,
-                  identifier ?? undefined,
-                );
-
-                if (
-                  currentUploadTarget === "reference" &&
-                  currentReferenceIndex !== null
-                ) {
-                  setDraftUpload("reference", currentReferenceIndex, finalUri);
-                } else if (currentUploadTarget === "suspect") {
-                  setDraftUpload("suspect", 0, finalUri);
-                }
-              }
-            }
-          } catch (e) {
-            console.warn("Gallery pick failed", e);
-            setErrorModal({
-              title: "Error",
-              message: "Unable to pick image from gallery.",
-            });
-          }
-        }}
-      />
-
       <ErrorModal
         visible={!!errorModal}
         title={errorModal?.title}

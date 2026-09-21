@@ -9,13 +9,13 @@ import * as Clipboard from "expo-clipboard";
 import { ChevronRight, Copy, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -106,7 +106,7 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     const renamed = await renameTenant(trimmedOrganizationName);
 
     if (!renamed) {
-      showToast("Unable to rename organization on the server");
+      showToast("Network error. Please check your connection and try again.");
       return;
     }
 

@@ -1,6 +1,7 @@
 import { ADMIN_API_ENDPOINTS } from "@/constants/adminApi";
 import { API_KEY, buildApiUrl } from "@/constants/api";
 import { createNotificationConnection } from "@/services/notificationHub";
+import { getServerErrorMessage } from "@/utils/networkError";
 import { normalizeInviteCode } from "@/utils/validation";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 import { create } from "zustand";
@@ -40,6 +41,7 @@ export interface TenantMemberDetail {
   lastName: string;
   email: string;
   role: string;
+  dailyCaseLimit: number | null;
 }
 
 interface AdminStore {
@@ -93,6 +95,10 @@ function normalizeTenantMemberDetail(record: any): TenantMemberDetail | null {
     lastName: record.lastName?.trim() || "",
     email: record.email?.trim() || "",
     role: record.role?.trim() || "Analyst",
+    dailyCaseLimit:
+      record.dailyCaseLimit == null && record.DailyCaseLimit == null
+        ? null
+        : Number(record.dailyCaseLimit ?? record.DailyCaseLimit),
   };
 }
 
@@ -212,7 +218,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       );
 
       if (!response.ok) {
-        throw new Error(`Create tenant failed (${response.status})`);
+        throw new Error(getServerErrorMessage(response.status));
       }
 
       const tokenResponse = (await response.json()) as {
@@ -278,7 +284,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       );
 
       if (!response.ok) {
-        throw new Error(`Rename tenant failed (${response.status})`);
+        throw new Error(getServerErrorMessage(response.status));
       }
 
       await get().fetchTenantProfile();
@@ -304,7 +310,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         },
       );
       if (!response.ok)
-        throw new Error(`Tenant profile fetch failed (${response.status})`);
+        throw new Error(getServerErrorMessage(response.status));
 
       const json = await response.json();
       set({
@@ -572,7 +578,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           headers: { "X-Api-Key": API_KEY || "", ...getAuthHeader() },
         },
       );
-      if (!response.ok) throw new Error(`Approve failed (${response.status})`);
+      if (!response.ok) throw new Error(getServerErrorMessage(response.status));
       useFeedbackStore
         .getState()
         .showToast("Member request approved", "success");
@@ -624,7 +630,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           headers: { "X-Api-Key": API_KEY || "", ...getAuthHeader() },
         },
       );
-      if (!response.ok) throw new Error(`Reject failed (${response.status})`);
+      if (!response.ok) throw new Error(getServerErrorMessage(response.status));
       useFeedbackStore
         .getState()
         .showToast("Member request declined", "success");
@@ -674,7 +680,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           },
         },
       );
-      if (!response.ok) throw new Error(`Suspend failed (${response.status})`);
+      if (!response.ok) throw new Error(getServerErrorMessage(response.status));
       useFeedbackStore.getState().showToast("Member suspended", "success");
     } catch (error) {
       adminLog.warn(
@@ -721,7 +727,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           headers: { "X-Api-Key": API_KEY || "", ...getAuthHeader() },
         },
       );
-      if (!response.ok) throw new Error(`Remove failed (${response.status})`);
+      if (!response.ok) throw new Error(getServerErrorMessage(response.status));
     } catch (error) {
       adminLog.warn(
         "AdminStore:Team",
@@ -750,7 +756,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       );
 
       if (!response.ok) {
-        throw new Error(`Invite code fetch failed (${response.status})`);
+        throw new Error(getServerErrorMessage(response.status));
       }
 
       const responseText = await response.text();

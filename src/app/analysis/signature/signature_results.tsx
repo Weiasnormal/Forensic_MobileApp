@@ -7,14 +7,14 @@ import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { createNotificationConnection } from "@/services/notificationHub";
 import {
-  findOverlayImage,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisVerdictLabel,
-  REFERENCE_SLOTS,
-  resolveCaseVerdict,
-  type OverlayVariant,
-  type SignatureAnalysisResult,
-  type SignatureAnalysisViewMode,
+    findOverlayImage,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisVerdictLabel,
+    REFERENCE_SLOTS,
+    resolveCaseVerdict,
+    type OverlayVariant,
+    type SignatureAnalysisResult,
+    type SignatureAnalysisViewMode,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
@@ -26,16 +26,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "../../../constants/api";
 import { useAnalysisFlowStore } from "../../../store/analysisFlowStore";
@@ -43,9 +44,9 @@ import { useCaseStore, type CaseStatus } from "../../../store/caseStore";
 
 import VerdictCard from "@/_components/common/VerdIctCard";
 import {
-  fetchCaseForReview,
-  FinalVerdict,
-  type AdminCaseDetail,
+    fetchCaseForReview,
+    FinalVerdict,
+    type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 
@@ -577,6 +578,35 @@ export function SignatureResultsScreen() {
           ...getAuthHeader(),
         },
       });
+
+      if (Platform.OS === "android") {
+        const directoryPermission =
+          await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(
+            FileSystem.StorageAccessFramework.getUriForDirectoryInRoot(
+              "Download",
+            ),
+          );
+
+        if (!directoryPermission.granted) {
+          setExportError("Choose a folder to save the PDF report.");
+          return;
+        }
+
+        const savedFileUri =
+          await FileSystem.StorageAccessFramework.createFileAsync(
+            directoryPermission.directoryUri,
+            `AVERA_Forensic_Report_${currentCaseId}.pdf`,
+            "application/pdf",
+          );
+        const pdfBase64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        await FileSystem.writeAsStringAsync(savedFileUri, pdfBase64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        setExportError("PDF report saved to your selected phone folder.");
+        return;
+      }
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {

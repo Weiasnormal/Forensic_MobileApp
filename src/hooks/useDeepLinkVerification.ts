@@ -1,4 +1,5 @@
 import { verifyEmailToken } from '@/services/emailVerificationApi';
+import { useAuthStore } from '@/store/authStore';
 import { useEmailVerificationStore } from '@/store/emailVerificationStore';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import * as Linking from 'expo-linking';
@@ -12,6 +13,8 @@ export function useDeepLinkVerification() {
   const markFailed = useEmailVerificationStore((s) => s.markFailed);
   const pendingRole = useEmailVerificationStore((s) => s.pendingRole);
   const hasHydrated = useEmailVerificationStore((s) => s.hasHydrated);
+  const authUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const hasHandledInitialUrl = useRef(false);
   const handledUrls = useRef(new Set<string>());
 
@@ -40,6 +43,23 @@ export function useDeepLinkVerification() {
           // is authoritative even when the link does not include the same email.
           markVerified();
           useFeedbackStore.getState().showToast('Email verified', 'success');
+
+          const rawLinkedEmail: unknown = email;
+          const linkedEmail =
+            typeof rawLinkedEmail === 'string'
+              ? rawLinkedEmail.trim().toLowerCase()
+              : null;
+          const isEmailChange = Boolean(
+            authUser?.email &&
+              linkedEmail &&
+              authUser.email.trim().toLowerCase() !== linkedEmail,
+          );
+
+          if (isEmailChange) {
+            await logout();
+            router.replace('/_login/SignInPage');
+            return;
+          }
         } else {
           markFailed('This verification link has expired or is invalid. Request a new one.');
           useFeedbackStore.getState().showToast('Verification link expired', 'infoLight');
@@ -85,5 +105,13 @@ export function useDeepLinkVerification() {
       subscription.remove();
       appStateSubscription.remove();
     };
-  }, [router, markVerified, markFailed, pendingRole, hasHydrated]);
+  }, [
+    router,
+    markVerified,
+    markFailed,
+    pendingRole,
+    hasHydrated,
+    authUser?.email,
+    logout,
+  ]);
 }

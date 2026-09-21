@@ -8,7 +8,7 @@ import ProfileSaveModal from '@/_components/modals/profile_save';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useResendCooldown } from '@/hooks/useResendCooldown';
-import { resendVerificationEmail } from '@/services/emailVerificationApi';
+import { requestEmailChange } from '@/services/emailVerificationApi';
 import { useAuthStore } from '@/store/authStore';
 import { useFeedbackStore } from '@/store/feedbackStore';
 import { useUser } from '@/store/userStore';
@@ -52,6 +52,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
   const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
+  const [pendingEmailPassword, setPendingEmailPassword] = useState<string | null>(null);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const hasHydratedForm = useRef(false);
 
   useEffect(() => {
@@ -101,6 +103,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       });
 
       useFeedbackStore.getState().showToast('Profile updated successfully', 'success');
+
+      // Keep the pending verification controls visible until the new email is confirmed.
+      if (pendingNewEmail) return;
 
       if (onSavePress) {
         onSavePress();
@@ -165,6 +170,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               style={styles.formField}
               rightIcon={<Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />}
               onRightIconPress={() => setShowChangeEmail(true)}
+              disabled
+              disabledStyle={styles.whiteDisabledField}
             />
           </Pressable>
 
@@ -175,19 +182,32 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 Link sent to {pendingNewEmail}. Current email stays active.
               </Text>
               <Pressable
-                disabled={isCoolingDown}
+                style={verifyStyles.resendButton}
+                disabled={isCoolingDown || isResendingEmail || !pendingEmailPassword}
                 onPress={async () => {
-                  if (isCoolingDown) return;
-                  startCooldown();
-                  const { ok } = await resendVerificationEmail(pendingNewEmail);
-                  useFeedbackStore.getState().showToast(
-                    ok ? 'Email resent' : 'Unable to resend right now',
-                    ok ? 'successLight' : 'infoLight',
-                  );
+                  if (isCoolingDown || isResendingEmail || !pendingEmailPassword) return;
+                  setIsResendingEmail(true);
+                  try {
+                    const { ok, message } = await requestEmailChange(
+                      pendingNewEmail,
+                      pendingEmailPassword,
+                    );
+                    if (ok) startCooldown();
+                    useFeedbackStore.getState().showToast(
+                      ok ? 'Verification email resent' : message ?? 'Unable to resend right now',
+                      ok ? 'successLight' : 'infoLight',
+                    );
+                  } finally {
+                    setIsResendingEmail(false);
+                  }
                 }}
               >
                 <Text style={verifyStyles.pendingResend}>
-                  {isCoolingDown ? `Resend (${secondsRemaining}s)` : 'Resend'}
+                  {isResendingEmail
+                    ? 'Sending…'
+                    : isCoolingDown
+                      ? `Resend (${secondsRemaining}s)`
+                      : 'Resend'}
                 </Text>
               </Pressable>
             </View>
@@ -236,9 +256,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         visible={showChangeEmail}
         currentEmail={email}
         onClose={() => setShowChangeEmail(false)}
-        onSent={(newEmail) => {
+        onSent={(newEmail, currentPassword) => {
           setShowChangeEmail(false);
           setPendingNewEmail(newEmail);
+          setPendingEmailPassword(currentPassword);
           setShowChangeEmailSuccess(true);
         }}
       />
@@ -343,6 +364,9 @@ const styles = StyleSheet.create({
   formField: {
     marginBottom: 0,
   },
+  whiteDisabledField: {
+    backgroundColor: '#FFFFFF',
+  },
   buttonContainer: {
     position: 'absolute',
     left: 0,
@@ -379,7 +403,17 @@ const verifyStyles = StyleSheet.create({
   },
   pendingTitle: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.textPrimary },
   pendingSubtitle: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary, marginTop: 2 },
-  pendingResend: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary, marginTop: 8 },
+  resendButton: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.background2,
+  },
+  pendingResend: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary },
 });
 
 function getInitials(first = '', last = '') {
