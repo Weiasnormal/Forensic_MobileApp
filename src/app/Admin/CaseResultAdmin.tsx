@@ -3,21 +3,22 @@ import SecondaryButton from "@/_components/common/SecondaryButton";
 import VerdictCard from "@/_components/common/VerdIctCard";
 import ZoomableImageModal from "@/_components/common/ZoomableImageModal";
 import ErrorModal from "@/_components/modals/error_modal";
+import SuccessModal from "@/_components/modals/success_modal";
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-  CaseReviewApiError,
-  fetchCaseForReview,
-  FinalVerdict,
-  submitCaseReview,
-  toggleCaseInternalReviewFlag,
-  type AdminCaseDetail,
+    CaseReviewApiError,
+    fetchCaseForReview,
+    FinalVerdict,
+    submitCaseReview,
+    toggleCaseInternalReviewFlag,
+    type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import {
-  findOverlayImage,
-  REFERENCE_SLOTS,
-  type OverlayImageRef,
+    findOverlayImage,
+    REFERENCE_SLOTS,
+    type OverlayImageRef,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
 import { useCaseStore } from "@/store/caseStore";
@@ -28,19 +29,19 @@ import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 const viewModes = ["Heatmap", "Bounding Box", "Stroke Diff"] as const;
@@ -74,6 +75,9 @@ export default function CaseResultAdmin() {
   const [reviewNote, setReviewNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
 
@@ -270,6 +274,9 @@ export default function CaseResultAdmin() {
   };
 
   const handleExportReport = async () => {
+    if (isExportingPdf) return;
+
+    setIsExportingPdf(true);
     try {
       // Same GET /cases/{id}/results endpoint used in signature_results.tsx
       // (Avera.WebApi/Endpoints/ML/GetResults.cs).
@@ -291,7 +298,7 @@ export default function CaseResultAdmin() {
           );
 
         if (!directoryPermission.granted) {
-          setSaveError("Choose a folder to save the PDF report.");
+          setExportError("Choose a folder to save the PDF report.");
           return;
         }
 
@@ -307,9 +314,7 @@ export default function CaseResultAdmin() {
         await FileSystem.writeAsStringAsync(savedFileUri, pdfBase64, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        useFeedbackStore
-          .getState()
-          .showToast("PDF report saved to your selected phone folder.", "success");
+        setExportSuccess("PDF report saved to your selected phone folder.");
         return;
       }
 
@@ -319,9 +324,17 @@ export default function CaseResultAdmin() {
           dialogTitle: "Export Forensic PDF Report",
           UTI: "com.adobe.pdf",
         });
+        setExportSuccess("PDF report exported successfully.");
+      } else {
+        setExportError(`File saved to: ${uri}`);
       }
-    } catch {
-      setSaveError("The PDF report is either still generating or unavailable.");
+    } catch (error) {
+      console.warn("Failed to download PDF report:", error);
+      setExportError(
+        "The PDF report is either still generating or unavailable.",
+      );
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -767,12 +780,13 @@ export default function CaseResultAdmin() {
                   value={pdfExportPermission}
                   onValueChange={setPdfExportPermission}
                   trackColor={{
-                    false: colors.inputBorder,
+                    false: colors.primaryLight,
                     true: colors.primary,
                   }}
+                  thumbColor={colors.primaryText}
                 />
               </View>
-              <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}> 
+              <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}>
                 <View style={styles.radioIconWrap}>
                   <Ionicons
                     name="flag-outline"
@@ -781,7 +795,9 @@ export default function CaseResultAdmin() {
                   />
                 </View>
                 <View style={styles.radioTextWrap}>
-                  <Text style={styles.radioTitle}>Flag for Internal Review</Text>
+                  <Text style={styles.radioTitle}>
+                    Flag for Internal Review
+                  </Text>
                   <Text style={styles.radioDesc}>
                     Show this case as flagged to admins
                   </Text>
@@ -791,9 +807,10 @@ export default function CaseResultAdmin() {
                   onValueChange={handleToggleInternalReviewFlag}
                   disabled={isTogglingFlag}
                   trackColor={{
-                    false: colors.inputBorder,
-                    true: colors.suspectAccent,
+                    false: colors.primaryLight,
+                    true: colors.primary,
                   }}
+                  thumbColor={colors.primaryText}
                 />
               </View>
             </View>
@@ -851,6 +868,20 @@ export default function CaseResultAdmin() {
         onPrimaryPress={() => setSaveError(null)}
       />
 
+      <ErrorModal
+        visible={!!exportError}
+        title="Export Failed"
+        message={exportError ?? ""}
+        onPrimaryPress={() => setExportError(null)}
+      />
+
+      <SuccessModal
+        visible={!!exportSuccess}
+        title="Export Complete"
+        message={exportSuccess ?? ""}
+        onPrimaryPress={() => setExportSuccess(null)}
+      />
+
       <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
         {!isAlreadyReviewed && (
           <PrimaryButton
@@ -862,8 +893,10 @@ export default function CaseResultAdmin() {
           />
         )}
         <SecondaryButton
-          label="Export PDF Report"
+          label={isExportingPdf ? "Exporting PDF..." : "Export PDF Report"}
           onPress={handleExportReport}
+          disabled={isExportingPdf}
+          loading={isExportingPdf}
           size="medium"
           style={isAlreadyReviewed ? undefined : styles.secondaryButtonSpacing}
         />

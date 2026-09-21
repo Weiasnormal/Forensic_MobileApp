@@ -1,7 +1,6 @@
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { normalizePersonDisplay } from "@/utils/validation";
-import { Flag } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export type CaseStatus = "Suspected" | "Genuine" | "Processing";
@@ -82,7 +81,14 @@ export default function CaseCard({
       onPress={onPress}
     >
       <View
-        style={[styles.accentLine, { backgroundColor: style.borderColor }]}
+        style={[
+          styles.accentLine,
+          {
+            backgroundColor: isFlaggedForInternalReview
+              ? colors.suspectAccent
+              : style.borderColor,
+          },
+        ]}
       />
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -112,34 +118,35 @@ export default function CaseCard({
         <View style={styles.badgeGroup}>
           {isAdminCard && isFlaggedForInternalReview ? (
             <View style={styles.flaggedBadge}>
-              <Flag size={12} color={colors.suspectSubtext} strokeWidth={2.5} />
               <Text allowFontScaling={false} style={styles.flaggedText}>
                 Flagged
               </Text>
             </View>
           ) : (
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: isAdminCard
-                  ? adminBadgeStyle.backgroundColor
-                  : style.badgeBgColor,
-              },
-            ]}
-          >
-            <Text
-              allowFontScaling={false}
+            <View
               style={[
-                styles.badgeText,
+                styles.badge,
                 {
-                  color: isAdminCard ? adminBadgeStyle.color : style.badgeColor,
+                  backgroundColor: isAdminCard
+                    ? adminBadgeStyle.backgroundColor
+                    : style.badgeBgColor,
                 },
               ]}
             >
+              <Text
+                allowFontScaling={false}
+                style={[
+                  styles.badgeText,
+                  {
+                    color: isAdminCard
+                      ? adminBadgeStyle.color
+                      : style.badgeColor,
+                  },
+                ]}
+              >
                 {isAdminCard ? adminStatus || "Review" : style.badgeText}
-            </Text>
-          </View>
+              </Text>
+            </View>
           )}
         </View>
       </View>
@@ -217,6 +224,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    marginTop: 8,
+    marginRight: 4,
   },
   flaggedText: {
     ...getTypographyStyle("c2Caption", "bold"),

@@ -304,7 +304,7 @@ export default function UserCasesScreen({
               createdAt={item.createdAt}
               type={`${item.documentType} • `}
               priority={item.priority}
-              name={`${item.subjectName} · ${item.documentType}`}
+              name={item.subjectName}
               status={item.status}
               onPress={() => openCase(item)}
             />
