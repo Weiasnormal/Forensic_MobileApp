@@ -359,15 +359,15 @@ const styles = StyleSheet.create({
   },
   caseIdBox: {
     borderWidth: 1,
-    borderColor: colors.uploadSlotBorder,
+    borderColor: colors.disabledBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.disabledBackground,
   },
   caseIdDisplay: {
     ...getTypographyStyle("body", "semiBold"),
-    color: colors.textPrimary,
+    color: colors.disabledText,
   },
   caseIdHelper: {
     flexDirection: "row",
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     ...getTypographyStyle("l2List", "regular"),
-    color: colors.label,
+    color: colors.disabledText,
   },
   dropdownButton: {
     flexDirection: "row",
