@@ -37,7 +37,7 @@ export default function MemberRequestCard({
 
       <View style={styles.info}>
         <Text allowFontScaling={false} style={styles.name}>
-          {limitDashboardName(`${request.firstName} ${request.lastName}`)}
+          {limitDashboardName(`${request.firstName} ${request.lastName}`, 20)}
         </Text>
         <Text allowFontScaling={false} style={styles.timeAgo}>
           {request.timeAgo}

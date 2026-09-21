@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
-import { Animated, Modal, StyleSheet, Text, View } from 'react-native';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import SecondaryButton from '@/_components/common/SecondaryButton';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import SecondaryButton from "@/_components/common/SecondaryButton";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useRef } from "react";
+import { Animated, Modal, StyleSheet, Text, View } from "react-native";
 
 interface SuccessModalProps {
   visible: boolean;
@@ -14,16 +14,20 @@ interface SuccessModalProps {
   onPrimaryPress: () => void;
   secondaryLabel?: string;
   onSecondaryPress?: () => void;
+  accentColor?: string;
+  accentBackgroundColor?: string;
 }
 
 export default function SuccessModal({
   visible,
-  title = 'Success',
+  title = "Success",
   message,
-  primaryLabel = 'Continue',
+  primaryLabel = "Continue",
   onPrimaryPress,
   secondaryLabel,
   onSecondaryPress,
+  accentColor = colors.statusGenuine,
+  accentBackgroundColor = colors.statusGenuineBg,
 }: SuccessModalProps) {
   const scale = useRef(new Animated.Value(0.9)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -57,9 +61,16 @@ export default function SuccessModal({
       onRequestClose={onPrimaryPress}
     >
       <View style={styles.overlay}>
-        <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="checkmark-circle" size={30} color={colors.statusGenuine} />
+        <Animated.View
+          style={[styles.card, { opacity, transform: [{ scale }] }]}
+        >
+          <View
+            style={[
+              styles.iconCircle,
+              { backgroundColor: accentBackgroundColor },
+            ]}
+          >
+            <Ionicons name="checkmark-circle" size={30} color={accentColor} />
           </View>
 
           <Text style={styles.title}>{title}</Text>
@@ -68,7 +79,7 @@ export default function SuccessModal({
           <PrimaryButton
             label={primaryLabel}
             onPress={onPrimaryPress}
-            backgroundColor={colors.statusGenuine}
+            backgroundColor={accentColor}
             textColor="#FFFFFF"
             style={styles.button}
           />
@@ -93,44 +104,44 @@ export default function SuccessModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.48)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(15, 23, 42, 0.48)",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     backgroundColor: colors.background2,
     borderRadius: 24,
     paddingHorizontal: 28,
     paddingVertical: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   iconCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.statusGenuineBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 14,
   },
   title: {
-    ...getTypographyStyle('t3Title'),
+    ...getTypographyStyle("t3Title"),
     color: colors.textPrimary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 8,
   },
   message: {
-    ...getTypographyStyle('headline', 'regular'),
+    ...getTypographyStyle("headline", "regular"),
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 22,
     lineHeight: 21,
   },
   button: {
-    width: '100%',
+    width: "100%",
     marginTop: 10,
   },
 });

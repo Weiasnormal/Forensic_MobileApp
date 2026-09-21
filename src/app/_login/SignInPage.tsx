@@ -1,30 +1,46 @@
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import FormField from '@/_components/common/FormField';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import SuccessModal from '@/_components/modals/success_modal';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import { isEmailVerificationRequired } from '@/services/authApi';
-import { resendVerificationEmail } from '@/services/emailVerificationApi';
-import { useAuthStore } from '@/store/authStore';
-import { clearPendingSignupCredentials, useEmailVerificationStore } from '@/store/emailVerificationStore';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { isFirstLoginForUser, markUserAsSeen } from '@/utils/firstLoginTracker';
-import { Ionicons } from '@expo/vector-icons';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { type AppRole, ROLE_SETTINGS } from '../../constants/roles';
-import { type SignInFormValues, signInSchema } from '../../utils/validation';
+import ErrorBanner from "@/_components/common/ErrorBanner";
+import FormField from "@/_components/common/FormField";
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import SuccessModal from "@/_components/modals/success_modal";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { isEmailVerificationRequired } from "@/services/authApi";
+import { resendVerificationEmail } from "@/services/emailVerificationApi";
+import { useAuthStore } from "@/store/authStore";
+import {
+  clearPendingSignupCredentials,
+  useEmailVerificationStore,
+} from "@/store/emailVerificationStore";
+import { useFeedbackStore } from "@/store/feedbackStore";
+import { isFirstLoginForUser, markUserAsSeen } from "@/utils/firstLoginTracker";
+import { Ionicons } from "@expo/vector-icons";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { type AppRole, ROLE_SETTINGS } from "../../constants/roles";
+import { type SignInFormValues, signInSchema } from "../../utils/validation";
 
 export default function LogInPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ verifiedEmail?: string; role?: string; next?: string }>();
+  const params = useLocalSearchParams<{
+    verifiedEmail?: string;
+    role?: string;
+    next?: string;
+  }>();
   const [showPassword, setShowPassword] = useState(false);
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -34,17 +50,25 @@ export default function LogInPage() {
   const [signInError, setSignInError] = useState<string | null>(null);
   const [showVerifyEmail, setShowVerifyEmail] = useState(false);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
-  const [welcomeInfo, setWelcomeInfo] = useState<{ isFirstTime: boolean } | null>(null);
-  const [resolvedRole, setResolvedRole] = useState<AppRole>('user');
+  const [welcomeInfo, setWelcomeInfo] = useState<{
+    isFirstTime: boolean;
+  } | null>(null);
+  const [resolvedRole, setResolvedRole] = useState<AppRole>("user");
 
   function resolveRoleFromClaims(roles: string[] | undefined): AppRole {
-    return (roles ?? []).some((r) => r.toLowerCase().includes('admin')) ? 'admin' : 'user';
+    return (roles ?? []).some((r) => r.toLowerCase().includes("admin"))
+      ? "admin"
+      : "user";
   }
 
   function hasSupportedRole(roles: string[] | undefined): boolean {
     return (roles ?? []).some((role) => {
       const normalizedRole = role.toLowerCase();
-      return normalizedRole.includes('admin') || normalizedRole.includes('user') || normalizedRole.includes('analyst');
+      return (
+        normalizedRole.includes("admin") ||
+        normalizedRole.includes("user") ||
+        normalizedRole.includes("analyst")
+      );
     });
   }
 
@@ -56,14 +80,14 @@ export default function LogInPage() {
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: params.verifiedEmail ?? '',
-      password: '',
+      email: params.verifiedEmail ?? "",
+      password: "",
     },
   });
 
-  const emailPlaceholder = 'avera@institution.gov.ph';
+  const emailPlaceholder = "avera@institution.gov.ph";
   const forgotPasswordRoute = {
-    pathname: '/_login/forgot_password/enterEmail' as const,
+    pathname: "/_login/forgot_password/enterEmail" as const,
     params: {},
   };
 
@@ -78,21 +102,27 @@ export default function LogInPage() {
       setResolvedRole(role);
 
       const authState = useAuthStore.getState();
-      const hasValidSession = Boolean(authState.accessToken) && !authState.isTokenExpired();
+      const hasValidSession =
+        Boolean(authState.accessToken) && !authState.isTokenExpired();
       const hasTenantMembership = Boolean(authUser?.tenantId?.trim());
-      const shouldEnterOrganizationCode = params.next === 'organizationCode' && role === 'user';
+      const shouldEnterOrganizationCode =
+        params.next === "organizationCode" && role === "user";
 
-      if (!authUser?.userId || !hasSupportedRole(authUser.roles) || !hasValidSession) {
+      if (
+        !authUser?.userId ||
+        !hasSupportedRole(authUser.roles) ||
+        !hasValidSession
+      ) {
         await logout();
-        router.replace('/_login/GetStarted');
+        router.replace("/_login/GetStarted");
         return;
       }
 
       if (!hasTenantMembership || shouldEnterOrganizationCode) {
         router.replace(
-          role === 'admin'
-            ? '/_login/_signup/OrganizationCreate'
-            : '/_login/_signup/User&AdminCodepage?role=user',
+          role === "admin"
+            ? "/_login/_signup/OrganizationCreate"
+            : "/_login/_signup/User&AdminCodepage?role=user",
         );
         return;
       }
@@ -100,10 +130,10 @@ export default function LogInPage() {
       const isFirstTime = await isFirstLoginForUser(authUser.userId);
       setWelcomeInfo({ isFirstTime });
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
+      const message = error instanceof Error ? error.message : "";
       setShowVerifyEmail(isEmailVerificationRequired(error));
       setSignInError(
-        message || 'Unable to sign in. Check your email and password.',
+        message || "Unable to sign in. Check your email and password.",
       );
     }
   };
@@ -111,21 +141,23 @@ export default function LogInPage() {
   const handleVerifyEmail = async () => {
     if (isSendingVerification) return;
 
-    const email = getValues('email')?.trim();
+    const email = getValues("email")?.trim();
     if (!email) return;
 
     setIsSendingVerification(true);
-    const role = params.role === 'admin' ? 'admin' : 'user';
+    const role = params.role === "admin" ? "admin" : "user";
     clearPendingSignupCredentials();
     try {
       useEmailVerificationStore.getState().setPendingVerification(email, role);
       const { ok } = await resendVerificationEmail(email);
-      useFeedbackStore.getState().showToast(
-        ok ? 'Verification email sent' : 'Unable to send verification email',
-        ok ? 'success' : 'infoLight',
-      );
+      useFeedbackStore
+        .getState()
+        .showToast(
+          ok ? "Verification email sent" : "Unable to send verification email",
+          ok ? "success" : "infoLight",
+        );
       router.push({
-        pathname: '/_login/_signup/VerifyEmailInstruction',
+        pathname: "/_login/_signup/VerifyEmailInstruction",
         params: { role, email },
       });
     } finally {
@@ -136,22 +168,23 @@ export default function LogInPage() {
   const handleDismissWelcome = async () => {
     const authState = useAuthStore.getState();
     const user = authState.user;
-    const hasValidSession = Boolean(authState.accessToken) && !authState.isTokenExpired();
+    const hasValidSession =
+      Boolean(authState.accessToken) && !authState.isTokenExpired();
     const hasTenantMembership = Boolean(user?.tenantId?.trim());
 
     if (!user?.userId || !hasSupportedRole(user.roles) || !hasValidSession) {
       setWelcomeInfo(null);
       await logout();
-      router.replace('/_login/GetStarted');
+      router.replace("/_login/GetStarted");
       return;
     }
 
     if (!hasTenantMembership) {
       setWelcomeInfo(null);
       router.replace(
-        resolvedRole === 'admin'
-          ? '/_login/_signup/OrganizationCreate'
-          : '/_login/_signup/User&AdminCodepage?role=user',
+        resolvedRole === "admin"
+          ? "/_login/_signup/OrganizationCreate"
+          : "/_login/_signup/User&AdminCodepage?role=user",
       );
       return;
     }
@@ -166,18 +199,26 @@ export default function LogInPage() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <StatusBar style="light" translucent backgroundColor={colors.primary} />
 
       <View style={styles.hero}>
-        <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          activeOpacity={0.85}
+          onPress={() => router.back()}
+        >
           <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
         </TouchableOpacity>
 
         <View style={styles.heroCopy}>
-          <Text allowFontScaling={false} style={styles.title}>Welcome Back</Text>
-          <Text allowFontScaling={false} style={styles.subtitle}>Sign in to continue to Avera</Text>
+          <Text allowFontScaling={false} style={styles.title}>
+            Welcome Back
+          </Text>
+          <Text allowFontScaling={false} style={styles.subtitle}>
+            Sign in to continue to Avera
+          </Text>
         </View>
       </View>
 
@@ -221,9 +262,13 @@ export default function LogInPage() {
                 onPress={handleVerifyEmail}
                 disabled={isSendingVerification}
               >
-                {isSendingVerification ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+                {isSendingVerification ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : null}
                 <Text allowFontScaling={false} style={styles.verifyEmailText}>
-                  {isSendingVerification ? 'Sending verification email...' : 'Verify your email'}
+                  {isSendingVerification
+                    ? "Sending verification email..."
+                    : "Verify your email"}
                 </Text>
               </TouchableOpacity>
             )}
@@ -249,7 +294,7 @@ export default function LogInPage() {
                   error={errors.password?.message}
                   rightIcon={
                     <Ionicons
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
                       size={20}
                       color={colors.textTertiary}
                     />
@@ -264,13 +309,17 @@ export default function LogInPage() {
               activeOpacity={0.7}
               onPress={() => router.push(forgotPasswordRoute)}
             >
-              <Text allowFontScaling={false} style={styles.forgotPasswordText}>Forgot password?</Text>
+              <Text allowFontScaling={false} style={styles.forgotPasswordText}>
+                Forgot password?
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 12 }]}>
+      <View
+        style={[styles.bottomActions, { paddingBottom: insets.bottom + 12 }]}
+      >
         <ErrorBanner message={signInError} />
 
         <PrimaryButton
@@ -281,23 +330,36 @@ export default function LogInPage() {
         />
 
         <View style={styles.footerRow}>
-          <Text allowFontScaling={false} style={styles.footerPrompt}>Don&apos;t have an account?</Text>
-          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/_login/_signup/SignUppage')}>
-            <Text allowFontScaling={false} style={styles.footerAction}>Create account</Text>
+          <Text allowFontScaling={false} style={styles.footerPrompt}>
+            Don&apos;t have an account?
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push("/_login/_signup/SignUppage")}
+          >
+            <Text allowFontScaling={false} style={styles.footerAction}>
+              Create account
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <SuccessModal
         visible={!!welcomeInfo}
-        title={welcomeInfo?.isFirstTime ? 'Welcome aboard!' : 'Welcome back!'}
+        title={
+          welcomeInfo?.isFirstTime
+            ? `Welcome ${resolvedRole === "admin" ? "Admin" : "Analyst"}!`
+            : `Welcome back, ${resolvedRole === "admin" ? "Admin" : "Analyst"}!`
+        }
         message={
           welcomeInfo?.isFirstTime
-            ? "Your analyst account is ready. Let's set up your first case."
-            : 'Signed in successfully. Your dashboard and case queue are ready.'
+            ? `Your ${resolvedRole === "admin" ? "admin" : "analyst"} account is ready.`
+            : `Your ${resolvedRole === "admin" ? "admin" : "analyst"} account is ready. Your dashboard and case queue are ready.`
         }
         primaryLabel="Continue"
         onPrimaryPress={handleDismissWelcome}
+        accentColor={colors.primary}
+        accentBackgroundColor={colors.primaryLight}
       />
     </KeyboardAvoidingView>
   );
@@ -330,18 +392,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.heroIconButtonBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroCopy: {
     marginTop: 20,
   },
   title: {
-    ...getTypographyStyle('t1Title'),
+    ...getTypographyStyle("t1Title"),
     color: colors.primaryText,
   },
   subtitle: {
-    ...getTypographyStyle('c1Caption', 'regular'),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.heroSubtitleText, // NEW TOKEN — pending your confirm
     marginTop: 4,
   },
@@ -353,19 +415,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   forgotPasswordWrap: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginTop: -6,
   },
   verifyEmailWrap: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginTop: 2,
   },
   verifyEmailText: {
-    ...getTypographyStyle('c3Caption'),
+    ...getTypographyStyle("c3Caption"),
     color: colors.primary,
   },
   forgotPasswordText: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.primary,
   },
   bottomActions: {
@@ -374,18 +436,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background2,
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 4,
     marginTop: 14,
   },
   footerPrompt: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.textSecondary,
   },
   footerAction: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle("c1Caption"),
     color: colors.primary,
   },
 });

@@ -332,8 +332,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           },
         },
       );
-      if (!response.ok)
-        throw new Error(getServerErrorMessage(response.status));
+      if (!response.ok) throw new Error(getServerErrorMessage(response.status));
 
       const json = await response.json();
       set({
@@ -751,10 +750,15 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       return;
     }
     const previousTeamMembers = get().teamMembers;
+    const previousMemberDetail = get().memberDetail;
     set((state) => ({
       teamMembers: state.teamMembers.map((member) =>
         member.id === id ? { ...member, status: "suspended" } : member,
       ),
+      memberDetail:
+        state.memberDetail?.id === id
+          ? { ...state.memberDetail, isSuspended: true }
+          : state.memberDetail,
     }));
 
     if (get().isUsingMockTeam) {
@@ -781,7 +785,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         `Unable to suspend member ${id} on the backend`,
         error,
       );
-      set({ teamMembers: previousTeamMembers });
+      set({
+        teamMembers: previousTeamMembers,
+        memberDetail: previousMemberDetail,
+      });
       useFeedbackStore
         .getState()
         .showToast("Unable to suspend member. Try again.", "error");
@@ -798,6 +805,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
 
     const previousTeamMembers = get().teamMembers;
+    const previousMemberDetail = get().memberDetail;
     set((state) => ({
       teamMembers: state.teamMembers.map((member) =>
         member.id === id ? { ...member, status: "active" } : member,
@@ -832,7 +840,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         `Unable to unsuspend member ${id} on the backend`,
         error,
       );
-      set({ teamMembers: previousTeamMembers });
+      set({
+        teamMembers: previousTeamMembers,
+        memberDetail: previousMemberDetail,
+      });
       useFeedbackStore
         .getState()
         .showToast("Unable to unsuspend member. Try again.", "error");
