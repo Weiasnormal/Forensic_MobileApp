@@ -1,24 +1,35 @@
-import ErrorBanner from '@/_components/common/ErrorBanner';
-import FormField from '@/_components/common/FormField';
-import ScreenHeader from '@/_components/common/ScreenHeader';
-import ChangeEmailModal from '@/_components/modals/change_email';
-import ChangeEmailSuccessModal from '@/_components/modals/change_email_success';
-import ErrorModal from '@/_components/modals/error_modal';
-import ProfileSaveModal from '@/_components/modals/profile_save';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import { useResendCooldown } from '@/hooks/useResendCooldown';
-import { requestEmailChange } from '@/services/emailVerificationApi';
-import { useAuthStore } from '@/store/authStore';
-import { useFeedbackStore } from '@/store/feedbackStore';
-import { useUser } from '@/store/userStore';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import ErrorBanner from "@/_components/common/ErrorBanner";
+import FormField from "@/_components/common/FormField";
+import ScreenHeader from "@/_components/common/ScreenHeader";
+import ChangeEmailModal from "@/_components/modals/change_email";
+import ChangeEmailSuccessModal from "@/_components/modals/change_email_success";
+import ErrorModal from "@/_components/modals/error_modal";
+import ProfileSaveModal from "@/_components/modals/profile_save";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { useResendCooldown } from "@/hooks/useResendCooldown";
+import { requestEmailChange } from "@/services/emailVerificationApi";
+import { useAuthStore } from "@/store/authStore";
+import { useFeedbackStore } from "@/store/feedbackStore";
+import { useUser } from "@/store/userStore";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 interface EditProfileScreenProps {
   onBackPress?: () => void;
@@ -32,19 +43,25 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   onSavePress,
 }) => {
   const router = useRouter();
-  const { user, setUser } = useUser();
-  const { secondsRemaining, isCoolingDown, startCooldown } = useResendCooldown();
+  const { user, load, setUser } = useUser();
+  const { secondsRemaining, isCoolingDown, startCooldown } =
+    useResendCooldown();
   const insets = useSafeAreaInsets();
-  const [firstName, setFirstName] = useState(user.firstName ?? '');
-  const [lastName, setLastName] = useState(user.lastName ?? '');
+  const [firstName, setFirstName] = useState(user.firstName ?? "");
+  const [lastName, setLastName] = useState(user.lastName ?? "");
   const authEmail = useAuthStore((state) => state.user?.email);
-  const email = authEmail || user.email || '';
-  const [role, setRole] = useState(user.role ?? '');
-  const [organization, setOrganization] = useState(user.organization ?? '');
-  const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri ?? null);
+  const email = authEmail || user.email || "";
+  const [role, setRole] = useState(user.role ?? "");
+  const [organization, setOrganization] = useState(user.organization ?? "");
+  const [avatarUri, setAvatarUri] = useState<string | null>(
+    user.avatarUri ?? null,
+  );
   const [showSaveProfileModal, setShowSaveProfileModal] = useState(false);
 
-  const canContinue = firstName.trim().length > 1 && lastName.trim().length > 1 && email.trim().length > 3;
+  const canContinue =
+    firstName.trim().length > 1 &&
+    lastName.trim().length > 1 &&
+    email.trim().length > 3;
 
   const [saveError, setSaveError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -52,30 +69,57 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeEmailSuccess, setShowChangeEmailSuccess] = useState(false);
   const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
-  const [pendingEmailPassword, setPendingEmailPassword] = useState<string | null>(null);
+  const [pendingEmailPassword, setPendingEmailPassword] = useState<
+    string | null
+  >(null);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   const hasHydratedForm = useRef(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      hasHydratedForm.current = false;
+      void load();
+    }, [load]),
+  );
+
   useEffect(() => {
-    if (hasHydratedForm.current || (!user.firstName && !user.lastName && !user.role && !user.organization && !user.avatarUri)) return;
-    setFirstName(user.firstName ?? '');
-    setLastName(user.lastName ?? '');
-    setRole(user.role ?? '');
-    setOrganization(user.organization ?? '');
+    if (
+      hasHydratedForm.current ||
+      (!user.firstName &&
+        !user.lastName &&
+        !user.role &&
+        !user.organization &&
+        !user.avatarUri)
+    )
+      return;
+    setFirstName(user.firstName ?? "");
+    setLastName(user.lastName ?? "");
+    setRole(user.role ?? "");
+    setOrganization(user.organization ?? "");
     setAvatarUri(user.avatarUri ?? null);
     hasHydratedForm.current = true;
-  }, [user.avatarUri, user.email, user.firstName, user.lastName, user.organization, user.role]);
+  }, [
+    user.avatarUri,
+    user.email,
+    user.firstName,
+    user.lastName,
+    user.organization,
+    user.role,
+  ]);
 
- const pickImage = async () => {
+  const pickImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.status !== 'granted') {
-        setAvatarError('Photo library access was denied. Enable it in your device settings to change your avatar.');
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.status !== "granted") {
+        setAvatarError(
+          "Photo library access was denied. Enable it in your device settings to change your avatar.",
+        );
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         quality: 0.7,
         allowsEditing: true,
         aspect: [1, 1],
@@ -88,7 +132,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         setAvatarError(null);
       }
     } catch {
-      setAvatarError('Unable to open your photo library. Please try again.');
+      setAvatarError("Unable to open your photo library. Please try again.");
     }
   };
   const handleSave = async () => {
@@ -102,7 +146,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         avatarUri: avatarUri || undefined,
       });
 
-      useFeedbackStore.getState().showToast('Profile updated successfully', 'success');
+      useFeedbackStore
+        .getState()
+        .showToast("Profile updated successfully", "success");
 
       // Keep the pending verification controls visible until the new email is confirmed.
       if (pendingNewEmail) return;
@@ -114,7 +160,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
       router.back();
     } catch {
-      setSaveError('Unable to save your profile changes. Please try again.');
+      setSaveError("Unable to save your profile changes. Please try again.");
     }
   };
 
@@ -122,19 +168,30 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     <SafeAreaView style={styles.screen}>
       <StatusBar style="dark" translucent backgroundColor="transparent" />
 
-      <ScreenHeader title="Edit Profile" onBackPress={onBackPress ?? router.back} />
+      <ScreenHeader
+        title="Edit Profile"
+        onBackPress={onBackPress ?? router.back}
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: Math.max(140, insets.bottom + 120) }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(140, insets.bottom + 120) },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable style={styles.avatarWrap} onPress={onEditAvatarPress ?? pickImage}>
+        <Pressable
+          style={styles.avatarWrap}
+          onPress={onEditAvatarPress ?? pickImage}
+        >
           <View style={styles.avatarCircle}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarInitials}>{getInitials(firstName, lastName)}</Text>
+              <Text style={styles.avatarInitials}>
+                {getInitials(firstName, lastName)}
+              </Text>
             )}
           </View>
           <View style={styles.editBadge}>
@@ -168,7 +225,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               label="Email"
               value={email}
               style={styles.formField}
-              rightIcon={<Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />}
+              rightIcon={
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textTertiary}
+                />
+              }
               onRightIconPress={() => setShowChangeEmail(true)}
               disabled
               disabledStyle={styles.whiteDisabledField}
@@ -177,15 +240,24 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
           {pendingNewEmail ? (
             <View style={verifyStyles.pendingBox}>
-              <Text style={verifyStyles.pendingTitle}>Verification Pending</Text>
+              <Text style={verifyStyles.pendingTitle}>
+                Verification Pending
+              </Text>
               <Text style={verifyStyles.pendingSubtitle}>
                 Link sent to {pendingNewEmail}. Current email stays active.
               </Text>
               <Pressable
                 style={verifyStyles.resendButton}
-                disabled={isCoolingDown || isResendingEmail || !pendingEmailPassword}
+                disabled={
+                  isCoolingDown || isResendingEmail || !pendingEmailPassword
+                }
                 onPress={async () => {
-                  if (isCoolingDown || isResendingEmail || !pendingEmailPassword) return;
+                  if (
+                    isCoolingDown ||
+                    isResendingEmail ||
+                    !pendingEmailPassword
+                  )
+                    return;
                   setIsResendingEmail(true);
                   try {
                     const { ok, message } = await requestEmailChange(
@@ -193,10 +265,14 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                       pendingEmailPassword,
                     );
                     if (ok) startCooldown();
-                    useFeedbackStore.getState().showToast(
-                      ok ? 'Verification email resent' : message ?? 'Unable to resend right now',
-                      ok ? 'successLight' : 'infoLight',
-                    );
+                    useFeedbackStore
+                      .getState()
+                      .showToast(
+                        ok
+                          ? "Verification email resent"
+                          : (message ?? "Unable to resend right now"),
+                        ok ? "successLight" : "infoLight",
+                      );
                   } finally {
                     setIsResendingEmail(false);
                   }
@@ -204,10 +280,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               >
                 <Text style={verifyStyles.pendingResend}>
                   {isResendingEmail
-                    ? 'Sending…'
+                    ? "Sending…"
                     : isCoolingDown
                       ? `Resend (${secondsRemaining}s)`
-                      : 'Resend'}
+                      : "Resend"}
                 </Text>
               </Pressable>
             </View>
@@ -233,7 +309,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         </View>
       </ScrollView>
 
-      <View style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}> 
+      <View
+        style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}
+      >
         <Pressable
           onPress={() => setShowSaveProfileModal(true)}
           disabled={!canContinue}
@@ -265,14 +343,14 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       />
       <ChangeEmailSuccessModal
         visible={showChangeEmailSuccess}
-        newEmail={pendingNewEmail ?? ''}
+        newEmail={pendingNewEmail ?? ""}
         onDone={() => setShowChangeEmailSuccess(false)}
       />
 
       <ErrorModal
         visible={!!saveError}
         title="Save Failed"
-        message={saveError ?? ''}
+        message={saveError ?? ""}
         onPrimaryPress={() => setSaveError(null)}
       />
     </SafeAreaView>
@@ -290,9 +368,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: colors.background,
@@ -306,14 +384,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   topBarTitle: {
     flex: 1,
-    ...getTypographyStyle('t3Title'),
+    ...getTypographyStyle("t3Title"),
     color: colors.textPrimary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   topBarSpacer: {
     width: 48,
@@ -324,7 +402,7 @@ const styles = StyleSheet.create({
     paddingBottom: 140,
   },
   avatarWrap: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 20,
   },
   avatarCircle: {
@@ -332,9 +410,9 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   avatarImage: {
     width: 87,
@@ -342,19 +420,19 @@ const styles = StyleSheet.create({
     borderRadius: 48,
   },
   avatarInitials: {
-    ...getTypographyStyle('t1Title'),
+    ...getTypographyStyle("t1Title"),
     color: colors.primaryText,
   },
   editBadge: {
-    position: 'absolute',
+    position: "absolute",
     right: -1,
     bottom: -1,
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderColor: colors.background,
     borderWidth: 2,
   },
@@ -365,10 +443,10 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   whiteDisabledField: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     backgroundColor: colors.background2,
@@ -379,15 +457,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.primary,
     paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   disabledButton: {
     backgroundColor: colors.disabledBackground,
     opacity: 1,
   },
   primaryButtonText: {
-    ...getTypographyStyle('b1Button'),
+    ...getTypographyStyle("b1Button"),
     color: colors.primaryText,
   },
 });
@@ -401,10 +479,17 @@ const verifyStyles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.background,
   },
-  pendingTitle: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.textPrimary },
-  pendingSubtitle: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textSecondary, marginTop: 2 },
+  pendingTitle: {
+    ...getTypographyStyle("c1Caption", "bold"),
+    color: colors.textPrimary,
+  },
+  pendingSubtitle: {
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
   resendButton: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -413,11 +498,14 @@ const verifyStyles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.background2,
   },
-  pendingResend: { ...getTypographyStyle('c1Caption', 'bold'), color: colors.primary },
+  pendingResend: {
+    ...getTypographyStyle("c1Caption", "bold"),
+    color: colors.primary,
+  },
 });
 
-function getInitials(first = '', last = '') {
-  return ((first[0] || '') + (last[0] || '')).toUpperCase();
+function getInitials(first = "", last = "") {
+  return ((first[0] || "") + (last[0] || "")).toUpperCase();
 }
 
 export default EditProfileScreen;

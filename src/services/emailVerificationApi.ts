@@ -1,43 +1,57 @@
-import { API_ENDPOINTS, API_KEY, buildApiUrl } from '@/constants/api';
-import { getAuthHeader } from '@/store/authStore';
-import { getServerErrorMessage, NETWORK_ERROR_MESSAGE } from '@/utils/networkError';
+import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
+import { getAuthHeader } from "@/store/authStore";
+import {
+  getServerErrorMessage,
+  NETWORK_ERROR_MESSAGE,
+} from "@/utils/networkError";
 
 interface VerificationRequestResult {
   ok: boolean;
   message?: string;
 }
 
-export async function sendVerificationEmail(email: string): Promise<{ ok: boolean }> {
+export async function sendVerificationEmail(
+  email: string,
+): Promise<{ ok: boolean }> {
   try {
-    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Api-Key': API_KEY || '',
-        ...getAuthHeader(),
+    const res = await fetch(
+      buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Api-Key": API_KEY || "",
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       },
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
-    });
+    );
     return { ok: res.ok };
   } catch {
     return { ok: false };
   }
 }
 
-
-export async function verifyEmailToken(userId: string, token: string): Promise<{ ok: boolean }> {
+export async function verifyEmailToken(
+  userId: string,
+  token: string,
+  options?: { type?: string; email?: string; newEmail?: string },
+): Promise<{ ok: boolean }> {
   try {
     const query = new URLSearchParams({ userId, token });
+    if (options?.type) query.set("type", options.type);
+    if (options?.email) query.set("email", options.email);
+    if (options?.newEmail) query.set("newEmail", options.newEmail);
     const res = await fetch(
       `${buildApiUrl(API_ENDPOINTS.auth.verifySignupCode)}?${query.toString()}`,
       {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'X-Api-Key': API_KEY || '',
-        ...getAuthHeader(),
-      },
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "X-Api-Key": API_KEY || "",
+          ...getAuthHeader(),
+        },
       },
     );
     return { ok: res.ok };
@@ -51,10 +65,10 @@ export async function checkEmailVerified(): Promise<boolean> {
     const res = await fetch(
       buildApiUrl(API_ENDPOINTS.auth.emailVerificationStatus),
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          Accept: 'application/json',
-          'X-Api-Key': API_KEY || '',
+          Accept: "application/json",
+          "X-Api-Key": API_KEY || "",
           ...getAuthHeader(),
         },
       },
@@ -64,13 +78,13 @@ export async function checkEmailVerified(): Promise<boolean> {
     const body = await res.json();
     return Boolean(
       body?.isVerified ??
-        body?.IsVerified ??
+      body?.IsVerified ??
       body?.emailConfirmed ??
       body?.EmailConfirmed ??
-        body?.emailVerified ??
-        body?.EmailVerified ??
-        body?.value ??
-        body?.Value,
+      body?.emailVerified ??
+      body?.EmailVerified ??
+      body?.value ??
+      body?.Value,
     );
   } catch {
     return false;
@@ -86,16 +100,23 @@ export async function requestEmailChange(
 ): Promise<{ ok: boolean; message?: string }> {
   try {
     const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.changeEmail), {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Api-Key': API_KEY || '',
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Api-Key": API_KEY || "",
         ...getAuthHeader(),
       },
       body: JSON.stringify({ newEmail, currentPassword }),
     });
     if (res.ok) return { ok: true };
+    if (res.status === 401) {
+      return {
+        ok: false,
+        message:
+          "Your session has expired. Sign in again, then retry changing your email.",
+      };
+    }
 
     try {
       const body = await res.json();
@@ -114,18 +135,23 @@ export async function requestEmailChange(
   }
 }
 
-export async function resendVerificationEmail(email: string): Promise<VerificationRequestResult> {
+export async function resendVerificationEmail(
+  email: string,
+): Promise<VerificationRequestResult> {
   try {
-    const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Api-Key': API_KEY || '',
-        ...getAuthHeader(),
+    const res = await fetch(
+      buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Api-Key": API_KEY || "",
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       },
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
-    });
+    );
     if (res.ok) return { ok: true };
 
     try {
@@ -153,16 +179,16 @@ export async function resendEmailChangeVerification(
     const res = await fetch(
       buildApiUrl(API_ENDPOINTS.auth.resendVerificationEmail),
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'X-Api-Key': API_KEY || '',
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Api-Key": API_KEY || "",
           ...getAuthHeader(),
         },
         body: JSON.stringify({
           email: currentEmail.trim().toLowerCase(),
-          type: 'change-email',
+          type: "change-email",
           newEmail: newEmail.trim().toLowerCase(),
         }),
       },

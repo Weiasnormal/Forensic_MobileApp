@@ -1,154 +1,216 @@
-import React, { useState } from 'react';
-import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomSheetTransition } from '@/_components/transition';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import FormField from '@/_components/common/FormField';
-import PrimaryButton from '@/_components/common/PrimaryButton';
-import SecondaryButton from '@/_components/common/SecondaryButton';
+import FormField from "@/_components/common/FormField";
+import PrimaryButton from "@/_components/common/PrimaryButton";
+import SecondaryButton from "@/_components/common/SecondaryButton";
+import { useBottomSheetTransition } from "@/_components/transition";
+import { colors } from "@/constants/colors";
+import { getTypographyStyle } from "@/constants/typography";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+	Animated,
+	KeyboardAvoidingView,
+	Modal,
+	Platform,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ChangeEmailModalProps {
-	visible: boolean;
-	currentEmail: string;
-	onClose: () => void;
-	onSent: (newEmail: string, currentPassword: string) => void;
+  visible: boolean;
+  currentEmail: string;
+  onClose: () => void;
+  onSent: (newEmail: string, currentPassword: string) => void;
 }
 
-export default function ChangeEmailModal({ visible, currentEmail, onClose, onSent }: ChangeEmailModalProps) {
-	const insets = useSafeAreaInsets();
-	const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } = useBottomSheetTransition({
-		visible,
-		onClose,
-	});
-	const [newEmail, setNewEmail] = useState('');
-	const [currentPassword, setCurrentPassword] = useState('');
-	const [showPassword, setShowPassword] = useState(false);
-	const [isSending, setIsSending] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+export default function ChangeEmailModal({
+  visible,
+  currentEmail,
+  onClose,
+  onSent,
+}: ChangeEmailModalProps) {
+  const insets = useSafeAreaInsets();
+  const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } =
+    useBottomSheetTransition({
+      visible,
+      onClose,
+    });
+  const [newEmail, setNewEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-	if (!isMounted) return null;
+  if (!isMounted) return null;
 
-	const canSend = /\S+@\S+\.\S+/.test(newEmail) && newEmail.trim() !== currentEmail.trim() && currentPassword.length > 0;
+  const canSend =
+    /\S+@\S+\.\S+/.test(newEmail) &&
+    newEmail.trim() !== currentEmail.trim() &&
+    currentPassword.length > 0;
 
-	const handleSend = async () => {
-		if (!canSend) return;
-		setIsSending(true);
-		setError(null);
-		try {
-			const { requestEmailChange } = await import('@/services/emailVerificationApi');
-			const { ok } = await requestEmailChange(newEmail.trim(), currentPassword);
-			if (!ok) {
-				setError('Unable to request the email change. Check your current password and try again.');
-				return;
-			}
-			onSent(newEmail.trim(), currentPassword);
-			setNewEmail('');
-			setCurrentPassword('');
-		} finally {
-			setIsSending(false);
-		}
-	};
+  const handleSend = async () => {
+    if (!canSend) return;
+    setIsSending(true);
+    setError(null);
+    try {
+      const { requestEmailChange } =
+        await import("@/services/emailVerificationApi");
+      const { ok, message } = await requestEmailChange(
+        newEmail.trim(),
+        currentPassword,
+      );
+      if (!ok) {
+        setError(
+          message ??
+            "Unable to request the email change. Check your current password and try again.",
+        );
+        return;
+      }
+      onSent(newEmail.trim(), currentPassword);
+      setNewEmail("");
+      setCurrentPassword("");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
-	return (
-		<Modal visible={isMounted} transparent onRequestClose={onClose} statusBarTranslucent>
-			<KeyboardAvoidingView
-				style={styles.root}
-				behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-			>
-				<Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-					<Animated.View pointerEvents="none" style={[styles.backdrop, { opacity: backdropOpacity }]} />
-				</Pressable>
+  return (
+    <Modal
+      visible={isMounted}
+      transparent
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.backdrop, { opacity: backdropOpacity }]}
+          />
+        </Pressable>
 
-				<Animated.View
-					style={[
-						styles.sheet,
-						{ paddingBottom: insets.bottom + 24, transform: [{ translateY: sheetY }] },
-					]}
-				>
-					<View style={styles.dragHandleWrap} {...dragHandlePanHandlers}>
-						<View style={styles.dragHandle} />
-					</View>
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              paddingBottom: insets.bottom + 24,
+              transform: [{ translateY: sheetY }],
+            },
+          ]}
+        >
+          <View style={styles.dragHandleWrap} {...dragHandlePanHandlers}>
+            <View style={styles.dragHandle} />
+          </View>
 
-					<Text allowFontScaling={false} style={styles.title}>Change Email</Text>
-					<Text allowFontScaling={false} style={styles.subtitle}>Login stays the same until confirmed</Text>
+          <Text allowFontScaling={false} style={styles.title}>
+            Change Email
+          </Text>
+          <Text allowFontScaling={false} style={styles.subtitle}>
+            Login stays the same until confirmed
+          </Text>
 
-					<FormField
-						label="Current email"
-						value={currentEmail}
-						disabled
-						style={styles.field}
-					/>
+          <FormField
+            label="Current email"
+            value={currentEmail}
+            disabled
+            style={styles.field}
+          />
 
-					<FormField
-						label="New email"
-						value={newEmail}
-						onChangeText={setNewEmail}
-						placeholder="new@institution.gov.ph"
-						keyboardType="email-address"
-						autoCapitalize="none"
-						style={styles.field}
-						error={error ?? undefined}
-					/>
+          <FormField
+            label="New email"
+            value={newEmail}
+            onChangeText={setNewEmail}
+            placeholder="new@institution.gov.ph"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.field}
+            error={error ?? undefined}
+          />
 
-					<FormField
-						label="Current password"
-						value={currentPassword}
-						onChangeText={setCurrentPassword}
-						placeholder="Enter current password"
-						secureTextEntry={!showPassword}
-						autoCapitalize="none"
-						rightIcon={
-							<Ionicons
-								name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-								size={20}
-								color={colors.textTertiary}
-							/>
-						}
-						onRightIconPress={() => setShowPassword((visible) => !visible)}
-						style={styles.field}
-					/>
+          <FormField
+            label="Current password"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            placeholder="Enter current password"
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            rightIcon={
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color={colors.textTertiary}
+              />
+            }
+            onRightIconPress={() => setShowPassword((visible) => !visible)}
+            style={styles.field}
+          />
 
-					<Text allowFontScaling={false} style={styles.footnote}>
-						Current email is also notified of this change.
-					</Text>
+          <Text allowFontScaling={false} style={styles.footnote}>
+            Current email is also notified of this change.
+          </Text>
 
-					<View style={styles.buttonRow}>
-						<SecondaryButton label="Cancel" onPress={onClose} size="medium" style={styles.halfButton} />
-						<PrimaryButton
-							label={isSending ? 'Sending…' : 'Send Link'}
-							onPress={handleSend}
-							disabled={!canSend || isSending}
-							loading={isSending}
-							size="medium"
-							style={styles.halfButton}
-						/>
-					</View>
-				</Animated.View>
-			</KeyboardAvoidingView>
-		</Modal>
-	);
+          <View style={styles.buttonRow}>
+            <SecondaryButton
+              label="Cancel"
+              onPress={onClose}
+              size="medium"
+              style={styles.halfButton}
+            />
+            <PrimaryButton
+              label={isSending ? "Sending…" : "Send Link"}
+              onPress={handleSend}
+              disabled={!canSend || isSending}
+              loading={isSending}
+              size="medium"
+              style={styles.halfButton}
+            />
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 }
 
 const styles = StyleSheet.create({
-	root: { flex: 1, justifyContent: 'flex-end' },
-	backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay },
-	sheet: {
-		backgroundColor: colors.background2,
-		borderTopLeftRadius: 22,
-		borderTopRightRadius: 22,
-		paddingHorizontal: 20,
-		paddingTop: 10,
-		borderWidth: 1,
-		borderColor: colors.sheetBorder,
-	},
-	dragHandleWrap: { alignItems: 'center', paddingBottom: 10 },
-	dragHandle: { width: 44, height: 5, borderRadius: 999, backgroundColor: colors.sheetHandle },
-	title: { ...getTypographyStyle('t2Title'), color: colors.textPrimary },
-	subtitle: { ...getTypographyStyle('c1Caption', 'regular'), color: colors.textSecondary, marginTop: 4, marginBottom: 18 },
-	field: { marginBottom: 14 },
-	footnote: { ...getTypographyStyle('c2Caption', 'regular'), color: colors.textTertiary, marginBottom: 18 },
-	buttonRow: { flexDirection: 'row', gap: 10 },
-	halfButton: { flex: 1 },
+  root: { flex: 1, justifyContent: "flex-end" },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay,
+  },
+  sheet: {
+    backgroundColor: colors.background2,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    borderWidth: 1,
+    borderColor: colors.sheetBorder,
+  },
+  dragHandleWrap: { alignItems: "center", paddingBottom: 10 },
+  dragHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: colors.sheetHandle,
+  },
+  title: { ...getTypographyStyle("t2Title"), color: colors.textPrimary },
+  subtitle: {
+    ...getTypographyStyle("c1Caption", "regular"),
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  field: { marginBottom: 14 },
+  footnote: {
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.textTertiary,
+    marginBottom: 18,
+  },
+  buttonRow: { flexDirection: "row", gap: 10 },
+  halfButton: { flex: 1 },
 });
