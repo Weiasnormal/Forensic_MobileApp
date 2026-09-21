@@ -1,16 +1,16 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { CASES_PAGE_SIZE, fetchBackendCases } from "@/services/backendCases";
 import {
-    notifyProcessingComplete,
-    notifyProcessingFailed,
+  notifyProcessingComplete,
+  notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-    OverlayImageRef,
-    OverlaySlot,
-    OverlayVariant,
-    getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisConfidence,
-    type SignatureAnalysisResult,
+  OverlayImageRef,
+  OverlaySlot,
+  OverlayVariant,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisConfidence,
+  type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import { getServerErrorMessage } from "@/utils/networkError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,9 +19,9 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-    getAuthHeader,
-    handleUnauthorizedResponse,
-    useAuthStore,
+  getAuthHeader,
+  handleUnauthorizedResponse,
+  useAuthStore,
 } from "./authStore";
 
 const VALID_SLOTS: OverlaySlot[] = [
@@ -379,10 +379,10 @@ export const useCaseStore = create<CaseStore>()(
         totalCaseCount: 0,
         hasMoreCases: false,
         isLoadingMoreCases: false,
-        draftSignatureCase: createInitialDraft(1),
+        draftSignatureCase: createInitialDraft(0),
         savedDrafts: [],
         isSubmitting: false,
-        nextCaseNumber: 2,
+        nextCaseNumber: 1,
         activeSignatureCaseId: null,
         hiddenSavedCases: null,
         signatureAnalysisResults: {},
@@ -398,9 +398,9 @@ export const useCaseStore = create<CaseStore>()(
             totalCaseCount: 0,
             hasMoreCases: false,
             isLoadingMoreCases: false,
-            draftSignatureCase: createInitialDraft(1),
+            draftSignatureCase: createInitialDraft(0),
             savedDrafts: [],
-            nextCaseNumber: 2,
+            nextCaseNumber: 1,
             activeSignatureCaseId: null,
             hiddenSavedCases: null,
             signatureAnalysisResults: {},
@@ -637,6 +637,20 @@ export const useCaseStore = create<CaseStore>()(
         startNewSignatureDraft: () => {
           caseLog.info("CaseStore:Action", "Starting new signature draft");
           set((state) => {
+            if (
+              state.nextCaseNumber === 1 &&
+              state.cases.length === 0 &&
+              state.savedDrafts.length === 0 &&
+              !hasDraftProgress(state.draftSignatureCase)
+            ) {
+              return {
+                submissionStatus: "idle",
+                submissionStep: "",
+                submissionProgress: 0,
+                submissionError: null,
+              };
+            }
+
             const nextCaseNumber = state.nextCaseNumber;
             caseLog.info("CaseStore:Action", "New draft created", {
               caseId: buildCaseId(nextCaseNumber),
@@ -837,7 +851,7 @@ export const useCaseStore = create<CaseStore>()(
               }
               const message = await parseBackendError(
                 createRes,
-                  getServerErrorMessage(createRes.status),
+                getServerErrorMessage(createRes.status),
               );
               throw new Error(message);
             }
@@ -1199,9 +1213,7 @@ export const useCaseStore = create<CaseStore>()(
                   },
                 );
                 if (!statusResponse.ok) {
-                  throw new Error(
-                    getServerErrorMessage(statusResponse.status),
-                  );
+                  throw new Error(getServerErrorMessage(statusResponse.status));
                 }
               } catch (statusError) {
                 caseLog.warn(
@@ -1426,9 +1438,7 @@ export const useCaseStore = create<CaseStore>()(
                 },
               );
               if (!statusResponse.ok) {
-                throw new Error(
-                    getServerErrorMessage(statusResponse.status),
-                );
+                throw new Error(getServerErrorMessage(statusResponse.status));
               }
             } catch (statusError) {
               caseLog.warn(
