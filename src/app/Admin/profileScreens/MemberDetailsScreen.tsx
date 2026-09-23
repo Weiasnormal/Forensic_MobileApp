@@ -14,13 +14,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Folder, Minus, MinusCircle, Plus, UserX } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-    View,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -53,14 +53,11 @@ const MemberDetailsScreen: React.FC = () => {
     (state) =>
       state.cases.filter(
         (item) =>
-          (item.ownerUserId &&
-            String(item.ownerUserId).toLowerCase() ===
-              String(memberId ?? "").toLowerCase()) ||
-          (!item.ownerUserId &&
-            normalizePersonDisplay(item.examiner) ===
-              normalizePersonDisplay(
-                `${memberDetail?.firstName ?? ""} ${memberDetail?.lastName ?? ""}`,
-              )),
+          Boolean(item.ownerUserId) &&
+          String(item.ownerUserId).trim().toLowerCase() ===
+            String(memberId ?? "")
+              .trim()
+              .toLowerCase(),
       ).length,
   );
   const isProtectedMember = /admin/i.test(memberDetail?.role ?? "");

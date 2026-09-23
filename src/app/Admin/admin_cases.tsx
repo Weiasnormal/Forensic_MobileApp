@@ -16,7 +16,6 @@ import {
   caseMatchesSearch,
   normalizeCaseSearchQuery,
 } from "@/utils/caseSearch";
-import { normalizePersonDisplay } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
@@ -115,11 +114,8 @@ export default function AdminCasesScreen({
       const matchesMember =
         (!memberId && !memberName) ||
         (item.ownerUserId &&
-          String(item.ownerUserId).toLowerCase() === memberId?.toLowerCase()) ||
-        (!item.ownerUserId &&
-          memberName &&
-          normalizePersonDisplay(item.examiner) ===
-            normalizePersonDisplay(memberName));
+          String(item.ownerUserId).trim().toLowerCase() ===
+            memberId?.trim().toLowerCase());
       const matchesQuery = caseMatchesSearch(item, normalizedQuery, "admin");
 
       const matchesFilter =
@@ -282,7 +278,7 @@ export default function AdminCasesScreen({
                     ? item.status
                     : "Processing"
               }
-                    isFlaggedForInternalReview={item.isFlaggedForInternalReview}
+              isFlaggedForInternalReview={item.isFlaggedForInternalReview}
               onPress={() => {
                 setActiveSignatureCaseId(item.caseId);
 
