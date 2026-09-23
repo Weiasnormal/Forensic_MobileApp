@@ -121,19 +121,17 @@ export default function UserDashboardScreen() {
   const authUser = useAuthStore((state) => state.user);
   const hasTenant = Boolean(authUser?.tenantId?.trim());
 
-  const dailyCaseLimit =
-    getDailyCaseLimit(user) ?? getDailyCaseLimit(authUser);
+  const dailyCaseLimit = getDailyCaseLimit(user) ?? getDailyCaseLimit(authUser);
 
   const casesCreatedToday = cases.filter((item) =>
     isCreatedToday(item.createdAt),
   ).length;
 
   const caseLimitReached =
-    dailyCaseLimit !== undefined &&
-    casesCreatedToday >= dailyCaseLimit;
+    dailyCaseLimit !== undefined && casesCreatedToday >= dailyCaseLimit;
 
   const showCaseLimitMessage = () => {
-    const message = "Case creation limit is reached for the day.";
+    const message = "Contact your admin. Your case limit has been reached.";
 
     if (Platform.OS === "android") {
       ToastAndroid.show(message, ToastAndroid.SHORT);
