@@ -202,6 +202,8 @@ export default function SetupAccount() {
                 />
               }
               onRightIconPress={() => setShowChangeEmail(true)}
+              disabled
+              disabledStyle={styles.whiteDisabledField}
             />
           </Pressable>
 
@@ -379,6 +381,10 @@ const styles = StyleSheet.create({
     ...getTypographyStyle("b1Button"),
     color: colors.primaryText,
   },
+  whiteDisabledField: {
+    backgroundColor: "#FFFFFF",
+  },
+
 });
 
 const verifyStyles = StyleSheet.create({
@@ -404,4 +410,5 @@ const verifyStyles = StyleSheet.create({
     color: colors.primary,
     marginTop: 8,
   },
+  
 });
