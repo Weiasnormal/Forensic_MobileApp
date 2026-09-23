@@ -20,6 +20,7 @@ type UserProfile = {
   email: string;
   role?: string;
   organization?: string;
+  dailyCaseLimit?: number | null;
   avatarUri?: string | null;
   defaultResultView?: SignatureAnalysisViewMode;
 };
@@ -151,6 +152,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           remoteProfile.organization?.trim() ||
           localProfile.organization?.trim() ||
           "",
+        dailyCaseLimit: remoteProfile.dailyCaseLimit ?? null,
         avatarUri: localProfile.avatarUri ?? remoteProfile.avatarUri ?? null,
         defaultResultView: localProfile.defaultResultView,
       };

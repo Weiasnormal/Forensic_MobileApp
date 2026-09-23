@@ -39,6 +39,7 @@ export interface UserProfileResponse {
   email?: string;
   role?: string;
   organization?: string;
+  dailyCaseLimit?: number | null;
   avatarUri?: string | null;
 }
 
@@ -453,10 +454,10 @@ export async function forgotPassword(
             ? bodyExpiresAt
             : Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
               ? new Date(Date.now() + expiresInSeconds * 1000).toISOString()
-              : expiresAtHeader ??
+              : (expiresAtHeader ??
                 (Number.isFinite(retryAfter) && retryAfter > 0
                   ? new Date(Date.now() + retryAfter * 1000).toISOString()
-                  : undefined),
+                  : undefined)),
       };
     } catch {
       return {
