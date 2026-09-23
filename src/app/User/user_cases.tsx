@@ -9,31 +9,30 @@ import { useRouter } from "expo-router";
 import { FileText, Search } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SectionList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import CaseCard from "../../_components/caseCards";
 import FilterCasesModal from "../../_components/modals/filtercases";
 import { markBackendCaseViewed } from "../../services/backendCases";
 import {
-    formatCaseDateLabel,
-    getCaseSummary,
-    type SavedCase,
-    useCaseStore,
+  formatCaseDateLabel,
+  getCaseSummary,
+  type SavedCase,
+  useCaseStore,
 } from "../../store/caseStore";
 import {
-    caseMatchesSearch,
-    normalizeCaseSearchQuery,
+  caseMatchesSearch,
+  normalizeCaseSearchQuery,
 } from "../../utils/caseSearch";
-import { isPendingCase } from "../../utils/pendingCase";
 
-const quickFilters = ["All", "Pending", "Genuine", "Suspected", "Processing"];
+const quickFilters = ["All", "Genuine", "Suspected", "Processing"];
 const DEFAULT_HEADER_HEIGHT = 140;
 
 interface UserCasesScreenProps {
@@ -111,7 +110,6 @@ export default function UserCasesScreen({
 
       const matchesFilter =
         activeFilter === "All" ||
-        (activeFilter === "Pending" && isPendingCase(item)) ||
         item.status === activeFilter ||
         (activeFilter === "Processing" &&
           item.workflowStatus === "Processing") ||

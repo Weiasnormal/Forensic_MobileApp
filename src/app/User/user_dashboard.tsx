@@ -1,6 +1,5 @@
 import EmptyState from "@/_components/common/EmptyState";
 import ListSectionHeader from "@/_components/common/ListSectionHeader";
-import NotificationBell from "@/_components/common/NotificationBell";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import CasesScreen from "@/app/User/user_cases";
 import StatsScreen from "@/app/User/user_stats";
@@ -212,7 +211,6 @@ export default function UserDashboardScreen() {
               </Text>
             </View>
             <View style={styles.homeHeaderActions}>
-              <NotificationBell />
               <View style={styles.homeAvatarCircle}>
                 {user && user.avatarUri ? (
                   <Image
