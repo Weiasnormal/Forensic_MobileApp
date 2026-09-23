@@ -120,7 +120,7 @@ export default function AdminCasesScreen({
           memberName &&
           normalizePersonDisplay(item.examiner) ===
             normalizePersonDisplay(memberName));
-      const matchesQuery = caseMatchesSearch(item, normalizedQuery);
+      const matchesQuery = caseMatchesSearch(item, normalizedQuery, "admin");
 
       const matchesFilter =
         activeFilter === "All" ||
@@ -206,8 +206,8 @@ export default function AdminCasesScreen({
 
         {showSearchFeedback ? (
           <Text allowFontScaling={false} style={styles.searchHint}>
-            Search covers case ID, subject, examiner, analysis type, and
-            priority across the whole organization.
+            Search covers case code, subject, analyst username, document type,
+            priority, date, genuine, suspected, or pending.
           </Text>
         ) : null}
 
@@ -250,7 +250,7 @@ export default function AdminCasesScreen({
           <EmptyState
             icon={Search}
             title="No matching cases"
-            subtitle="Try a case ID, subject, examiner, analysis type, or priority."
+            subtitle="Try a case ID, subject, examiner, document type, or priority."
             action={
               <SecondaryButton
                 label="Clear search"

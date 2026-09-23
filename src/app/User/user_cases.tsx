@@ -9,27 +9,27 @@ import { useRouter } from "expo-router";
 import { FileText, Search } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  SectionList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    SectionList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import CaseCard from "../../_components/caseCards";
 import FilterCasesModal from "../../_components/modals/filtercases";
 import { markBackendCaseViewed } from "../../services/backendCases";
 import {
-  formatCaseDateLabel,
-  getCaseSummary,
-  type SavedCase,
-  useCaseStore,
+    formatCaseDateLabel,
+    getCaseSummary,
+    type SavedCase,
+    useCaseStore,
 } from "../../store/caseStore";
 import {
-  caseMatchesSearch,
-  normalizeCaseSearchQuery,
+    caseMatchesSearch,
+    normalizeCaseSearchQuery,
 } from "../../utils/caseSearch";
 import { isPendingCase } from "../../utils/pendingCase";
 
@@ -107,7 +107,7 @@ export default function UserCasesScreen({
     });
 
     const filteredCases = sortedCases.filter((item) => {
-      const matchesQuery = caseMatchesSearch(item, normalizedQuery);
+      const matchesQuery = caseMatchesSearch(item, normalizedQuery, "user");
 
       const matchesFilter =
         activeFilter === "All" ||
@@ -233,8 +233,8 @@ export default function UserCasesScreen({
         {showSearchFeedback ? (
           <>
             <Text allowFontScaling={false} style={styles.searchHint}>
-              Search covers case ID, subject, examiner, document type, priority,
-              and analysis type.
+              Search covers case code, subject, analyst username, document type,
+              priority, date, genuine, suspected, or processing.
             </Text>
           </>
         ) : null}

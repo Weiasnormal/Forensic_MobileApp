@@ -4,12 +4,12 @@ import { getServerErrorMessage } from "@/utils/networkError";
 import { normalizePersonDisplay } from "@/utils/validation";
 
 import type {
-    AnalysisPriority,
-    AnalysisType,
-    CaseStatus,
-    CaseWorkflowStatus,
-    DocumentType,
-    SavedCase,
+  AnalysisPriority,
+  AnalysisType,
+  CaseStatus,
+  CaseWorkflowStatus,
+  DocumentType,
+  SavedCase,
 } from "@/store/caseStore";
 
 type BackendCaseRecord = {
@@ -75,14 +75,9 @@ function normalizeCreatedByUser(value: unknown): string {
   if (typeof value === "string") return normalizePersonDisplay(value);
   if (!isRecord(value)) return "";
 
-  const displayName =
-    value.name ??
-    value.fullName ??
-    value.userName ??
-    value.username ??
-    value.email;
-  return typeof displayName === "string" && displayName.trim()
-    ? normalizePersonDisplay(displayName)
+  const username = value.userName ?? value.username ?? value.UserName;
+  return typeof username === "string" && username.trim()
+    ? normalizePersonDisplay(username)
     : "";
 }
 
