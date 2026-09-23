@@ -8,17 +8,17 @@ import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-    CaseReviewApiError,
-    fetchCaseForReview,
-    FinalVerdict,
-    submitCaseReview,
-    toggleCaseInternalReviewFlag,
-    type AdminCaseDetail,
+  CaseReviewApiError,
+  fetchCaseForReview,
+  FinalVerdict,
+  submitCaseReview,
+  toggleCaseInternalReviewFlag,
+  type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import {
-    findOverlayImage,
-    REFERENCE_SLOTS,
-    type OverlayImageRef,
+  findOverlayImage,
+  REFERENCE_SLOTS,
+  type OverlayImageRef,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
 import { useCaseStore } from "@/store/caseStore";
@@ -29,19 +29,19 @@ import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 const viewModes = ["Heatmap", "Bounding Box", "Stroke Diff"] as const;
@@ -68,7 +68,7 @@ export default function CaseResultAdmin() {
   const [reviewDecision, setReviewDecision] = useState<
     "suspected" | "genuine" | null
   >(null);
-  const [pdfExportPermission, setPdfExportPermission] = useState(false);
+  const [pdfExportPermission, setPdfExportPermission] = useState(true);
   const [isFlaggedForInternalReview, setIsFlaggedForInternalReview] =
     useState(false);
   const [isTogglingFlag, setIsTogglingFlag] = useState(false);

@@ -50,7 +50,7 @@ export default function VerifyEmailInstruction() {
 		<SafeAreaView style={styles.container}>
 			<StatusBar style="dark" />
 
-			<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
+			<TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.replace('/_login/GetStarted')}>
 				<Ionicons name="chevron-back" size={22} color={colors.primary} />
 			</TouchableOpacity>
 
