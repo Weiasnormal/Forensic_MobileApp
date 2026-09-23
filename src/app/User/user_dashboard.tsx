@@ -6,6 +6,7 @@ import StatsScreen from "@/app/User/user_stats";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useAuthStore } from "@/store/authStore";
+import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { limitDashboardName } from "@/utils/validation";
 import * as NavigationBar from "expo-navigation-bar";
@@ -13,13 +14,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  ToastAndroid,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -130,13 +129,12 @@ export default function UserDashboardScreen() {
     dailyCaseLimit !== undefined && casesCreatedToday >= dailyCaseLimit;
 
   const showCaseLimitMessage = () => {
-    const message = "Contact your admin. Your case limit has been reached.";
-
-    if (Platform.OS === "android") {
-      ToastAndroid.show(message, ToastAndroid.SHORT);
-    } else {
-      Alert.alert("Limit reached", message);
-    }
+    useFeedbackStore
+      .getState()
+      .showToast(
+        "Contact your admin. Your case limit has been reached.",
+        "error",
+      );
   };
 
   useEffect(() => {
