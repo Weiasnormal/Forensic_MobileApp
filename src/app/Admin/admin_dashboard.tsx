@@ -1,24 +1,23 @@
 import AdminNavbar, { type AdminTabKey } from "@/_components/admin/AdminNavbar";
 import EmptyStateCard from "@/_components/common/EmptyStateCard";
 import ListSectionHeader from "@/_components/common/ListSectionHeader";
-import NotificationBell from "@/_components/common/NotificationBell";
 import { ScreenStatusBar } from "@/_components/common/ScreenStatusBar";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-    getNotificationsEnabledPreference,
-    setNotificationsEnabledPreference,
+  getNotificationsEnabledPreference,
+  setNotificationsEnabledPreference,
 } from "@/services/processingNotifications";
 import {
-    formatRelativeTime,
-    getTeamSummary,
-    useAdminStore,
+  formatRelativeTime,
+  getTeamSummary,
+  useAdminStore,
 } from "@/store/adminStore";
 import { useAuthStore } from "@/store/authStore";
 import {
-    getCaseSummary,
-    useCaseStore,
-    type SavedCase,
+  getCaseSummary,
+  useCaseStore,
+  type SavedCase,
 } from "@/store/caseStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
@@ -28,25 +27,25 @@ import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import AdminCasesScreen from "./admin_cases";
 import AdminStatsScreen from "./admin_stats";
 import AdminTeamScreen from "./admin_team";
 import {
-    MemberRequestCard,
-    PendingReviewCard,
-    type MemberRequestData,
-    type PendingReview,
+  MemberRequestCard,
+  PendingReviewCard,
+  type MemberRequestData,
+  type PendingReview,
 } from "./cards";
 import ProfileScreen from "./ProfileScreen";
 
@@ -232,7 +231,6 @@ export default function AdminDashboard() {
               </Text>
             </View>
             <View style={styles.homeHeaderActions}>
-              <NotificationBell />
               <View style={styles.homeAvatarCircle}>
                 {user && user.avatarUri ? (
                   <Image
