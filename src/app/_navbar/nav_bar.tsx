@@ -11,6 +11,7 @@ interface NavbarProps {
 	activeTab: TabKey;
 	onTabChange: (tab: TabKey) => void;
 	onNewPress: () => void;
+	caseLimitReached: boolean;
 }
 
 interface TabDefinition {
@@ -26,7 +27,7 @@ const TABS: TabDefinition[] = [
 	{ key: 'profile', label: 'Profile', icon: User },
 ];
 
-export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarProps) {
+export default function Navbar({ activeTab, onTabChange, onNewPress, caseLimitReached }: NavbarProps) {
 	const leftTabs = TABS.slice(0, 2);
 	const rightTabs = TABS.slice(2);
 	const insets = useSafeAreaInsets();
@@ -57,10 +58,21 @@ export default function Navbar({ activeTab, onTabChange, onNewPress }: NavbarPro
 			{leftTabs.map(renderTab)}
 
 			<View style={styles.centerSlot}>
-				<TouchableOpacity style={styles.newButton} activeOpacity={0.84} onPress={onNewPress}>
+				<TouchableOpacity
+					style={[
+						styles.newButton,
+						caseLimitReached && styles.disabledNewButton,
+					]}
+					activeOpacity={0.84}
+					onPress={onNewPress}
+				>
 					<Plus size={26} color={colors.primaryText} />
 				</TouchableOpacity>
-				<Text allowFontScaling={false} style={[styles.label, { color: colors.primary }]}>
+
+				<Text
+					allowFontScaling={false}
+					style={[styles.label, { color: colors.primary }]}
+				>
 					New
 				</Text>
 			</View>
@@ -114,5 +126,8 @@ const styles = StyleSheet.create({
 		marginTop: -26,
 		borderWidth: 2,
 		borderColor: colors.primaryLight,
+	},
+	disabledNewButton: {
+		opacity: 0.55,
 	},
 });

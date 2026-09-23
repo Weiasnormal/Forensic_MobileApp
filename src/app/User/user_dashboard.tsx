@@ -14,22 +14,24 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { FolderOpen, Pencil } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CaseCard from "../../_components/caseCards";
 import PendingCard from "../../_components/pendingCards";
 import { markBackendCaseViewed } from "../../services/backendCases";
 import {
-    getPendingCards,
-    type SavedCase,
-    useCaseStore,
+  getPendingCards,
+  type SavedCase,
+  useCaseStore,
 } from "../../store/caseStore";
 import Navbar, { type TabKey } from "../_navbar/nav_bar";
 import ProfileScreen from "./user_profile";
@@ -76,6 +78,28 @@ function resolveTabValue(value: string | string[] | undefined): TabKey {
 
   return "home";
 }
+function getDailyCaseLimit(value: unknown): number | undefined {
+  if (!value || typeof value !== "object") return undefined;
+
+  const limit = (value as { dailyCaseLimit?: unknown }).dailyCaseLimit;
+  return typeof limit === "number" && Number.isFinite(limit) && limit >= 0
+    ? limit
+    : undefined;
+}
+
+function isCreatedToday(value: unknown): boolean {
+  if (!value) return false;
+
+  const createdAt = new Date(String(value));
+  if (Number.isNaN(createdAt.getTime())) return false;
+
+  const today = new Date();
+  return (
+    createdAt.getFullYear() === today.getFullYear() &&
+    createdAt.getMonth() === today.getMonth() &&
+    createdAt.getDate() === today.getDate()
+  );
+}
 
 export default function UserDashboardScreen() {
   const params = useLocalSearchParams<{ tab?: string | string[] }>();
@@ -96,6 +120,27 @@ export default function UserDashboardScreen() {
   const { user, load } = useUser();
   const authUser = useAuthStore((state) => state.user);
   const hasTenant = Boolean(authUser?.tenantId?.trim());
+
+  const dailyCaseLimit =
+    getDailyCaseLimit(user) ?? getDailyCaseLimit(authUser);
+
+  const casesCreatedToday = cases.filter((item) =>
+    isCreatedToday(item.createdAt),
+  ).length;
+
+  const caseLimitReached =
+    dailyCaseLimit !== undefined &&
+    casesCreatedToday >= dailyCaseLimit;
+
+  const showCaseLimitMessage = () => {
+    const message = "Case creation limit is reached for the day.";
+
+    if (Platform.OS === "android") {
+      ToastAndroid.show(message, ToastAndroid.SHORT);
+    } else {
+      Alert.alert("Limit reached", message);
+    }
+  };
 
   useEffect(() => {
     if (!hasTenant) {
@@ -124,6 +169,11 @@ export default function UserDashboardScreen() {
   }, [activeTab, hasTenant]);
 
   const handleNewAnalysisPress = () => {
+    if (caseLimitReached) {
+      showCaseLimitMessage();
+      return;
+    }
+
     startNewSignatureDraft();
     nav.push("/analysis/signature/step1");
   };
@@ -192,6 +242,8 @@ export default function UserDashboardScreen() {
             onStartAnalysis={handleNewAnalysisPress}
             cases={cases}
             onViewAllPress={handleViewAllCases}
+            caseLimitReached={caseLimitReached}
+            onLimitPress={showCaseLimitMessage}
           />
         </ScrollView>
       ) : activeTab === "cases" ? (
@@ -206,6 +258,7 @@ export default function UserDashboardScreen() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onNewPress={handleNewAnalysisPress}
+        caseLimitReached={caseLimitReached}
       />
     </SafeAreaView>
   );
@@ -215,10 +268,14 @@ function HomeTab({
   onStartAnalysis,
   cases,
   onViewAllPress,
+  caseLimitReached,
+  onLimitPress,
 }: {
   onStartAnalysis: () => void;
   cases: SavedCase[];
   onViewAllPress: () => void;
+  caseLimitReached: boolean;
+  onLimitPress: () => void;
 }) {
   const router = useRouter();
   const nav = router as any;
@@ -284,9 +341,12 @@ function HomeTab({
   return (
     <>
       <TouchableOpacity
-        style={styles.analysisBanner}
+        style={[
+          styles.analysisBanner,
+          caseLimitReached && styles.disabledAnalysisBanner,
+        ]}
         activeOpacity={0.9}
-        onPress={onStartAnalysis}
+        onPress={caseLimitReached ? onLimitPress : onStartAnalysis}
       >
         <View style={styles.analysisBannerIcon}>
           <Pencil size={24} color={colors.primary} />
@@ -570,5 +630,8 @@ const styles = StyleSheet.create({
   },
   listSectionHeader: {
     marginHorizontal: 16,
+  },
+  disabledAnalysisBanner: {
+    opacity: 0.55,
   },
 });
