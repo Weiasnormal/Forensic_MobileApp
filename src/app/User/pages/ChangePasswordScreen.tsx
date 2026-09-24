@@ -1,9 +1,11 @@
+import { PasswordStrengthGuide } from "@/_components/auth/PasswordStrengthGuide";
 import ErrorBanner from "@/_components/common/ErrorBanner";
 import FormField from "@/_components/common/FormField";
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import ScreenHeader from "@/_components/common/ScreenHeader";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import { usePasswordStrength } from "@/hooks/usePasswordStrength";
 import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -22,12 +24,22 @@ export default function ChangePasswordScreen() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [wasPasswordBlurred, setWasPasswordBlurred] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const passwordStrength = usePasswordStrength(newPassword);
+  const showPasswordError =
+    wasPasswordBlurred &&
+    !isPasswordFocused &&
+    newPassword.trim().length > 0 &&
+    !passwordStrength.isValid;
+
   const canSubmit =
     currentPassword.length > 0 &&
-    newPassword.length >= 8 &&
+    passwordStrength.isValid &&
+    confirmPassword.length > 0 &&
     newPassword === confirmPassword;
 
   const handleSubmit = async () => {
@@ -72,6 +84,14 @@ export default function ChangePasswordScreen() {
           label="New password"
           value={newPassword}
           onChangeText={setNewPassword}
+          onFocus={() => {
+            setIsPasswordFocused(true);
+            setWasPasswordBlurred(false);
+          }}
+          onBlur={() => {
+            setIsPasswordFocused(false);
+            setWasPasswordBlurred(true);
+          }}
           secureTextEntry={!showNewPassword}
           placeholder="Enter new password"
           rightIcon={
@@ -82,6 +102,13 @@ export default function ChangePasswordScreen() {
             />
           }
           onRightIconPress={() => setShowNewPassword((visible) => !visible)}
+          style={styles.noMargin}
+        />
+        <PasswordStrengthGuide
+          password={newPassword}
+          isVisible={isPasswordFocused}
+          showError={showPasswordError}
+          errorMessage="Password does not meet requirements"
         />
         <FormField
           label="Confirm new password"
@@ -97,6 +124,11 @@ export default function ChangePasswordScreen() {
             />
           }
           onRightIconPress={() => setShowConfirmPassword((visible) => !visible)}
+          error={
+            confirmPassword.length > 0 && newPassword !== confirmPassword
+              ? "Passwords do not match"
+              : undefined
+          }
         />
 
         <ErrorBanner message={error} />
@@ -123,4 +155,5 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   button: { marginTop: 8 },
+  noMargin: { marginBottom: 0 },
 });
