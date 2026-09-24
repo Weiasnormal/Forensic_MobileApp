@@ -1,5 +1,8 @@
 import InfoRow from "@/_components/admin/InfoRow";
 import ScreenHeader from "@/_components/common/ScreenHeader";
+import SecondaryButton from "@/_components/common/SecondaryButton";
+import TertiaryButton from "@/_components/common/TertiaryButton";
+import MemberLimitModal from "@/_components/modals/member_limit";
 import Toast from "@/_components/toast";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
@@ -9,8 +12,6 @@ import * as Clipboard from "expo-clipboard";
 import { ChevronRight, Copy, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -30,6 +31,90 @@ interface OrganizationScreenProps {
   onCopyCodePress?: () => void;
   onMembersPress?: () => void;
 }
+
+type UsageLevel = "ok" | "warn" | "full";
+
+const WARN_RATIO = 0.8;
+
+function getUsageLevel(used: number, limit: number): UsageLevel {
+  if (limit <= 0 || used >= limit) return "full";
+  return used / limit >= WARN_RATIO ? "warn" : "ok";
+}
+
+interface MemberUsageProps {
+  used: number;
+  limit: number;
+  onRaiseLimit: () => void;
+}
+
+// Progress bar plus one inline status line. The warning and full states use a
+// fill only (no border), and the "Raise limit" action only appears when needed.
+const MemberUsage: React.FC<MemberUsageProps> = ({
+  used,
+  limit,
+  onRaiseLimit,
+}) => {
+  const level = getUsageLevel(used, limit);
+  const seatsLeft = Math.max(limit - used, 0);
+  const fillRatio = limit > 0 ? Math.min(used / limit, 1) : 1;
+
+  // FLAG: suspectAccent is the amber token added for the suspect signature.
+  // It is an exact match for the design's warning amber, so it is reused here.
+  // Rename it to a neutral warning token if you want it shared.
+  const fillColor =
+    level === "full"
+      ? colors.danger
+      : level === "warn"
+        ? colors.suspectAccent
+        : colors.primary;
+
+  const statusText =
+    seatsLeft === 0
+      ? "No seats left, approvals paused"
+      : `${seatsLeft} ${seatsLeft === 1 ? "seat" : "seats"} left`;
+
+  return (
+    <View>
+      <View style={styles.usageTrack}>
+        <View
+          style={[
+            styles.usageFill,
+            { width: `${fillRatio * 100}%`, backgroundColor: fillColor },
+          ]}
+        />
+      </View>
+
+      <View
+        style={[
+          styles.usageStatus,
+          level === "warn" && styles.usageStatusWarn,
+          level === "full" && styles.usageStatusFull,
+        ]}
+      >
+        <Text
+          style={[
+            styles.usageStatusText,
+            level !== "ok" && styles.usageStatusTextAlert,
+          ]}
+        >
+          {statusText}
+        </Text>
+
+        {level !== "ok" ? (
+          <TertiaryButton
+            label="Raise limit"
+            onPress={onRaiseLimit}
+            size="small"
+            textVariant="b3Button"
+            textColor={colors.textPrimary}
+            textStyle={styles.usageActionText}
+            style={styles.usageAction}
+          />
+        ) : null}
+      </View>
+    </View>
+  );
+};
 
 const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   organizationName,
@@ -80,8 +165,6 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   const [toastVisible, setToastVisible] = useState(false);
   const [isMemberLimitModalVisible, setIsMemberLimitModalVisible] =
     useState(false);
-  const [memberLimitDraft, setMemberLimitDraft] = useState("");
-  const [isSavingMemberLimit, setIsSavingMemberLimit] = useState(false);
 
   useEffect(() => {
     if (!isEditingOrganizationName) {
@@ -144,34 +227,32 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   }, [onCopyCodePress, resolvedOrganizationCode, showToast]);
 
   const openMemberLimitModal = useCallback(() => {
-    setMemberLimitDraft(
-      resolvedMemberLimit === null ? "" : String(resolvedMemberLimit),
-    );
     setIsMemberLimitModalVisible(true);
-  }, [resolvedMemberLimit]);
+  }, []);
 
   const closeMemberLimitModal = useCallback(() => {
     setIsMemberLimitModalVisible(false);
-    setMemberLimitDraft(
-      resolvedMemberLimit === null ? "" : String(resolvedMemberLimit),
-    );
-  }, [resolvedMemberLimit]);
+  }, []);
 
-  const handleSaveMemberLimit = useCallback(async () => {
-    const parsedLimit = Number(memberLimitDraft.trim());
-    if (!Number.isInteger(parsedLimit) || parsedLimit < 0) {
-      showToast("Enter a whole number of members");
-      return;
-    }
+  // Returns whether the save worked so the modal can show its own inline
+  // error. The modal is closed here on success.
+  const handleSaveMemberLimit = useCallback(
+    async (limit: number): Promise<boolean> => {
+      let saved = false;
+      try {
+        saved = await setMemberCountLimit(limit);
+      } catch {
+        saved = false;
+      }
 
-    setIsSavingMemberLimit(true);
-    try {
-      const saved = await setMemberCountLimit(parsedLimit);
-      if (saved) setIsMemberLimitModalVisible(false);
-    } finally {
-      setIsSavingMemberLimit(false);
-    }
-  }, [memberLimitDraft, setMemberCountLimit, showToast]);
+      if (saved) {
+        setIsMemberLimitModalVisible(false);
+        showToast("Member limit updated");
+      }
+      return saved;
+    },
+    [setMemberCountLimit, showToast],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -269,7 +350,11 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
 
         <InfoRow
           label="Members"
-          value={String(resolvedMemberCount)}
+          value={
+            resolvedMemberLimit === null
+              ? String(resolvedMemberCount)
+              : `${resolvedMemberCount} of ${resolvedMemberLimit}`
+          }
           onPress={onMembersPress}
           rightAccessory={
             <ChevronRight
@@ -278,6 +363,15 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
               strokeWidth={2.1}
             />
           }
+          footer={
+            resolvedMemberLimit === null ? undefined : (
+              <MemberUsage
+                used={resolvedMemberCount}
+                limit={resolvedMemberLimit}
+                onRaiseLimit={openMemberLimitModal}
+              />
+            )
+          }
         />
 
         <InfoRow
@@ -285,12 +379,12 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
           value={
             resolvedMemberLimit === null ? "—" : String(resolvedMemberLimit)
           }
-          onPress={openMemberLimitModal}
           rightAccessory={
-            <ChevronRight
-              size={20}
-              color={colors.textTertiary}
-              strokeWidth={2.1}
+            <SecondaryButton
+              label="Edit"
+              onPress={openMemberLimitModal}
+              size="small"
+              style={styles.editLimitButton}
             />
           }
         />
@@ -298,55 +392,13 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
         <InfoRow label="Created" value={resolvedCreatedDate} />
       </ScrollView>
 
-      <Modal
-        transparent
-        animationType="fade"
+      <MemberLimitModal
         visible={isMemberLimitModalVisible}
-        onRequestClose={closeMemberLimitModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.limitModalCard}>
-            <Text style={styles.limitModalTitle}>Member limit</Text>
-            <Text style={styles.limitModalSubtitle}>
-              Set the maximum members for your organization
-            </Text>
-
-            <TextInput
-              value={memberLimitDraft}
-              onChangeText={(value) =>
-                setMemberLimitDraft(value.replace(/[^0-9]/g, ""))
-              }
-              keyboardType="number-pad"
-              placeholder="Enter member limit"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.limitInput}
-              autoFocus
-            />
-
-            <View style={styles.modalActionRow}>
-              <TouchableOpacity
-                style={[styles.secondaryButton, styles.modalActionButton]}
-                onPress={closeMemberLimitModal}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.primaryButton, styles.modalActionButton]}
-                onPress={() => void handleSaveMemberLimit()}
-                disabled={isSavingMemberLimit}
-                activeOpacity={0.8}
-              >
-                {isSavingMemberLimit ? (
-                  <ActivityIndicator color={colors.primaryText} />
-                ) : (
-                  <Text style={styles.primaryButtonText}>Confirm</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        currentLimit={resolvedMemberLimit}
+        memberCount={resolvedMemberCount}
+        onClose={closeMemberLimitModal}
+        onSave={handleSaveMemberLimit}
+      />
 
       <Toast
         visible={toastVisible}
@@ -413,7 +465,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#EDF3FA",
+    backgroundColor: "#EDF3FA", // FLAG: no exact token (statsBackground is #F5F8FC), left as is
     alignItems: "center",
     justifyContent: "center",
   },
@@ -437,7 +489,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     ...getTypographyStyle("b3Button"),
-    color: "#64748B",
+    color: colors.textSecondary, // was #64748B, exact match
   },
   primaryButton: {
     minWidth: 92,
@@ -454,48 +506,61 @@ const styles = StyleSheet.create({
     ...getTypographyStyle("b3Button"),
     color: colors.primaryText,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.35)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  limitModalCard: {
-    width: "100%",
-    maxWidth: 360,
-    borderRadius: 16,
-    backgroundColor: colors.background2,
-    padding: 20,
-  },
-  limitModalTitle: {
-    ...getTypographyStyle("t3Title"),
-    color: colors.textPrimary,
-  },
-  limitModalSubtitle: {
-    ...getTypographyStyle("c1Caption", "regular"),
-    color: colors.textSecondary,
-    marginTop: 6,
-    marginBottom: 16,
-  },
-  limitInput: {
-    ...getTypographyStyle("body"),
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    borderRadius: 12,
-    backgroundColor: colors.inputBackground,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  modalActionRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 18,
-  },
-  modalActionButton: {
+  editLimitButton: {
     minWidth: 92,
+    height: 36,
+    paddingVertical: 0,
+    borderRadius: 12,
+  },
+  usageTrack: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: colors.disabledBorder,
+    overflow: "hidden",
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  usageFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  usageStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  usageStatusWarn: {
+    backgroundColor: colors.suspectBackground,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingLeft: 12,
+    paddingRight: 8,
+  },
+  usageStatusFull: {
+    backgroundColor: colors.dangerLight,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingLeft: 12,
+    paddingRight: 8,
+  },
+  usageStatusText: {
+    // FLAG: the prototype used 12px regular. There is no 12px caption token,
+    // so this uses c1Caption (13) at regular weight, 1px larger.
+    ...getTypographyStyle("c1Caption", "regular"),
+    flex: 1,
+    color: colors.textSecondary,
+  },
+  usageStatusTextAlert: {
+    color: colors.textPrimary,
+  },
+  usageAction: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  usageActionText: {
+    ...getTypographyStyle("b3Button", "semiBold"),
+    textDecorationLine: "underline",
   },
 });
 

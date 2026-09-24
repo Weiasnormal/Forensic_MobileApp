@@ -8,39 +8,46 @@ interface InfoRowProps {
   value: string;
   /** Optional element rendered on the right (e.g. copy icon button, chevron) */
   rightAccessory?: React.ReactNode;
+  /** Optional content rendered below the label and value (e.g. a usage meter) */
+  footer?: React.ReactNode;
   onPress?: () => void;
 }
 
-const InfoRow: React.FC<InfoRowProps> = ({ label, value, rightAccessory, onPress }) => {
-  const content = (
-    <>
+const InfoRow: React.FC<InfoRowProps> = ({ label, value, rightAccessory, footer, onPress }) => {
+  const header = (
+    <View style={styles.header}>
       <View style={styles.textWrapper}>
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{value}</Text>
       </View>
       {rightAccessory ? <View>{rightAccessory}</View> : null}
-    </>
+    </View>
   );
 
-  if (onPress) {
-    return (
-      <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
-        {content}
-      </TouchableOpacity>
-    );
-  }
-
-  return <View style={styles.row}>{content}</View>;
+  return (
+    <View style={styles.row}>
+      {onPress ? (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+          {header}
+        </TouchableOpacity>
+      ) : (
+        header
+      )}
+      {footer ? <View>{footer}</View> : null}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   textWrapper: {
     flex: 1,
