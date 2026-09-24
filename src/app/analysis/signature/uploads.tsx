@@ -1,16 +1,18 @@
 import ErrorBanner from "@/_components/common/ErrorBanner";
 import PermissionDisclosure from "@/_components/common/PermissionDisclosure";
 import PrimaryButton from "@/_components/common/PrimaryButton";
+import CropGuideModal from "@/_components/modals/crop_guide_modal";
 import ErrorModal from "@/_components/modals/error_modal";
 import { scanForensicDocument } from "@/_components/modals/media_source_picker";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { hasCompleteUploads, useCaseStore } from "@/store/caseStore";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Info, Plus } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   BackHandler,
@@ -28,6 +30,8 @@ import {
 } from "react-native-safe-area-context";
 
 const UPLOAD_DIRECTORY = `${FileSystem.documentDirectory ?? ""}case-uploads/`;
+const CROP_GUIDE_SEEN_KEY = "avera:hasSeenCropGuide";
+const CROP_GUIDE_AUTO_SHOW_KEY = "avera:showCropGuideAutomatically";
 
 function getFileExtension(uri: string): string {
   const sanitizedUri = uri.split("?")[0].split("#")[0];
@@ -89,6 +93,8 @@ export default function SignatureUploadsRoute() {
   const [previewLabel, setPreviewLabel] = useState("");
   const [showPermissionModal, setShowPermissionModal] = useState(true);
   const [permissionSeconds, setPermissionSeconds] = useState(3);
+  const [showCropGuide, setShowCropGuide] = useState(false);
+  const [showCropGuideAgain, setShowCropGuideAgain] = useState(true);
   const uploads = useCaseStore((state) => state.draftSignatureCase.uploads);
   const setDraftUpload = useCaseStore((state) => state.setDraftUpload);
   const submitNewCase = useCaseStore((state) => state.submitNewCase);
@@ -126,6 +132,46 @@ export default function SignatureUploadsRoute() {
 
     return () => clearInterval(timer);
   }, [showPermissionModal]);
+
+  // Show permission first, then show the guide on the first visit or when
+  // the user has opted into seeing it automatically.
+  useEffect(() => {
+    if (showPermissionModal) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [seen, autoShow] = await Promise.all([
+          AsyncStorage.getItem(CROP_GUIDE_SEEN_KEY),
+          AsyncStorage.getItem(CROP_GUIDE_AUTO_SHOW_KEY),
+        ]);
+        if (!cancelled && (!seen || autoShow === "true")) {
+          setShowCropGuideAgain(autoShow !== "false");
+          setShowCropGuide(true);
+        }
+      } catch (error) {
+        console.warn("Failed to read crop guide flag", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showPermissionModal]);
+
+  const dismissCropGuide = useCallback(() => {
+    setShowCropGuide(false);
+    Promise.all([
+      AsyncStorage.setItem(CROP_GUIDE_SEEN_KEY, "true"),
+      AsyncStorage.setItem(
+        CROP_GUIDE_AUTO_SHOW_KEY,
+        showCropGuideAgain ? "true" : "false",
+      ),
+    ]).catch((error) => {
+      console.warn("Failed to persist crop guide preference", error);
+    });
+  }, [showCropGuideAgain]);
 
   const handleCameraPress = (
     target: "reference" | "suspect",
@@ -224,8 +270,19 @@ export default function SignatureUploadsRoute() {
       >
         <ErrorBanner message={submissionError} title="Upload issue" />
         <View style={styles.headerSection}>
-          <Text style={styles.sectionHeading}>Reference Signatures</Text>
-          <Text style={styles.sectionSubheading}>
+          <View style={styles.headerTitleRow}>
+            <Text style={styles.sectionHeading} allowFontScaling={false}>
+              Reference Signatures
+            </Text>
+            <Pressable
+              onPress={() => setShowCropGuide(true)}
+              style={styles.infoButton}
+              hitSlop={8}
+            >
+              <Info size={13} color={colors.textSecondary} strokeWidth={2.5} />
+            </Pressable>
+          </View>
+          <Text style={styles.sectionSubheading} allowFontScaling={false}>
             Upload 4 reference signatures
           </Text>
         </View>
@@ -370,6 +427,12 @@ export default function SignatureUploadsRoute() {
           </View>
         </View>
       </Modal>
+      <CropGuideModal
+        visible={showCropGuide}
+        showAgain={showCropGuideAgain}
+        onShowAgainChange={setShowCropGuideAgain}
+        onDismiss={dismissCropGuide}
+      />
       <View
         style={[styles.buttonContainer, { bottom: insets.bottom, zIndex: 50 }]}
       >
@@ -527,6 +590,20 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     marginBottom: 8,
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  infoButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.disabledBorder,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionHeading: {
     ...getTypographyStyle("t3Title"),

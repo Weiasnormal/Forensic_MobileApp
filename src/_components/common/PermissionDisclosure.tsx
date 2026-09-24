@@ -17,7 +17,9 @@ export default function PermissionDisclosure({
 }: PermissionDisclosureProps) {
   return (
     <View style={styles.box}>
-      <Ionicons name={icon} size={16} color={colors.primary} />
+      <View style={styles.iconWrap}>
+        <Ionicons name={icon} size={16} color={colors.primary} />
+      </View>
       <Text style={styles.text}>{message}</Text>
     </View>
   );
@@ -26,17 +28,27 @@ export default function PermissionDisclosure({
 const styles = StyleSheet.create({
   box: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: colors.primaryLight,
-    borderRadius: 10,
-    padding: 10,
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 14,
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
   },
   text: {
     flex: 1,
     ...getTypographyStyle('c1Caption', 'regular'),
-    color: colors.textPrimary,
-    lineHeight: 16,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
 });

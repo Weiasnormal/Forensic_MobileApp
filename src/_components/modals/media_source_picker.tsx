@@ -21,6 +21,7 @@ export const scanForensicDocument = async (
   try {
     const { scannedImages, status } = await DocumentScanner.scanDocument({
       croppedImageQuality: 100,
+      maxNumDocuments: 1,
       responseType: ResponseType.ImageFilePath,
     });
 
