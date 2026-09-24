@@ -1,7 +1,7 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import {
-  getServerErrorMessage,
-  NETWORK_ERROR_MESSAGE,
+    getServerErrorMessage,
+    NETWORK_ERROR_MESSAGE,
 } from "@/utils/networkError";
 
 export interface LoginRequest {
@@ -20,6 +20,11 @@ export interface RegisterRequest {
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
+}
+
+export interface ChangeNameRequest {
+  newName: string;
+  newLastName: string;
 }
 
 export interface ResetPasswordRequest {
@@ -339,6 +344,28 @@ export async function changePassword(
     throw new ApiError(
       res.status,
       "Change password failed",
+      await parseProblem(res),
+    );
+  }
+}
+
+export async function changeName(
+  token: string,
+  request: ChangeNameRequest,
+): Promise<void> {
+  const res = await fetch(buildApiUrl(API_ENDPOINTS.auth.changeName), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      NewName: request.newName,
+      NewLastName: request.newLastName,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      "Change name failed",
       await parseProblem(res),
     );
   }

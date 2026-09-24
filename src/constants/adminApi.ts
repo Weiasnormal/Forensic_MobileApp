@@ -21,6 +21,7 @@ export const ADMIN_API_ENDPOINTS = {
     suspendUser: "/admin/suspend-user",
     unsuspendUser: "/admin/unsuspend-user",
     setDailyLimit: "/admin/set-user-daily-limit",
+    setMemberCountLimit: "/admin/set-member-count-limit",
     inviteCode: "/tenant/invite-code",
     profile: "/tenant/profile",
   },

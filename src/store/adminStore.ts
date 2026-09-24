@@ -76,6 +76,7 @@ interface AdminStore {
     userId: string,
     dailyLimit: number | null,
   ) => Promise<boolean>;
+  setMemberCountLimit: (memberLimit: number) => Promise<boolean>;
 
   isCreatingTenant: boolean;
   createTenantError: string | null;
@@ -86,6 +87,7 @@ interface AdminStore {
     name: string;
     inviteCode: string;
     memberCount: number;
+    memberCountLimit: number;
     createdAt: string;
   } | null;
   isLoadingTenantProfile: boolean;
@@ -318,6 +320,50 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
+  setMemberCountLimit: async (memberLimit: number) => {
+    const normalizedLimit = Math.max(0, Math.trunc(memberLimit));
+
+    try {
+      const response = await fetch(
+        buildApiUrl(ADMIN_API_ENDPOINTS.tenant.setMemberCountLimit),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-Api-Key": API_KEY || "",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(normalizedLimit),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Set member limit failed (${response.status})`);
+      }
+
+      set((state) => ({
+        tenantProfile: state.tenantProfile
+          ? { ...state.tenantProfile, memberCountLimit: normalizedLimit }
+          : state.tenantProfile,
+      }));
+      useFeedbackStore
+        .getState()
+        .showToast(`Member limit set to ${normalizedLimit}`, "success");
+      return true;
+    } catch (error) {
+      adminLog.warn(
+        "AdminStore:Tenant",
+        "Unable to update member count limit",
+        error,
+      );
+      useFeedbackStore
+        .getState()
+        .showToast("Unable to update member limit. Try again.", "error");
+      return false;
+    }
+  },
+
   fetchTenantProfile: async () => {
     set({ isLoadingTenantProfile: true });
     try {
@@ -340,6 +386,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           name: json.name ?? json.Name ?? "",
           inviteCode: json.inviteCode ?? json.InviteCode ?? "",
           memberCount: Number(json.memberCount ?? json.MemberCount ?? 0),
+          memberCountLimit: Number(
+            json.memberCountLimit ?? json.MemberCountLimit ?? 0,
+          ),
           createdAt: json.createdAt ?? json.CreatedAt ?? "",
         },
         inviteCode: json.inviteCode ?? json.InviteCode ?? get().inviteCode,
