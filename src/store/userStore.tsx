@@ -1,4 +1,7 @@
-import { fetchCurrentUser } from "@/services/authApi";
+import {
+    fetchCurrentUser,
+    getProfilePictureUrl,
+} from "@/services/authApi";
 import type { SignatureAnalysisViewMode } from "@/services/signatureAnalysis";
 import { normalizePersonName } from "@/utils/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -137,6 +140,24 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       ) {
         return;
       }
+      let remoteAvatarUri = remoteProfile.avatarUri ?? null;
+      if (!localProfile.avatarUri && !remoteAvatarUri) {
+        const avatarUri = `${FileSystem.documentDirectory}avatars/avatar-current`;
+        try {
+          await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}avatars/`, {
+            intermediates: true,
+          });
+          const download = await FileSystem.downloadAsync(
+            getProfilePictureUrl(),
+            avatarUri,
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+          );
+          remoteAvatarUri = download.uri;
+        } catch {
+          remoteAvatarUri = null;
+        }
+      }
+
       const nextUser = {
         firstName: normalizePersonName(
           remoteProfile.firstName?.trim() ||
@@ -153,7 +174,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           localProfile.organization?.trim() ||
           "",
         dailyCaseLimit: remoteProfile.dailyCaseLimit ?? null,
-        avatarUri: localProfile.avatarUri ?? remoteProfile.avatarUri ?? null,
+        avatarUri: localProfile.avatarUri ?? remoteAvatarUri,
         defaultResultView: localProfile.defaultResultView,
       };
       userRef.current = nextUser;

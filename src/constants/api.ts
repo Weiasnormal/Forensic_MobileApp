@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   auth: {
     login: "/auth/login",
     profile: "/auth/me",
+    profilePicture: "/auth/me/profile-picture",
     register: "/auth/register",
     logout: "/auth/logout",
     changePassword: "/auth/change-password",

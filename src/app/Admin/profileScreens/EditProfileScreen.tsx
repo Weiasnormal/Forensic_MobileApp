@@ -8,7 +8,10 @@ import ProfileSaveModal from "@/_components/modals/profile_save";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useResendCooldown } from "@/hooks/useResendCooldown";
-import { changeName } from "@/services/authApi";
+import {
+  changeName,
+  uploadProfilePicture,
+} from "@/services/authApi";
 import { requestEmailChange } from "@/services/emailVerificationApi";
 import { useAuthStore } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
@@ -137,6 +140,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       setAvatarError("Unable to open your photo library. Please try again.");
     }
   };
+
   const handleSave = async () => {
     try {
       if (!accessToken) throw new Error("Your session has expired.");
@@ -144,6 +148,14 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         newName: firstName.trim(),
         newLastName: lastName.trim(),
       });
+      if (avatarUri && avatarUri !== user.avatarUri) {
+        const extension = avatarUri.split(".").pop()?.split("?")[0] || "jpg";
+        await uploadProfilePicture(accessToken, {
+          uri: avatarUri,
+          name: `profile-picture.${extension}`,
+          type: extension.toLowerCase() === "png" ? "image/png" : "image/jpeg",
+        });
+      }
       await setUser({
         firstName,
         lastName,

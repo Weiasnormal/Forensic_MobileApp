@@ -4,17 +4,21 @@ import { getServerErrorMessage } from "@/utils/networkError";
 import { normalizePersonDisplay } from "@/utils/validation";
 
 import type {
-  AnalysisPriority,
-  AnalysisType,
-  CaseStatus,
-  CaseWorkflowStatus,
-  DocumentType,
-  SavedCase,
+    AnalysisPriority,
+    AnalysisType,
+    CaseStatus,
+    CaseWorkflowStatus,
+    DocumentType,
+    SavedCase,
 } from "@/store/caseStore";
 
 type BackendCaseRecord = {
   id?: string;
   caseCode?: string;
+  userId?: string;
+  UserId?: string;
+  examinerId?: string;
+  ExaminerId?: string;
   createdByUserId?: string;
   CreatedByUserId?: string;
   tenantId?: string;
@@ -82,7 +86,13 @@ function normalizeCreatedByUser(value: unknown): string {
 }
 
 function getOwnerUserId(record: BackendCaseRecord): string | null {
-  const directId = record.createdByUserId ?? record.CreatedByUserId;
+  const directId =
+    record.userId ??
+    record.UserId ??
+    record.examinerId ??
+    record.ExaminerId ??
+    record.createdByUserId ??
+    record.CreatedByUserId;
   if (typeof directId === "string" && directId.trim()) {
     return directId.trim();
   }
@@ -246,6 +256,7 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
         record.createdByUserName ??
         record.CreatedByUserName,
     ),
+    userId: getOwnerUserId(record) ?? undefined,
     ownerUserId: getOwnerUserId(record) ?? undefined,
     tenantId: (
       record.tenantId ??

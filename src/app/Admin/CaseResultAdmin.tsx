@@ -46,6 +46,7 @@ import {
 
 const viewModes = ["Heatmap", "Bounding Box", "Stroke Diff"] as const;
 type ViewMode = (typeof viewModes)[number];
+const DEFAULT_PDF_EXPORT_ALLOWED = true;
 
 const WORKFLOW_STATUS_LABEL: Record<AdminCaseDetail["caseStatus"], string> = {
   Processing: "Processing",
@@ -68,7 +69,9 @@ export default function CaseResultAdmin() {
   const [reviewDecision, setReviewDecision] = useState<
     "suspected" | "genuine" | null
   >(null);
-  const [pdfExportPermission, setPdfExportPermission] = useState(true);
+  const [isPdfExportAllowed, setIsPdfExportAllowed] = useState(
+    DEFAULT_PDF_EXPORT_ALLOWED,
+  );
   const [isFlaggedForInternalReview, setIsFlaggedForInternalReview] =
     useState(false);
   const [isTogglingFlag, setIsTogglingFlag] = useState(false);
@@ -100,7 +103,13 @@ export default function CaseResultAdmin() {
     try {
       const detail = await fetchCaseForReview(caseId);
       setCaseDetail(detail);
-      setPdfExportPermission(detail.isPdfExportAllowed);
+      const isReviewComplete =
+        detail.finalVerdict !== null && detail.finalVerdict !== FinalVerdict.None;
+      setIsPdfExportAllowed(
+        isReviewComplete
+          ? (detail.isPdfExportAllowed ?? DEFAULT_PDF_EXPORT_ALLOWED)
+          : DEFAULT_PDF_EXPORT_ALLOWED,
+      );
       setIsFlaggedForInternalReview(detail.isFlaggedForInternalReview);
       setReviewNote(detail.reviewNote ?? "");
       if (detail.finalVerdict === FinalVerdict.Genuine)
@@ -229,7 +238,7 @@ export default function CaseResultAdmin() {
             ? FinalVerdict.Genuine
             : FinalVerdict.Forged,
         reviewNote: reviewNote.trim() ? reviewNote.trim() : null,
-        isPdfExportAllowed: pdfExportPermission,
+        isPdfExportAllowed,
       });
       useFeedbackStore.getState().showToast("Review saved", "success");
       await loadCase();
@@ -783,14 +792,14 @@ export default function CaseResultAdmin() {
                   />
                 </View>
                 <View style={styles.radioTextWrap}>
-                  <Text style={styles.radioTitle}>Allow PDF Export</Text>
+                  <Text style={styles.radioTitle}>Enable PDF Export</Text>
                   <Text style={styles.radioDesc}>
-                    Enable exporting this report
+                    Allow this report to be exported as a PDF
                   </Text>
                 </View>
                 <ToggleSwitch
-                  value={pdfExportPermission}
-                  onValueChange={setPdfExportPermission}
+                  value={isPdfExportAllowed}
+                  onValueChange={setIsPdfExportAllowed}
                 />
               </View>
               <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}>

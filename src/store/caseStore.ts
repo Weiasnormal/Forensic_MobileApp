@@ -1,20 +1,20 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import {
-  CASES_PAGE_SIZE,
-  fetchBackendCases,
-  markBackendCaseViewed,
+    CASES_PAGE_SIZE,
+    fetchBackendCases,
+    markBackendCaseViewed,
 } from "@/services/backendCases";
 import {
-  notifyProcessingComplete,
-  notifyProcessingFailed,
+    notifyProcessingComplete,
+    notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-  OverlayImageRef,
-  OverlaySlot,
-  OverlayVariant,
-  getSignatureAnalysisCaseStatus,
-  getSignatureAnalysisConfidence,
-  type SignatureAnalysisResult,
+    OverlayImageRef,
+    OverlaySlot,
+    OverlayVariant,
+    getSignatureAnalysisCaseStatus,
+    getSignatureAnalysisConfidence,
+    type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import { getServerErrorMessage } from "@/utils/networkError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -23,9 +23,9 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-  getAuthHeader,
-  handleUnauthorizedResponse,
-  useAuthStore,
+    getAuthHeader,
+    handleUnauthorizedResponse,
+    useAuthStore,
 } from "./authStore";
 
 const VALID_SLOTS: OverlaySlot[] = [
@@ -192,6 +192,7 @@ export interface DraftCase {
 export interface SavedCase extends DraftCase {
   createdAt: string;
   examiner: string;
+  userId?: string;
   ownerUserId?: string;
   tenantId?: string;
   status: CaseStatus;

@@ -138,6 +138,10 @@ export function normalizeInviteCodeErrorMessage(message: unknown): string {
     return "You already have a pending request for this organization.";
   }
 
+  if (/(full|capacity|member.*(limit|maximum)|no seats|seat.*left)/i.test(trimmed)) {
+    return "This organization has reached its member limit.";
+  }
+
   if (
     /(organization.*(not found|missing)|tenant.*(not found|missing))/i.test(
       trimmed,
@@ -313,6 +317,36 @@ export async function fetchCurrentUser(
   }
 
   return res.json();
+}
+
+export function getProfilePictureUrl() {
+  return buildApiUrl(API_ENDPOINTS.auth.profilePicture);
+}
+
+export async function uploadProfilePicture(
+  token: string,
+  file: { uri: string; name: string; type: string },
+): Promise<void> {
+  const body = new FormData();
+  body.append("file", file as unknown as Blob);
+
+  const res = await fetch(getProfilePictureUrl(), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "X-Api-Key": API_KEY || "",
+    },
+    body,
+  });
+
+  if (!res.ok && res.status !== 204) {
+    throw new ApiError(
+      res.status,
+      "Profile picture upload failed",
+      await parseProblem(res),
+    );
+  }
 }
 
 export async function logout(token: string): Promise<void> {

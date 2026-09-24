@@ -51,6 +51,10 @@ const MemberDetailsScreen: React.FC = () => {
     (state) => state.isLoadingMemberDetail,
   );
   const memberDetailError = useAdminStore((state) => state.memberDetailError);
+  const refreshCasesFromBackend = useCaseStore(
+    (state) => state.refreshCasesFromBackend,
+  );
+  const loadAllCases = useCaseStore((state) => state.loadAllCases);
   const [limitDraft, setLimitDraft] = useState<number | null>(null);
   const [pendingLimitChange, setPendingLimitChange] = useState<string | null>(
     null,
@@ -63,8 +67,10 @@ const MemberDetailsScreen: React.FC = () => {
     (state) =>
       state.cases.filter(
         (item) =>
-          Boolean(item.ownerUserId) &&
-          String(item.ownerUserId).trim().toLowerCase() ===
+          Boolean(item.userId ?? item.ownerUserId) &&
+          String(item.userId ?? item.ownerUserId)
+            .trim()
+            .toLowerCase() ===
             String(memberId ?? "")
               .trim()
               .toLowerCase(),
@@ -80,10 +86,18 @@ const MemberDetailsScreen: React.FC = () => {
   const [removeTypeVisible, setRemoveTypeVisible] = React.useState(false);
   const [isRemovingMember, setIsRemovingMember] = React.useState(false);
   useEffect(() => {
-    if (memberId) {
-      void fetchMemberById(memberId);
-    }
-  }, [fetchMemberById, memberId]);
+    if (!memberId) return;
+
+    void (async () => {
+      await Promise.all([
+        fetchMemberById(memberId),
+        (async () => {
+          const refreshed = await refreshCasesFromBackend();
+          if (refreshed) await loadAllCases();
+        })(),
+      ]);
+    })();
+  }, [fetchMemberById, loadAllCases, memberId, refreshCasesFromBackend]);
 
   useEffect(() => {
     setLimitDraft(

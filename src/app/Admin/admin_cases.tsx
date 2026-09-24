@@ -7,28 +7,28 @@ import FilterCasesModal from "@/_components/modals/filtercases";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-  formatCaseDateLabel,
-  getCaseSummary,
-  type SavedCase,
-  useCaseStore,
+    formatCaseDateLabel,
+    getCaseSummary,
+    type SavedCase,
+    useCaseStore,
 } from "@/store/caseStore";
 import {
-  caseMatchesSearch,
-  normalizeCaseSearchQuery,
+    caseMatchesSearch,
+    normalizeCaseSearchQuery,
 } from "@/utils/caseSearch";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  SectionList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    SectionList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -113,8 +113,10 @@ export default function AdminCasesScreen({
     const filteredCases = sortedCases.filter((item) => {
       const matchesMember =
         (!memberId && !memberName) ||
-        (item.ownerUserId &&
-          String(item.ownerUserId).trim().toLowerCase() ===
+        ((item.userId ?? item.ownerUserId) &&
+          String(item.userId ?? item.ownerUserId)
+            .trim()
+            .toLowerCase() ===
             memberId?.trim().toLowerCase());
       const matchesQuery = caseMatchesSearch(item, normalizedQuery, "admin");
 

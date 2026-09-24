@@ -1,12 +1,12 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import {
-  getAuthHeader,
-  handleUnauthorizedResponse,
-  useAuthStore,
+    getAuthHeader,
+    handleUnauthorizedResponse,
+    useAuthStore,
 } from "@/store/authStore";
 import type { AnalysisPriority, DocumentType } from "@/store/caseStore";
-import { normalizePersonDisplay } from "@/utils/validation";
 import { getServerErrorMessage } from "@/utils/networkError";
+import { normalizePersonDisplay } from "@/utils/validation";
 
 /** Mirrors Avera.Domain/Cases/FinalVerdict.cs — do not reorder, values match backend exactly. */
 export enum FinalVerdict {
@@ -255,7 +255,12 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     id: String(raw?.id ?? raw?.Id ?? ""),
     caseCode: raw?.caseCode ?? raw?.CaseCode ?? "",
     subjectName: raw?.subjectName ?? raw?.SubjectName ?? "",
-    ownerUserId: raw?.createdByUserId ?? raw?.CreatedByUserId ?? null,
+    ownerUserId:
+      raw?.userId ??
+      raw?.UserId ??
+      raw?.createdByUserId ??
+      raw?.CreatedByUserId ??
+      null,
     examiner: normalizeCreatedByUser(
       raw?.createdByUser ??
         raw?.CreatedByUser ??
@@ -319,7 +324,7 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     reviewNote: raw?.reviewNote ?? raw?.ReviewNote ?? null,
     finalVerdict: normalizeFinalVerdict(raw?.finalVerdict ?? raw?.FinalVerdict),
     isPdfExportAllowed: normalizeBoolean(
-      raw?.isPdfExportAllowed ?? raw?.IsPdfExportAllowed,
+      raw?.isPdfExportAllowed ?? raw?.IsPdfExportAllowed ?? true,
     ),
     isFlaggedForInternalReview: normalizeBoolean(
       raw?.isFlaggedForInternalReview ?? raw?.IsFlaggedForInternalReview,
