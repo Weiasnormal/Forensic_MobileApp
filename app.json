@@ -30,19 +30,12 @@
       "package": "com.anonymous.forensic"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#000000"
-        }
-      ],
       [
         "expo-camera",
         {
