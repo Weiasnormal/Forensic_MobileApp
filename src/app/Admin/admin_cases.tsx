@@ -120,11 +120,13 @@ export default function AdminCasesScreen({
 
       const matchesFilter =
         activeFilter === "All" ||
-        item.status === activeFilter ||
-        (activeFilter === "Processing" &&
-          item.workflowStatus === "Processing") ||
-        item.documentType === activeFilter ||
-        item.priority === activeFilter;
+        (activeFilter === "Pending"
+          ? item.workflowStatus === "PendingReview"
+          : item.status === activeFilter ||
+            (activeFilter === "Processing" &&
+              item.workflowStatus === "Processing") ||
+            item.documentType === activeFilter ||
+            item.priority === activeFilter);
 
       return matchesMember && matchesQuery && matchesFilter;
     });

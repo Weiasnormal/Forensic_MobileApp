@@ -1,5 +1,6 @@
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import SecondaryButton from "@/_components/common/SecondaryButton";
+import ToggleSwitch from "@/_components/common/ToggleSwitch";
 import VerdictCard from "@/_components/common/VerdIctCard";
 import ZoomableImageModal from "@/_components/common/ZoomableImageModal";
 import ErrorModal from "@/_components/modals/error_modal";
@@ -34,7 +35,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -442,7 +442,7 @@ export default function CaseResultAdmin() {
               <Text style={styles.heroLabel}>{mlVerdictLabel}</Text>
             </Text>
             <Text style={styles.heroCase}>
-              ML VERDICT · {caseDetail.caseCode}
+              VERDICT · {caseDetail.caseCode}
             </Text>
           </View>
         </View>
@@ -607,8 +607,7 @@ export default function CaseResultAdmin() {
                 <Text style={styles.largeThumbText}>No suspect image</Text>
               </View>
             )}
-            <Text style={styles.suspectLabel}>SUSPECT</Text>
-            <Text style={styles.suspectHint}>{mlVerdictLabel}</Text>
+            <Text style={styles.suspectLabel}>QUESTIONED</Text>
           </Pressable>
         </View>
 
@@ -617,11 +616,6 @@ export default function CaseResultAdmin() {
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
             >
-              <Ionicons
-                name="checkbox-outline"
-                size={20}
-                color={colors.textPrimary}
-              />
               <Text style={styles.findingsTitle}>Supervisor Review</Text>
             </View>
             <View
@@ -690,6 +684,7 @@ export default function CaseResultAdmin() {
                   <Ionicons
                     name={isOverridden ? "warning" : "checkmark-circle"}
                     size={16}
+                    style={styles.finalDecisionIcon}
                     color={
                       isOverridden
                         ? colors.statusSuspected
@@ -699,18 +694,21 @@ export default function CaseResultAdmin() {
                   <Text
                     style={[
                       styles.finalDecisionText,
-                      {
-                        color: isOverridden
-                          ? colors.statusSuspected
-                          : colors.statusGenuine,
-                      },
                     ]}
                   >
-                    {isOverridden
-                      ? "OVERRIDING ML VERDICT: "
-                      : "CONFIRMING ML VERDICT: "}
-                    <Text style={{ fontWeight: "bold" }}>
-                      FINAL WILL BE {finalDecisionLabel}
+                    Your decision changes the result to:{" "}
+                    <Text
+                      style={[
+                        styles.finalDecisionValue,
+                        {
+                          color:
+                            finalDecisionLabel === "SUSPECTED"
+                              ? colors.statusSuspected
+                              : colors.statusGenuine,
+                        },
+                      ]}
+                    >
+                      {finalDecisionLabel}
                     </Text>
                   </Text>
                 </View>
@@ -798,14 +796,9 @@ export default function CaseResultAdmin() {
                     Enable exporting this report
                   </Text>
                 </View>
-                <Switch
+                <ToggleSwitch
                   value={pdfExportPermission}
                   onValueChange={setPdfExportPermission}
-                  trackColor={{
-                    false: colors.primaryLight,
-                    true: colors.primary,
-                  }}
-                  thumbColor={colors.primaryText}
                 />
               </View>
               <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}>
@@ -824,15 +817,10 @@ export default function CaseResultAdmin() {
                     Show this case as flagged to admins
                   </Text>
                 </View>
-                <Switch
+                <ToggleSwitch
                   value={isFlaggedForInternalReview}
                   onValueChange={handleToggleInternalReviewFlag}
                   disabled={isTogglingFlag}
-                  trackColor={{
-                    false: colors.primaryLight,
-                    true: colors.primary,
-                  }}
-                  thumbColor={colors.primaryText}
                 />
               </View>
             </View>
@@ -1093,13 +1081,8 @@ const styles = StyleSheet.create({
   largeThumbText: { marginTop: 8, color: colors.label },
   suspectLabel: {
     ...getTypographyStyle("b3Button"),
-    color: colors.danger,
+    color: colors.textPrimary,
     marginTop: 8,
-  },
-  suspectHint: {
-    ...getTypographyStyle("c2Caption", "regular"),
-    color: colors.suspectAccent,
-    marginTop: 4,
   },
 
   findingsTitle: {
@@ -1128,7 +1111,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   reviewPendingText: {
-    ...getTypographyStyle("c2Caption", "regular"),
+    ...getTypographyStyle("c2Caption", "bold"),
     color: colors.textSecondary,
   },
   reviewDoneBadge: { backgroundColor: colors.statusGenuineBg },
@@ -1164,7 +1147,7 @@ const styles = StyleSheet.create({
 
   finalDecisionBanner: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 8,
     padding: 12,
     borderRadius: 8,
@@ -1172,14 +1155,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   overrideBanner: {
-    backgroundColor: colors.dangerLight,
-    borderColor: colors.dangerBorder,
+    backgroundColor: colors.background2,
+    borderColor: colors.border,
   },
   confirmBanner: {
-    backgroundColor: colors.statusGenuineBg,
-    borderColor: colors.statusGenuine,
+    backgroundColor: colors.background2,
+    borderColor: colors.border,
   },
-  finalDecisionText: { ...getTypographyStyle("c1Caption", "regular") },
+  finalDecisionIcon: {
+    marginTop: 1,
+  },
+  finalDecisionText: {
+    ...getTypographyStyle("c1Caption", "regular"),
+    color: colors.textPrimary,
+    flex: 1,
+    minWidth: 0,
+    lineHeight: 18,
+  },
+  finalDecisionValue: {
+    fontWeight: "bold",
+  },
 
   radioOption: {
     flexDirection: "row",
@@ -1218,7 +1213,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     flex: 1,
-    ...getTypographyStyle("b3Button"),
+    ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textPrimary,
     textAlignVertical: "top",
   },

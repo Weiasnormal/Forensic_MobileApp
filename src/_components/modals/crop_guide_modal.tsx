@@ -1,4 +1,5 @@
 import PrimaryButton from "@/_components/common/PrimaryButton";
+import ToggleSwitch from "@/_components/common/ToggleSwitch";
 import { useBottomSheetTransition } from "@/_components/transition";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
@@ -9,7 +10,6 @@ import {
     Modal,
     Pressable,
     StyleSheet,
-    Switch,
     Text,
     View,
 } from "react-native";
@@ -152,11 +152,9 @@ export default function CropGuideModal({
             <Text style={styles.preferenceText} allowFontScaling={false}>
               Show again next time
             </Text>
-            <Switch
+            <ToggleSwitch
               value={showAgain}
               onValueChange={onShowAgainChange}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colors.primaryText}
             />
           </View>
 
