@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
     logout: "/auth/logout",
     changePassword: "/auth/change-password",
     changeEmail: "/auth/change-email",
+    changeName: "/auth/change-name",
     resendVerificationEmail: "/auth/resend-verification-email",
 
     forgotPassword: "/auth/forgot-password",

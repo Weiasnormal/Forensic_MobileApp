@@ -8,6 +8,7 @@ import ProfileSaveModal from "@/_components/modals/profile_save";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useResendCooldown } from "@/hooks/useResendCooldown";
+import { changeName } from "@/services/authApi";
 import { resendEmailChangeVerification } from "@/services/emailVerificationApi";
 import { useAuthStore } from "@/store/authStore";
 import { useFeedbackStore } from "@/store/feedbackStore";
@@ -19,16 +20,16 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 export default function SetupAccount() {
@@ -39,6 +40,7 @@ export default function SetupAccount() {
   const [firstName, setFirstName] = useState(user.firstName ?? "");
   const [lastName, setLastName] = useState(user.lastName ?? "");
   const authEmail = useAuthStore((state) => state.user?.email);
+  const accessToken = useAuthStore((state) => state.accessToken);
   const email = authEmail || user.email || "";
   const [role, setRole] = useState(user.role ?? "");
   const [organization, setOrganization] = useState(user.organization ?? "");
@@ -107,6 +109,11 @@ export default function SetupAccount() {
 
   const handleSave = async () => {
     try {
+      if (!accessToken) throw new Error("Your session has expired.");
+      await changeName(accessToken, {
+        newName: firstName.trim(),
+        newLastName: lastName.trim(),
+      });
       await setUser({
         firstName,
         lastName,
@@ -120,8 +127,12 @@ export default function SetupAccount() {
         .getState()
         .showToast("Profile updated successfully", "success");
       router.back();
-    } catch {
-      setSaveError("Unable to save your profile changes. Please try again.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your profile changes. Please try again.",
+      );
     }
   };
 
@@ -384,7 +395,6 @@ const styles = StyleSheet.create({
   whiteDisabledField: {
     backgroundColor: "#FFFFFF",
   },
-
 });
 
 const verifyStyles = StyleSheet.create({
@@ -410,5 +420,4 @@ const verifyStyles = StyleSheet.create({
     color: colors.primary,
     marginTop: 8,
   },
-  
 });

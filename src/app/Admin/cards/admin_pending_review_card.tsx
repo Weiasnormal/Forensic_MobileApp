@@ -1,5 +1,6 @@
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
+import type { AnalysisPriority } from "@/store/caseStore";
 import { normalizePersonDisplay } from "@/utils/validation";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -11,6 +12,7 @@ export interface PendingReview {
   dateLabel: string;
   verdictLabel: string;
   confidence: number;
+  priority: AnalysisPriority;
 }
 
 interface PendingReviewCardProps {
@@ -50,12 +52,21 @@ export default function PendingReviewCard({
       </View>
 
       <TouchableOpacity
-        style={styles.button}
+        style={[
+          styles.button,
+          review.priority === "Urgent" && styles.urgentButton,
+        ]}
         onPress={() => onReview(review)}
         activeOpacity={0.85}
       >
-        <Text allowFontScaling={false} style={styles.buttonText}>
-          Review
+        <Text
+          allowFontScaling={false}
+          style={[
+            styles.buttonText,
+            review.priority === "Urgent" && styles.urgentButtonText,
+          ]}
+        >
+          {review.priority === "Urgent" ? "Urgent" : "Review"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -111,5 +122,11 @@ const styles = StyleSheet.create({
   buttonText: {
     ...getTypographyStyle("c2Caption", "bold"), // matches size (12) + weight (bold≈800) closely
     color: colors.primary,
+  },
+  urgentButton: {
+    backgroundColor: colors.statusSuspectedBg,
+  },
+  urgentButtonText: {
+    color: colors.statusSuspected,
   },
 });

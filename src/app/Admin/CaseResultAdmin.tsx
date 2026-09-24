@@ -276,18 +276,40 @@ export default function CaseResultAdmin() {
   const handleExportReport = async () => {
     if (isExportingPdf) return;
 
+    if (!caseId) {
+      setExportError("Case ID is missing.");
+      return;
+    }
+
     setIsExportingPdf(true);
     try {
-      // Same GET /cases/{id}/results endpoint used in signature_results.tsx
-      // (Avera.WebApi/Endpoints/ML/GetResults.cs).
       const FileSystem = await import("expo-file-system/legacy");
       const Sharing = await import("expo-sharing");
-      const reportPdfUrl = buildApiUrl(`/cases/${caseId}/results`);
+      const reportPdfUrl = buildApiUrl(
+        API_ENDPOINTS.analysis.getResults(caseId),
+      );
       const localUri =
         FileSystem.documentDirectory + `AVERA_Forensic_Report_${caseId}.pdf`;
-      const { uri } = await FileSystem.downloadAsync(reportPdfUrl, localUri, {
+      const download = await FileSystem.downloadAsync(reportPdfUrl, localUri, {
         headers: { "X-Api-Key": API_KEY || "", ...getAuthHeader() },
       });
+      const fileInfo = await FileSystem.getInfoAsync(download.uri);
+
+      if (
+        download.status < 200 ||
+        download.status >= 300 ||
+        !fileInfo.exists ||
+        fileInfo.size === 0
+      ) {
+        if (fileInfo.exists) {
+          await FileSystem.deleteAsync(download.uri, { idempotent: true });
+        }
+        throw new Error(
+          caseDetail?.isPdfExportAllowed
+            ? "The PDF report is not ready yet. Please try again."
+            : "PDF export is not enabled for this case. Save the review with PDF export enabled first.",
+        );
+      }
 
       if (Platform.OS === "android") {
         const directoryPermission =
@@ -308,7 +330,7 @@ export default function CaseResultAdmin() {
             `AVERA_Forensic_Report_${caseId}.pdf`,
             "application/pdf",
           );
-        const pdfBase64 = await FileSystem.readAsStringAsync(uri, {
+        const pdfBase64 = await FileSystem.readAsStringAsync(download.uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
         await FileSystem.writeAsStringAsync(savedFileUri, pdfBase64, {
@@ -319,14 +341,14 @@ export default function CaseResultAdmin() {
       }
 
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(download.uri, {
           mimeType: "application/pdf",
           dialogTitle: "Export Forensic PDF Report",
           UTI: "com.adobe.pdf",
         });
         setExportSuccess("PDF report exported successfully.");
       } else {
-        setExportError(`File saved to: ${uri}`);
+        setExportError(`File saved to: ${download.uri}`);
       }
     } catch (error) {
       console.warn("Failed to download PDF report:", error);

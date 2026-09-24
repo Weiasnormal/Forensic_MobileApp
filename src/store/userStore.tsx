@@ -4,13 +4,13 @@ import { normalizePersonName } from "@/utils/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from "react";
 import { useAuthStore } from "./authStore";
 
@@ -139,12 +139,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       }
       const nextUser = {
         firstName: normalizePersonName(
-          localProfile.firstName?.trim() ||
-            remoteProfile.firstName?.trim() ||
+          remoteProfile.firstName?.trim() ||
+            localProfile.firstName?.trim() ||
             "",
         ),
         lastName: normalizePersonName(
-          localProfile.lastName?.trim() || remoteProfile.lastName?.trim() || "",
+          remoteProfile.lastName?.trim() || localProfile.lastName?.trim() || "",
         ),
         email: remoteProfile.email?.trim() || authEmail || "",
         role: remoteProfile.role?.trim() || localProfile.role?.trim() || "",

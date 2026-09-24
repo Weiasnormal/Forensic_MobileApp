@@ -21,7 +21,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 const PUBLIC_SEGMENTS = [
   "_login",
   "_introPage",
-  "_devscan",
+  //"_devscan", -- UNCOMMENT IF YOU WANT TO USE DEV SCAN PAGE
   "_sucessPage",
 ];
 

@@ -9,13 +9,15 @@ import * as Clipboard from "expo-clipboard";
 import { ChevronRight, Copy, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -43,6 +45,9 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
   const teamMembers = useAdminStore((state) => state.teamMembers);
   const fetchTenantProfile = useAdminStore((state) => state.fetchTenantProfile);
   const renameTenant = useAdminStore((state) => state.renameTenant);
+  const setMemberCountLimit = useAdminStore(
+    (state) => state.setMemberCountLimit,
+  );
 
   useEffect(() => {
     fetchTenantProfile();
@@ -57,6 +62,7 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     tenantProfile?.inviteCode || organizationCode || "—";
   const { totalAnalysts } = getTeamSummary(teamMembers);
   const resolvedMemberCount = totalAnalysts;
+  const resolvedMemberLimit = tenantProfile?.memberCountLimit ?? null;
   const resolvedCreatedDate = tenantProfile?.createdAt
     ? new Date(tenantProfile.createdAt).toLocaleDateString("en-US", {
         month: "short",
@@ -72,6 +78,10 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
+  const [isMemberLimitModalVisible, setIsMemberLimitModalVisible] =
+    useState(false);
+  const [memberLimitDraft, setMemberLimitDraft] = useState("");
+  const [isSavingMemberLimit, setIsSavingMemberLimit] = useState(false);
 
   useEffect(() => {
     if (!isEditingOrganizationName) {
@@ -132,6 +142,36 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
       showToast("Unable to copy code");
     }
   }, [onCopyCodePress, resolvedOrganizationCode, showToast]);
+
+  const openMemberLimitModal = useCallback(() => {
+    setMemberLimitDraft(
+      resolvedMemberLimit === null ? "" : String(resolvedMemberLimit),
+    );
+    setIsMemberLimitModalVisible(true);
+  }, [resolvedMemberLimit]);
+
+  const closeMemberLimitModal = useCallback(() => {
+    setIsMemberLimitModalVisible(false);
+    setMemberLimitDraft(
+      resolvedMemberLimit === null ? "" : String(resolvedMemberLimit),
+    );
+  }, [resolvedMemberLimit]);
+
+  const handleSaveMemberLimit = useCallback(async () => {
+    const parsedLimit = Number(memberLimitDraft.trim());
+    if (!Number.isInteger(parsedLimit) || parsedLimit < 0) {
+      showToast("Enter a whole number of members");
+      return;
+    }
+
+    setIsSavingMemberLimit(true);
+    try {
+      const saved = await setMemberCountLimit(parsedLimit);
+      if (saved) setIsMemberLimitModalVisible(false);
+    } finally {
+      setIsSavingMemberLimit(false);
+    }
+  }, [memberLimitDraft, setMemberCountLimit, showToast]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -240,8 +280,73 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
           }
         />
 
+        <InfoRow
+          label="Member Limit"
+          value={
+            resolvedMemberLimit === null ? "—" : String(resolvedMemberLimit)
+          }
+          onPress={openMemberLimitModal}
+          rightAccessory={
+            <ChevronRight
+              size={20}
+              color={colors.textTertiary}
+              strokeWidth={2.1}
+            />
+          }
+        />
+
         <InfoRow label="Created" value={resolvedCreatedDate} />
       </ScrollView>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isMemberLimitModalVisible}
+        onRequestClose={closeMemberLimitModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.limitModalCard}>
+            <Text style={styles.limitModalTitle}>Member limit</Text>
+            <Text style={styles.limitModalSubtitle}>
+              Set the maximum members for your organization
+            </Text>
+
+            <TextInput
+              value={memberLimitDraft}
+              onChangeText={(value) =>
+                setMemberLimitDraft(value.replace(/[^0-9]/g, ""))
+              }
+              keyboardType="number-pad"
+              placeholder="Enter member limit"
+              placeholderTextColor={colors.textTertiary}
+              style={styles.limitInput}
+              autoFocus
+            />
+
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, styles.modalActionButton]}
+                onPress={closeMemberLimitModal}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, styles.modalActionButton]}
+                onPress={() => void handleSaveMemberLimit()}
+                disabled={isSavingMemberLimit}
+                activeOpacity={0.8}
+              >
+                {isSavingMemberLimit ? (
+                  <ActivityIndicator color={colors.primaryText} />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Confirm</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Toast
         visible={toastVisible}
@@ -348,6 +453,49 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     ...getTypographyStyle("b3Button"),
     color: colors.primaryText,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  limitModalCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    backgroundColor: colors.background2,
+    padding: 20,
+  },
+  limitModalTitle: {
+    ...getTypographyStyle("t3Title"),
+    color: colors.textPrimary,
+  },
+  limitModalSubtitle: {
+    ...getTypographyStyle("c1Caption", "regular"),
+    color: colors.textSecondary,
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  limitInput: {
+    ...getTypographyStyle("body"),
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 12,
+    backgroundColor: colors.inputBackground,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  modalActionRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 18,
+  },
+  modalActionButton: {
+    minWidth: 92,
   },
 });
 
