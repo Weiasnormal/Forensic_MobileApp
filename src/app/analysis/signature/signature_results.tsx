@@ -1189,7 +1189,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     ...getTypographyStyle("headline"),
-    color: colors.danger,
+    color: colors.textPrimary,
   },
   errorSubtitle: {
     ...getTypographyStyle("c1Caption", "regular"),

@@ -407,13 +407,6 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   fetchMemberById: async (userId: string) => {
     adminLog.info("AdminStore:MemberDetail", `Fetching member ${userId}`);
-    if (!get().teamMembers.some((member) => member.id === userId)) {
-      set({
-        isLoadingMemberDetail: false,
-        memberDetailError: "This member is not part of your organization.",
-      });
-      return null;
-    }
     set({ isLoadingMemberDetail: true, memberDetailError: null });
 
     try {

@@ -27,12 +27,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const MemberDetailsScreen: React.FC = () => {
+  const MAX_LIMIT = 99;
   const { memberId } = useLocalSearchParams<{ memberId?: string }>();
   const router = useRouter();
   const fetchMemberById = useAdminStore((state) => state.fetchMemberById);
@@ -50,7 +52,7 @@ const MemberDetailsScreen: React.FC = () => {
   );
   const memberDetailError = useAdminStore((state) => state.memberDetailError);
   const [limitDraft, setLimitDraft] = useState<number | null>(null);
-  const [pendingLimitChange, setPendingLimitChange] = useState<number | null>(
+  const [pendingLimitChange, setPendingLimitChange] = useState<string | null>(
     null,
   );
   const [isDailyLimitModalVisible, setIsDailyLimitModalVisible] =
@@ -84,44 +86,55 @@ const MemberDetailsScreen: React.FC = () => {
   }, [fetchMemberById, memberId]);
 
   useEffect(() => {
-    setLimitDraft(dailyCaseLimit);
+    setLimitDraft(
+      dailyCaseLimit === null
+        ? 1
+        : Math.min(MAX_LIMIT, Math.max(1, dailyCaseLimit)),
+    );
   }, [dailyCaseLimit]);
 
   const limitSummary = useMemo(() => {
-    if (limitDraft === null) return "Unlimited";
-    return `${limitDraft} / day`;
+    return `${limitDraft ?? 1}`;
   }, [limitDraft]);
 
   const openDailyLimitModal = () => {
-    setPendingLimitChange(limitDraft ?? 0);
+    setPendingLimitChange(String(Math.min(MAX_LIMIT, limitDraft ?? 1)));
     setIsDailyLimitModalVisible(true);
   };
 
   const handleLimitStepper = (direction: "increase" | "decrease") => {
-    const currentValue = pendingLimitChange ?? 0;
+    const currentValue = Number(pendingLimitChange ?? 0);
     const nextValue =
       direction === "increase"
-        ? currentValue + 1
-        : Math.max(0, currentValue - 1);
+        ? Math.min(MAX_LIMIT, currentValue + 1)
+        : Math.max(1, currentValue - 1);
 
-    setPendingLimitChange(nextValue);
+    setPendingLimitChange(String(nextValue));
   };
 
   const closeDailyLimitModal = () => {
     setIsDailyLimitModalVisible(false);
-    setPendingLimitChange(limitDraft);
+    setPendingLimitChange(String(limitDraft ?? 1));
   };
 
   const confirmLimitChange = async () => {
-    if (!memberId || pendingLimitChange === null) {
+    const parsedLimit = Number(pendingLimitChange);
+    if (
+      !memberId ||
+      pendingLimitChange === null ||
+      pendingLimitChange.trim() === "" ||
+      !Number.isInteger(parsedLimit) ||
+      parsedLimit < 1 ||
+      parsedLimit > MAX_LIMIT
+    ) {
       return;
     }
 
     setIsUpdatingDailyLimit(true);
     try {
-      const success = await setUserDailyCaseLimit(memberId, pendingLimitChange);
+      const success = await setUserDailyCaseLimit(memberId, parsedLimit);
       if (success) {
-        setLimitDraft(pendingLimitChange);
+        setLimitDraft(parsedLimit);
         setIsDailyLimitModalVisible(false);
         setPendingLimitChange(null);
       }
@@ -213,9 +226,7 @@ const MemberDetailsScreen: React.FC = () => {
           icon={Gauge}
           title="Daily Case Limit"
           subtitle={
-            limitDraft === null
-              ? "No limit currently configured"
-              : `Current limit: ${limitDraft} case${limitDraft === 1 ? "" : "s"} per day`
+            `Current limit: ${limitDraft ?? 1} case${(limitDraft ?? 1) === 1 ? "" : "s"} per day`
           }
           rightText={limitSummary}
           onPress={openDailyLimitModal}
@@ -326,21 +337,31 @@ const MemberDetailsScreen: React.FC = () => {
                 activeOpacity={0.8}
                 onPress={() => handleLimitStepper("decrease")}
               >
-                <Minus size={22} color={colors.primary} />
+                <Minus size={22} color={colors.textPrimary} />
               </TouchableOpacity>
 
-              <Text allowFontScaling={false} style={styles.limitModalValue}>
-                {pendingLimitChange === null
-                  ? "Unlimited"
-                  : `${pendingLimitChange}`}
-              </Text>
+              <TextInput
+                value={pendingLimitChange ?? ""}
+                onChangeText={(value) => {
+                  const digits = value.replace(/[^0-9]/g, "").slice(0, 2);
+                  setPendingLimitChange(
+                    digits === ""
+                      ? ""
+                      : String(Math.max(1, Math.min(MAX_LIMIT, Number(digits)))),
+                  );
+                }}
+                keyboardType="number-pad"
+                maxLength={2}
+                selectTextOnFocus
+                style={styles.limitModalValue}
+              />
 
               <TouchableOpacity
                 style={styles.stepButton}
                 activeOpacity={0.8}
                 onPress={() => handleLimitStepper("increase")}
               >
-                <Plus size={22} color={colors.primary} />
+                <Plus size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -449,7 +470,7 @@ const styles = StyleSheet.create({
   },
   limitValueText: {
     ...getTypographyStyle("c1Caption", "semiBold"),
-    color: colors.primary,
+    color: colors.textPrimary,
     minWidth: 60,
     textAlign: "center",
   },
@@ -492,7 +513,7 @@ const styles = StyleSheet.create({
   },
   limitModalValue: {
     ...getTypographyStyle("t3Title"),
-    color: colors.primary,
+    color: colors.textPrimary,
     minWidth: 90,
     textAlign: "center",
   },
