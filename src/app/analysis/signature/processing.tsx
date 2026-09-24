@@ -58,8 +58,8 @@ const PROCESSING_STEPS: ProcessingStepInfo[] = [
   },
 ];
 
-const RING_SIZE = 160;
-const RING_STROKE = 12;
+const RING_SIZE = 136;
+const RING_STROKE = 10;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
@@ -377,8 +377,8 @@ export default function SignatureProcessingRoute() {
           <Info size={14} color={colors.label} />
           <Text style={styles.backgroundHintText}>
             {isFailedState
-              ? "This case is safely saved. You can retry the analysis without re-uploading your images."
-              : "You may continue using the app while processing runs in the background. We'll notify you once it's complete."}
+              ? "This case is saved. You can retry without re-uploading."
+              : "Processing continues in the background. We'll notify you when it's complete."}
           </Text>
         </View>
         {isFailedState ? (
@@ -427,18 +427,18 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   topSection: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 32,
+    marginBottom: 20,
   },
   ringWrap: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: 14,
   },
   ringCenter: {
     position: "absolute",
@@ -448,6 +448,7 @@ const styles = StyleSheet.create({
   progressText: {
     ...getTypographyStyle("largeTitle"),
     color: colors.textPrimary,
+    fontSize: 30,
     letterSpacing: -1,
     marginBottom: -2,
   },
@@ -472,11 +473,11 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 1,
     backgroundColor: colors.statsBackground,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   checklistSection: {
     width: "100%",
-    gap: 20,
+    gap: 14,
   },
   stepRow: {
     flexDirection: "row",
@@ -488,7 +489,7 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
+    marginRight: 10,
   },
   iconCircle: {
     width: 24,
@@ -550,9 +551,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    paddingTop: 8,
-    gap: 10,
+    paddingBottom: 12,
+    paddingTop: 6,
+    gap: 8,
   },
   backgroundHint: {
     flexDirection: "row",
@@ -564,8 +565,8 @@ const styles = StyleSheet.create({
     ...getTypographyStyle("c3Caption"),
     color: colors.label,
     flex: 1,
-    lineHeight: 14,
-    paddingBottom: 10,
+    flexShrink: 1,
+    lineHeight: 16,
   },
   secondaryButtonSpacing: {
     marginTop: 10,

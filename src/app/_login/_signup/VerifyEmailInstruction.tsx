@@ -1,4 +1,5 @@
 import ErrorBanner from '@/_components/common/ErrorBanner';
+import PrimaryButton from '@/_components/common/PrimaryButton';
 import { colors } from '@/constants/colors';
 import { getTypographyStyle } from '@/constants/typography';
 import { useResendCooldown } from '@/hooks/useResendCooldown';
@@ -30,6 +31,16 @@ export default function VerifyEmailInstruction() {
 	const { secondsRemaining, isCoolingDown, startCooldown } = useResendCooldown();
 
 	const verificationError = useEmailVerificationStore((s) => s.lastError);
+
+	const handleSignInFallback = () => {
+		router.replace({
+			pathname: '/_login/SignInPage',
+			params: {
+				role: params.role,
+				verifiedEmail: email !== 'your email' ? email : undefined,
+			},
+		});
+	};
 
 	const handleResend = async () => {
 		if (!email || email === 'your email' || isCoolingDown || isResending) return;
@@ -76,14 +87,28 @@ export default function VerifyEmailInstruction() {
 						</View>
 					))}
 				</View>
+
 			</ScrollView>
 
 			<View style={styles.bottomActions}>
-				<View style={styles.resendRow}>
-					<Text allowFontScaling={false} style={styles.resendPrompt}>Didn&apos;t receive the email? </Text>
-					<TouchableOpacity activeOpacity={0.7} onPress={handleResend} disabled={isResending || isCoolingDown}>
-						<Text allowFontScaling={false} style={styles.resendAction}>
-							{isResending ? 'Resending…' : isCoolingDown ? `Resend (${secondsRemaining}s)` : 'Resend'}
+				<PrimaryButton
+					label={isResending ? 'Resending…' : isCoolingDown ? `Resend (${secondsRemaining}s)` : 'Resend email'}
+					onPress={handleResend}
+					disabled={isResending || isCoolingDown}
+					loading={isResending}
+					size="medium"
+				/>
+				<View style={styles.tertiaryRow}>
+					<Text allowFontScaling={false} style={styles.tertiaryPrompt}>
+						Didn&apos;t get redirected?
+					</Text>
+					<TouchableOpacity
+						activeOpacity={0.7}
+						onPress={handleSignInFallback}
+						style={styles.tertiaryButton}
+					>
+						<Text allowFontScaling={false} style={styles.tertiaryButtonText}>
+							Sign in
 						</Text>
 					</TouchableOpacity>
 				</View>
@@ -167,19 +192,25 @@ const styles = StyleSheet.create({
 	bottomActions: { 
 		paddingHorizontal: 20, 
 		paddingBottom: 24, 
-		gap: 4 
+		gap: 6 
 	},
-	resendRow: { 
-		flexDirection: 'row', 
-		justifyContent: 'center', 
-		marginTop: 14 
+	tertiaryButton: {
+		paddingVertical: 8,
+		paddingHorizontal: 4,
 	},
-	resendPrompt: { 
-		...getTypographyStyle('c1Caption'), 
-		color: colors.textSecondary 
+	tertiaryRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 2,
+		paddingTop: 2,
 	},
-	resendAction: { 
-		...getTypographyStyle('c1Caption', 'bold'), 
-		color: colors.primary 
+	tertiaryPrompt: {
+		...getTypographyStyle('c1Caption'),
+		color: colors.textSecondary,
+	},
+	tertiaryButtonText: {
+		...getTypographyStyle('c1Caption', 'bold'),
+		color: colors.primary,
 	},
 });
