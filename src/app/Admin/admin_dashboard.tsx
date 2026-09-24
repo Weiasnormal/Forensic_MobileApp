@@ -32,7 +32,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 import {
   SafeAreaView,
@@ -359,11 +359,16 @@ function AdminHomeTab({
 }) {
   const pendingReviews: PendingReview[] = cases
     .filter((item) => item.workflowStatus === "PendingReview")
-    .sort(
-      (left, right) =>
-        new Date(right.createdAt).getTime() -
-        new Date(left.createdAt).getTime(),
-    )
+    .sort((left, right) => {
+      const urgentOrder =
+        Number(right.priority === "Urgent") -
+        Number(left.priority === "Urgent");
+      if (urgentOrder !== 0) return urgentOrder;
+
+      return (
+        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      );
+    })
     .map((item) => ({
       id: item.caseId,
       caseCode: item.caseCode ?? item.caseId,
@@ -376,6 +381,7 @@ function AdminHomeTab({
             ? "Genuine"
             : "Awaiting verdict",
       confidence: item.confidence ?? item.Confidence ?? 0,
+      priority: item.priority,
     }));
 
   return (
