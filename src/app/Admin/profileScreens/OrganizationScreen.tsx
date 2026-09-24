@@ -47,8 +47,6 @@ interface MemberUsageProps {
   onRaiseLimit: () => void;
 }
 
-// Progress bar plus one inline status line. The warning and full states use a
-// fill only (no border), and the "Raise limit" action only appears when needed.
 const MemberUsage: React.FC<MemberUsageProps> = ({
   used,
   limit,
@@ -58,9 +56,6 @@ const MemberUsage: React.FC<MemberUsageProps> = ({
   const seatsLeft = Math.max(limit - used, 0);
   const fillRatio = limit > 0 ? Math.min(used / limit, 1) : 1;
 
-  // FLAG: suspectAccent is the amber token added for the suspect signature.
-  // It is an exact match for the design's warning amber, so it is reused here.
-  // Rename it to a neutral warning token if you want it shared.
   const fillColor =
     level === "full"
       ? colors.danger
@@ -234,8 +229,6 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
     setIsMemberLimitModalVisible(false);
   }, []);
 
-  // Returns whether the save worked so the modal can show its own inline
-  // error. The modal is closed here on success.
   const handleSaveMemberLimit = useCallback(
     async (limit: number): Promise<boolean> => {
       let saved = false;
@@ -247,11 +240,10 @@ const OrganizationScreen: React.FC<OrganizationScreenProps> = ({
 
       if (saved) {
         setIsMemberLimitModalVisible(false);
-        showToast("Member limit updated");
       }
       return saved;
     },
-    [setMemberCountLimit, showToast],
+    [setMemberCountLimit],
   );
 
   return (
@@ -465,7 +457,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#EDF3FA", // FLAG: no exact token (statsBackground is #F5F8FC), left as is
+    backgroundColor: "#EDF3FA",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -489,7 +481,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     ...getTypographyStyle("b3Button"),
-    color: colors.textSecondary, // was #64748B, exact match
+    color: colors.textSecondary,
   },
   primaryButton: {
     minWidth: 92,
@@ -545,8 +537,6 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   usageStatusText: {
-    // FLAG: the prototype used 12px regular. There is no 12px caption token,
-    // so this uses c1Caption (13) at regular weight, 1px larger.
     ...getTypographyStyle("c1Caption", "regular"),
     flex: 1,
     color: colors.textSecondary,
