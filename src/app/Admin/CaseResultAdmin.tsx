@@ -133,6 +133,9 @@ export default function CaseResultAdmin() {
       ? "SUSPECTED"
       : "GENUINE"
     : "PENDING";
+  const processingTime = localAnalysisResult?.analysisTimeMs
+    ? `${(localAnalysisResult.analysisTimeMs / 1000).toFixed(2)}s`
+    : "—";
 
   const isAlreadyReviewed = Boolean(
     caseDetail &&
@@ -441,9 +444,7 @@ export default function CaseResultAdmin() {
               {mlConfidence.toFixed(1)}%{" "}
               <Text style={styles.heroLabel}>{mlVerdictLabel}</Text>
             </Text>
-            <Text style={styles.heroCase}>
-              VERDICT · {caseDetail.caseCode}
-            </Text>
+            <Text style={styles.heroCase}>VERDICT · {caseDetail.caseCode}</Text>
           </View>
         </View>
 
@@ -647,6 +648,11 @@ export default function CaseResultAdmin() {
             </Text>
           </View>
 
+          <View style={styles.modelAssessmentRow}>
+            <Text style={styles.modelAssessmentLabel}>Time</Text>
+            <Text style={styles.modelAssessmentVerdict}>{processingTime}</Text>
+          </View>
+
           <View style={styles.divider} />
 
           {isAlreadyReviewed ? (
@@ -691,11 +697,7 @@ export default function CaseResultAdmin() {
                         : colors.statusGenuine
                     }
                   />
-                  <Text
-                    style={[
-                      styles.finalDecisionText,
-                    ]}
-                  >
+                  <Text style={[styles.finalDecisionText]}>
                     Your decision changes the result to:{" "}
                     <Text
                       style={[

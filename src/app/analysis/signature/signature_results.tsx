@@ -8,14 +8,14 @@ import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { createNotificationConnection } from "@/services/notificationHub";
 import {
-    findOverlayImage,
-    getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisVerdictLabel,
-    REFERENCE_SLOTS,
-    resolveCaseVerdict,
-    type OverlayVariant,
-    type SignatureAnalysisResult,
-    type SignatureAnalysisViewMode,
+  findOverlayImage,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisVerdictLabel,
+  REFERENCE_SLOTS,
+  resolveCaseVerdict,
+  type OverlayVariant,
+  type SignatureAnalysisResult,
+  type SignatureAnalysisViewMode,
 } from "@/services/signatureAnalysis";
 import { getAuthHeader } from "@/store/authStore";
 import { useUser } from "@/store/userStore";
@@ -26,17 +26,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "../../../constants/api";
 import { useAnalysisFlowStore } from "../../../store/analysisFlowStore";
@@ -44,9 +44,9 @@ import { useCaseStore, type CaseStatus } from "../../../store/caseStore";
 
 import VerdictCard from "@/_components/common/VerdIctCard";
 import {
-    fetchCaseForReview,
-    FinalVerdict,
-    type AdminCaseDetail,
+  fetchCaseForReview,
+  FinalVerdict,
+  type AdminCaseDetail,
 } from "@/services/caseReviewApi";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 
@@ -231,6 +231,9 @@ export function SignatureResultsScreen() {
       ? state.cases.find((c) => String(c.caseId) === safeCaseId)
       : undefined,
   );
+  const processingJob = useCaseStore((state) =>
+    safeCaseId ? state.processingJobs[safeCaseId] : undefined,
+  );
   const [reviewDetail, setReviewDetail] = useState<AdminCaseDetail | null>(
     null,
   );
@@ -252,9 +255,15 @@ export function SignatureResultsScreen() {
           setRemoteResultError("No analysis results found from the server.");
         }
       } else {
+        const storedAnalysisTimeMs =
+          useCaseStore.getState().signatureAnalysisResults[currentCaseId]
+            ?.analysisTimeMs;
         hydrateSignatureAnalysisResult(
           currentCaseId,
-          remoteResult,
+          {
+            ...remoteResult,
+            analysisTimeMs: storedAnalysisTimeMs,
+          },
           detail.caseStatus,
           detail.finalVerdict === FinalVerdict.Forged
             ? "Suspected"
@@ -648,9 +657,15 @@ export function SignatureResultsScreen() {
 
   const referenceSlots = [0, 1, 2, 3] as const;
 
-  const processingTime = activeResult?.analysisTimeMs
-    ? (activeResult.analysisTimeMs / 1000).toFixed(2)
-    : null;
+  const processingDurationMs =
+    activeResult?.analysisTimeMs ??
+    (processingJob?.status === "success"
+      ? processingJob.updatedAt - processingJob.startedAt
+      : undefined);
+  const processingTime =
+    processingDurationMs && processingDurationMs > 0
+      ? (processingDurationMs / 1000).toFixed(2)
+      : null;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -753,6 +768,18 @@ export function SignatureResultsScreen() {
                     year: "numeric",
                   })
                 : "—"}
+            </Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Subject Name</Text>
+            <Text style={styles.infoValue}>
+              {currentCase?.subjectName || "—"}
+            </Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Time</Text>
+            <Text style={styles.infoValue}>
+              {processingTime ? `${processingTime}s` : "—"}
             </Text>
           </View>
         </View>
@@ -1235,10 +1262,12 @@ const styles = StyleSheet.create({
   },
   infoGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
+    justifyContent: "space-between",
   },
   infoCard: {
-    flex: 1,
+    width: "48%",
     backgroundColor: colors.cardBackground,
     borderRadius: 10,
     padding: 12,
