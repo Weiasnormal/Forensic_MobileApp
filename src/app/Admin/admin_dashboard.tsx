@@ -22,9 +22,15 @@ import {
 import { useFeedbackStore } from "@/store/feedbackStore";
 import { useUser } from "@/store/userStore";
 import { limitDashboardName } from "@/utils/validation";
-import { Ionicons } from "@expo/vector-icons";
 import * as NavigationBar from "expo-navigation-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  ClipboardEdit,
+  FolderOpen,
+  IdCardLanyard,
+  Users,
+  type LucideIcon,
+} from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
@@ -391,13 +397,13 @@ function AdminHomeTab({
           <StatCard
             label="Active Analysts"
             value={String(activeAnalysts)}
-            icon="people-outline"
+            icon={Users}
             tint={colors.primary}
           />
           <StatCard
             label="Total Cases"
             value={String(totalCases)}
-            icon="folder-open-outline"
+            icon={FolderOpen}
             tint={colors.primary}
           />
         </View>
@@ -405,13 +411,13 @@ function AdminHomeTab({
           <StatCard
             label="Pending Review"
             value={String(pendingReviews.length)}
-            icon="shield-checkmark-outline"
+            icon={IdCardLanyard}
             tint="#D97706"
           />
           <StatCard
             label="Suspected Cases"
             value={String(suspectCount)}
-            icon="reader-outline"
+            icon={ClipboardEdit}
             tint="#E24B4A"
           />
         </View>
@@ -471,25 +477,25 @@ function AdminHomeTab({
 function StatCard({
   label,
   value,
-  icon,
+  icon: Icon,
   tint = colors.primary,
 }: {
   label: string;
   value: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon;
   tint?: string;
 }) {
   return (
     <View style={styles.statCard}>
-      <View style={[styles.statIconWrap, { backgroundColor: `${tint}1A` }]}>
-        <Ionicons name={icon} size={24} color={tint} />
-      </View>
-      <Text allowFontScaling={false} style={styles.statValue}>
-        {value}
-      </Text>
       <Text allowFontScaling={false} style={styles.statLabel}>
         {label}
       </Text>
+      <Text allowFontScaling={false} style={styles.statValue}>
+        {value}
+      </Text>
+      <View style={styles.statIconWrap}>
+        <Icon size={65} color={tint} strokeWidth={2} />
+      </View>
     </View>
   );
 }
@@ -571,30 +577,27 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.cardBackground,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    width: 175,
-    height: 137,
+    padding: 16,
+    minHeight: 150,
+    overflow: "hidden",
   },
   statIconWrap: {
-    width: 45,
-    height: 45,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
+    position: "absolute",
+    right: -3,
+    bottom: -10,
   },
   statValue: {
-    ...getTypographyStyle("t2Title"),
+    ...getTypographyStyle("largeTitle"),
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   statLabel: {
     ...getTypographyStyle("l2List"),
     color: colors.label,
-    marginTop: 2,
+    marginBottom: -10,
   },
   listGroup: {
     gap: 10,

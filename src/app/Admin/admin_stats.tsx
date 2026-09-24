@@ -3,25 +3,26 @@ import { getTypographyStyle } from "@/constants/typography";
 import { getTeamSummary, useAdminStore } from "@/store/adminStore";
 import { type SavedCase, useCaseStore } from "@/store/caseStore";
 import {
-    AlertCircle,
-    CheckCheck,
-    ChevronDown,
-    FolderOpen,
-    Info,
-    Users,
+  AlertCircle,
+  ChevronDown,
+  CircleCheck,
+  FolderOpen,
+  Info,
+  type LucideIcon,
+  Users,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    type DimensionValue,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  type DimensionValue,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
   SafeAreaView,
@@ -29,9 +30,8 @@ import {
 } from "react-native-safe-area-context";
 import Svg, { Circle, Polyline } from "react-native-svg";
 import {
-    AdminStatCard,
-    TeamOverviewCard,
-    type TeamOverviewData,
+  TeamOverviewCard,
+  type TeamOverviewData,
 } from "./cards";
 
 const TIME_RANGE_OPTIONS = [
@@ -254,19 +254,18 @@ export default function AdminStatsScreen() {
     };
   }, [filteredCases]);
 
+  const trendBuckets = useMemo(
+    () => buildTrendBuckets(cases, chartGranularity),
+    [cases, chartGranularity],
+  );
+
   const casesThisWeek = useMemo(() => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return cases.filter((item) => new Date(item.createdAt) >= weekAgo).length;
   }, [cases]);
 
-  const trendBuckets = useMemo(
-    () => buildTrendBuckets(cases, chartGranularity),
-    [cases, chartGranularity],
-  );
-
   const { activeCount, totalAnalysts } = getTeamSummary(teamMembers);
-  const totalRosterCount = totalAnalysts;
 
   const topAnalysts: TeamOverviewData[] = useMemo(
     () =>
@@ -304,43 +303,39 @@ export default function AdminStatsScreen() {
       >
         <View style={styles.statsGrid}>
           <View style={styles.statsGridRow}>
-            <AdminStatCard
+            <StatCard
               label="Active Analysts"
               value={String(activeCount)}
               icon={Users} // was "people-outline"
               tint={colors.primary}
-              subtext={`${activeCount} of ${totalRosterCount} total analysts`}
-              subtextColor="#94A3B8"
+              subtext={`${activeCount} of ${totalAnalysts} analysts`}
             />
-            <AdminStatCard
+            <StatCard
               label="Total Cases"
               value={String(summary.total)}
               icon={FolderOpen}
               tint={colors.primary}
               subtext={
                 casesThisWeek > 0
-                  ? `↑ ${casesThisWeek} this week`
+                  ? `${casesThisWeek} this week`
                   : "No new cases this week"
               }
-              subtextColor={colors.labelsuccess}
             />
           </View>
           <View style={styles.statsGridRow}>
-            <AdminStatCard
+            <StatCard
               label="Genuine Cases"
               value={String(summary.genuine)}
-              icon={CheckCheck}
+              icon={CircleCheck}
               tint={colors.labelsuccess}
               subtext={`${summary.genuinePercent}% of total`}
-              subtextColor={colors.labelsuccess}
             />
-            <AdminStatCard
+            <StatCard
               label="Suspected Cases"
               value={String(summary.suspected)}
               icon={AlertCircle}
               tint={colors.danger}
-              subtext={`${summary.suspectedPercent}% rate`}
-              subtextColor={colors.danger}
+              subtext={`${summary.suspectedPercent}% of total`}
             />
           </View>
         </View>
@@ -481,6 +476,43 @@ function TopAnalystsSkeleton({ opacity }: { opacity: Animated.Value }) {
         </View>
       ))}
     </>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  tint = colors.primary,
+  subtext,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  tint?: string;
+  subtext: string;
+}) {
+  return (
+    <View style={styles.statCard}>
+      <Text allowFontScaling={false} style={styles.statLabel}>
+        {label}
+      </Text>
+      <Text
+        allowFontScaling={false}
+        style={styles.statSubtext}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
+        {subtext}
+      </Text>
+      <Text allowFontScaling={false} style={styles.statValue}>
+        {value}
+      </Text>
+      <View style={styles.statIconWrap}>
+        <Icon size={65} color={tint} strokeWidth={2} />
+      </View>
+    </View>
   );
 }
 
@@ -736,6 +768,36 @@ const styles = StyleSheet.create({
   statsGridRow: {
     flexDirection: "row",
     gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    minHeight: 160,
+    overflow: "hidden",
+  },
+  statIconWrap: {
+    position: "absolute",
+    right: -3,
+    bottom: -10,
+  },
+  statValue: {
+    ...getTypographyStyle("largeTitle"),
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  statSubtext: {
+    ...getTypographyStyle("c2Caption", "regular"),
+    color: colors.textSecondary,
+    marginTop: 2,
+    marginBottom: -10,
+  },
+  statLabel: {
+    ...getTypographyStyle("l1List"),
+    color: colors.label,
   },
   sectionHeaderRow: {
     flexDirection: "row",
