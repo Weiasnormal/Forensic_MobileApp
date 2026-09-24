@@ -1,16 +1,20 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
-import { CASES_PAGE_SIZE, fetchBackendCases } from "@/services/backendCases";
 import {
-    notifyProcessingComplete,
-    notifyProcessingFailed,
+  CASES_PAGE_SIZE,
+  fetchBackendCases,
+  markBackendCaseViewed,
+} from "@/services/backendCases";
+import {
+  notifyProcessingComplete,
+  notifyProcessingFailed,
 } from "@/services/processingNotifications";
 import {
-    OverlayImageRef,
-    OverlaySlot,
-    OverlayVariant,
-    getSignatureAnalysisCaseStatus,
-    getSignatureAnalysisConfidence,
-    type SignatureAnalysisResult,
+  OverlayImageRef,
+  OverlaySlot,
+  OverlayVariant,
+  getSignatureAnalysisCaseStatus,
+  getSignatureAnalysisConfidence,
+  type SignatureAnalysisResult,
 } from "@/services/signatureAnalysis";
 import { getServerErrorMessage } from "@/utils/networkError";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,9 +23,9 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
-    getAuthHeader,
-    handleUnauthorizedResponse,
-    useAuthStore,
+  getAuthHeader,
+  handleUnauthorizedResponse,
+  useAuthStore,
 } from "./authStore";
 
 const VALID_SLOTS: OverlaySlot[] = [
@@ -221,6 +225,7 @@ interface CaseStore {
   hiddenSavedCases: SavedCase[] | null;
   signatureAnalysisResults: Record<string, SignatureAnalysisResult>;
   processingJobs: Record<string, ProcessingJob>;
+  viewedCaseIdsByUser: Record<string, string[]>;
   getProcessingJob: (caseId: string) => ProcessingJob | undefined;
   clearProcessingJob: (caseId: string) => void;
   clearUserScopedState: () => void;
@@ -255,7 +260,9 @@ interface CaseStore {
     index: number,
     uri: string | null,
   ) => void;
-  submitNewCase: (onCaseCreated?: (caseId: string) => void) => Promise<SavedCase>;
+  submitNewCase: (
+    onCaseCreated?: (caseId: string) => void,
+  ) => Promise<SavedCase>;
 
   submissionStatus: "idle" | "submitting" | "success" | "error";
   submissionStep: string;
@@ -387,6 +394,7 @@ export const useCaseStore = create<CaseStore>()(
         hiddenSavedCases: null,
         signatureAnalysisResults: {},
         processingJobs: {},
+        viewedCaseIdsByUser: {},
         submissionStatus: "idle",
         submissionStep: "",
         submissionProgress: 0,
@@ -423,11 +431,33 @@ export const useCaseStore = create<CaseStore>()(
         },
 
         markCaseResultViewed: (caseId) => {
-          set((state) => ({
-            cases: state.cases.map((item) =>
-              item.caseId === caseId ? { ...item, resultViewed: true } : item,
-            ),
-          }));
+          const userId = useAuthStore.getState().user?.userId?.trim();
+          if (!userId) return;
+
+          set((state) => {
+            const viewedCaseIds = new Set(
+              state.viewedCaseIdsByUser[userId] ?? [],
+            );
+            viewedCaseIds.add(caseId);
+
+            return {
+              viewedCaseIdsByUser: {
+                ...state.viewedCaseIdsByUser,
+                [userId]: [...viewedCaseIds],
+              },
+              cases: state.cases.map((item) =>
+                item.caseId === caseId ? { ...item, resultViewed: true } : item,
+              ),
+            };
+          });
+
+          void markBackendCaseViewed(caseId).catch((error) => {
+            caseLog.warn(
+              "CaseStore:Action",
+              `Unable to persist viewed state for case ${caseId}`,
+              error,
+            );
+          });
         },
 
         updateCaseStatus: (caseId, status) => {
@@ -510,10 +540,9 @@ export const useCaseStore = create<CaseStore>()(
             });
 
             set((state) => {
+              const userId = useAuthStore.getState().user?.userId?.trim();
               const viewedCaseIds = new Set(
-                state.cases
-                  .filter((item) => item.resultViewed)
-                  .map((item) => item.caseId),
+                userId ? (state.viewedCaseIdsByUser[userId] ?? []) : [],
               );
               const cases = result.cases.map((item) =>
                 viewedCaseIds.has(item.caseId)
@@ -1507,25 +1536,27 @@ export const useCaseStore = create<CaseStore>()(
         hiddenSavedCases: state.hiddenSavedCases,
         signatureAnalysisResults: state.signatureAnalysisResults,
         processingJobs: state.processingJobs,
+        viewedCaseIdsByUser: state.viewedCaseIdsByUser,
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as
           | (Partial<CaseStore> & { ownerUserId?: string | null })
           | undefined;
-        //const currentUserId = useAuthStore.getState().user?.userId?.trim();
-        // const persistedOwnerUserId = persisted?.ownerUserId?.trim();
+        const currentUserId = useAuthStore.getState().user?.userId?.trim();
+        const persistedOwnerUserId = persisted?.ownerUserId?.trim();
 
         if (!persisted?.cases) {
           return currentState;
         }
 
-        // TODO: Uncomment this owner check once every backend case includes
-        // createdByUserId and the persisted cache can be migrated safely.
-        /*
-        if (currentUserId && persistedOwnerUserId !== currentUserId) {
+        // Do not restore user-scoped cases before auth has identified the user.
+        if (!currentUserId) {
           return currentState;
         }
-        */
+
+        if (persistedOwnerUserId !== currentUserId) {
+          return currentState;
+        }
 
         return {
           ...currentState,
@@ -1542,6 +1573,8 @@ export const useCaseStore = create<CaseStore>()(
           savedDrafts: persisted.savedDrafts ?? currentState.savedDrafts,
           processingJobs:
             persisted.processingJobs ?? currentState.processingJobs,
+          viewedCaseIdsByUser:
+            persisted.viewedCaseIdsByUser ?? currentState.viewedCaseIdsByUser,
         };
       },
 

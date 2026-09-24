@@ -20,7 +20,6 @@ import {
 } from "react-native";
 import CaseCard from "../../_components/caseCards";
 import FilterCasesModal from "../../_components/modals/filtercases";
-import { markBackendCaseViewed } from "../../services/backendCases";
 import {
   formatCaseDateLabel,
   getCaseSummary,
@@ -171,9 +170,6 @@ export default function UserCasesScreen({
     // The result has now been seen, so it leaves the Pending list.
     if (!item.resultViewed) {
       markCaseResultViewed(item.caseId);
-      void markBackendCaseViewed(item.caseId).catch((error) => {
-        console.warn("Unable to persist case viewed state:", error);
-      });
     }
   };
 
