@@ -1,6 +1,6 @@
-import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import { ChevronRight, LucideIcon } from 'lucide-react-native';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../constants/colors';
 import { getTypographyStyle } from '../../constants/typography';
 
@@ -59,16 +59,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle('c1Caption', 'semiBold'),
     color: colors.textPrimary,
   },
   subtitle: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle('c1Caption', 'regular'),
     color: colors.textSecondary,
     marginTop: 2,
   },
   rightText: {
-    ...getTypographyStyle('c1Caption'),
+    ...getTypographyStyle('c2Caption'),
     color: colors.textTertiary,
     marginRight: 6,
     flexShrink: 1,
