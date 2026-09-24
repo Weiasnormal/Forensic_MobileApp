@@ -5,13 +5,21 @@ import ScreenHeader from "@/_components/common/ScreenHeader";
 import SectionLabel from "@/_components/common/SectionLabel";
 import SettingsRow from "@/_components/common/SettingsRow";
 import ConfirmActionModal from "@/_components/modals/confirm_action";
+import TypeToConfirmModal from "@/_components/modals/type_to_confirm";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { useAdminStore } from "@/store/adminStore";
 import { useCaseStore } from "@/store/caseStore";
 import { normalizePersonDisplay } from "@/utils/validation";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Folder, Minus, MinusCircle, Plus, UserX } from "lucide-react-native";
+import {
+  Folder,
+  Gauge,
+  Minus,
+  MinusCircle,
+  Plus,
+  UserX,
+} from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -65,6 +73,10 @@ const MemberDetailsScreen: React.FC = () => {
 
   const [confirmationVisible, setConfirmationVisible] = React.useState(false);
   const [isUpdatingAccess, setIsUpdatingAccess] = React.useState(false);
+  const [removeConfirmationVisible, setRemoveConfirmationVisible] =
+    React.useState(false);
+  const [removeTypeVisible, setRemoveTypeVisible] = React.useState(false);
+  const [isRemovingMember, setIsRemovingMember] = React.useState(false);
   useEffect(() => {
     if (memberId) {
       void fetchMemberById(memberId);
@@ -198,6 +210,7 @@ const MemberDetailsScreen: React.FC = () => {
         <Divider />
 
         <SettingsRow
+          icon={Gauge}
           title="Daily Case Limit"
           subtitle={
             limitDraft === null
@@ -228,10 +241,7 @@ const MemberDetailsScreen: React.FC = () => {
             icon={UserX}
             title="Remove from Organization"
             subtitle="Permanently remove access"
-            onPress={async () => {
-              await removeTeamMember(memberId);
-              router.back();
-            }}
+            onPress={() => setRemoveConfirmationVisible(true)}
           />
         ) : null}
       </ScrollView>
@@ -259,6 +269,38 @@ const MemberDetailsScreen: React.FC = () => {
             setConfirmationVisible(false);
           } finally {
             setIsUpdatingAccess(false);
+          }
+        }}
+      />
+
+      <ConfirmActionModal
+        visible={removeConfirmationVisible}
+        title={`Remove ${memberName} from the organization?`}
+        message="This action cannot be undone. All access will be permanently revoked."
+        confirmLabel="Remove"
+        onCancel={() => setRemoveConfirmationVisible(false)}
+        onConfirm={() => {
+          setRemoveConfirmationVisible(false);
+          setRemoveTypeVisible(true);
+        }}
+      />
+
+      <TypeToConfirmModal
+        visible={removeTypeVisible}
+        title="Type REMOVE to continue"
+        message="This confirms you want to permanently remove this member."
+        confirmWord="REMOVE"
+        confirmLabel="Remove"
+        isLoading={isRemovingMember}
+        onCancel={() => setRemoveTypeVisible(false)}
+        onConfirm={async () => {
+          setIsRemovingMember(true);
+          try {
+            await removeTeamMember(memberId);
+            setRemoveTypeVisible(false);
+            router.back();
+          } finally {
+            setIsRemovingMember(false);
           }
         }}
       />

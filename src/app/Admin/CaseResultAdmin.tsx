@@ -687,16 +687,6 @@ export default function CaseResultAdmin() {
                     isOverridden ? styles.overrideBanner : styles.confirmBanner,
                   ]}
                 >
-                  <Ionicons
-                    name={isOverridden ? "warning" : "checkmark-circle"}
-                    size={16}
-                    style={styles.finalDecisionIcon}
-                    color={
-                      isOverridden
-                        ? colors.statusSuspected
-                        : colors.statusGenuine
-                    }
-                  />
                   <Text style={[styles.finalDecisionText]}>
                     Your decision changes the result to:{" "}
                     <Text

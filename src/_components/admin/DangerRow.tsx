@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    ...getTypographyStyle("body", "semiBold"),
+    ...getTypographyStyle("c1Caption", "semiBold"),
     color: colors.danger,
   },
   subtitle: {
