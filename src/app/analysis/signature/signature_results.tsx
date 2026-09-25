@@ -727,12 +727,6 @@ export function SignatureResultsScreen() {
                 ? `Admin Override · Model: ${(modelConfidence || 0).toFixed(1)}% ${modelVerdictLabel}`
                 : `VERDICT · ${activeResult.case_name}`}
             </Text>
-
-            {processingTime && (
-              <Text style={styles.heroProcessingTime}>
-                Analysis completed in {processingTime}s
-              </Text>
-            )}
           </View>
         </View>
 
