@@ -1,11 +1,12 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import {
-    getAuthHeader,
-    handleUnauthorizedResponse,
-    useAuthStore,
+  getAuthHeader,
+  handleUnauthorizedResponse,
+  useAuthStore,
 } from "@/store/authStore";
 import type { AnalysisPriority, DocumentType } from "@/store/caseStore";
 import { getServerErrorMessage } from "@/utils/networkError";
+import { parseTimeElapsedMs } from "@/utils/timeElapsed";
 import { normalizePersonDisplay } from "@/utils/validation";
 
 /** Mirrors Avera.Domain/Cases/FinalVerdict.cs — do not reorder, values match backend exactly. */
@@ -136,6 +137,7 @@ export interface AdminCaseDetail {
   finalVerdict: FinalVerdict | null;
   isPdfExportAllowed: boolean;
   isFlaggedForInternalReview: boolean;
+  timeElapsedMs: number | null;
 }
 
 export class CaseReviewApiError extends Error {
@@ -328,6 +330,9 @@ function normalizeCaseDetail(raw: any): AdminCaseDetail {
     ),
     isFlaggedForInternalReview: normalizeBoolean(
       raw?.isFlaggedForInternalReview ?? raw?.IsFlaggedForInternalReview,
+    ),
+    timeElapsedMs: parseTimeElapsedMs(
+      raw?.timeElapsed ?? raw?.TimeElapsed,
     ),
   };
 }

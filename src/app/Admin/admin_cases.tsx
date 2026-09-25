@@ -7,28 +7,28 @@ import FilterCasesModal from "@/_components/modals/filtercases";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import {
-    formatCaseDateLabel,
-    getCaseSummary,
-    type SavedCase,
-    useCaseStore,
+  formatCaseDateLabel,
+  getCaseSummary,
+  type SavedCase,
+  useCaseStore,
 } from "@/store/caseStore";
 import {
-    caseMatchesSearch,
-    normalizeCaseSearchQuery,
+  caseMatchesSearch,
+  normalizeCaseSearchQuery,
 } from "@/utils/caseSearch";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SectionList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -111,6 +111,8 @@ export default function AdminCasesScreen({
     });
 
     const filteredCases = sortedCases.filter((item) => {
+      if (item.workflowStatus === "Processing") return false;
+
       const matchesMember =
         (!memberId && !memberName) ||
         ((item.userId ?? item.ownerUserId) &&
@@ -125,8 +127,6 @@ export default function AdminCasesScreen({
         (activeFilter === "Pending"
           ? item.workflowStatus === "PendingReview"
           : item.status === activeFilter ||
-            (activeFilter === "Processing" &&
-              item.workflowStatus === "Processing") ||
             item.documentType === activeFilter ||
             item.priority === activeFilter);
 
@@ -335,6 +335,7 @@ export default function AdminCasesScreen({
         visible={showFilter}
         onClose={() => setShowFilter(false)}
         cases={cases}
+        mode="admin"
         onApply={(filters) => {
           setAdvancedFilters(filters);
           setActiveFilter("All");

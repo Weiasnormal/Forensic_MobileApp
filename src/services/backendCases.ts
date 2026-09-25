@@ -1,15 +1,16 @@
 import { API_ENDPOINTS, API_KEY, buildApiUrl } from "@/constants/api";
 import { getAuthHeader, handleUnauthorizedResponse } from "@/store/authStore";
 import { getServerErrorMessage } from "@/utils/networkError";
+import { parseTimeElapsedMs } from "@/utils/timeElapsed";
 import { normalizePersonDisplay } from "@/utils/validation";
 
 import type {
-    AnalysisPriority,
-    AnalysisType,
-    CaseStatus,
-    CaseWorkflowStatus,
-    DocumentType,
-    SavedCase,
+  AnalysisPriority,
+  AnalysisType,
+  CaseStatus,
+  CaseWorkflowStatus,
+  DocumentType,
+  SavedCase,
 } from "@/store/caseStore";
 
 type BackendCaseRecord = {
@@ -47,6 +48,8 @@ type BackendCaseRecord = {
   IsFlaggedForInternalReview?: unknown;
   resultViewed?: unknown;
   ResultViewed?: unknown;
+  timeElapsed?: unknown;
+  TimeElapsed?: unknown;
 };
 
 const DEFAULT_DOCUMENT_TYPE = "Bank cheque";
@@ -255,6 +258,9 @@ function normalizeCaseRecord(record: BackendCaseRecord): SavedCase | null {
         record.Examiner ??
         record.createdByUserName ??
         record.CreatedByUserName,
+    ),
+    timeElapsedMs: parseTimeElapsedMs(
+      record.timeElapsed ?? record.TimeElapsed,
     ),
     userId: getOwnerUserId(record) ?? undefined,
     ownerUserId: getOwnerUserId(record) ?? undefined,

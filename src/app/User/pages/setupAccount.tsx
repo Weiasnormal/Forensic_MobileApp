@@ -173,15 +173,15 @@ export default function SetupAccount() {
         keyboardShouldPersistTaps="handled"
       >
         <Pressable style={styles.avatarWrap} onPress={pickImage}>
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
+          <View style={styles.avatarPlaceholder}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            ) : (
               <Text style={styles.avatarInitials}>
                 {getInitials(firstName, lastName)}
               </Text>
-            </View>
-          )}
+            )}
+          </View>
           <View style={styles.editBadge}>
             <Ionicons name="pencil" size={14} color={colors.primaryText} />
           </View>

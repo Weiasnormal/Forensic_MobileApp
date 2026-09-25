@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
 import {
-	Animated,
-	Modal,
-	Pressable,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
+    Animated,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
+import PrimaryButton from '@/_components/common/PrimaryButton';
+import SecondaryButton from '@/_components/common/SecondaryButton';
+import { colors } from '@/constants/colors';
+import { getTypographyStyle } from '@/constants/typography';
 import { type SavedCase } from '../../store/caseStore';
 import { isPendingCase } from '../../utils/pendingCase';
 import { useBottomSheetTransition } from '../transition';
-import { colors } from '@/constants/colors';
-import { getTypographyStyle } from '@/constants/typography';
-import SecondaryButton from '@/_components/common/SecondaryButton';
-import PrimaryButton from '@/_components/common/PrimaryButton';
 
 interface FilterCasesModalProps {
 	visible: boolean;
 	onClose: () => void;
 	cases: SavedCase[];
+	mode?: 'admin' | 'user';
 	onApply?: (filters: {
 		sortBy: string;
 		verdict: string | null;
@@ -31,14 +32,15 @@ interface FilterCasesModalProps {
 }
 
 const sortOptions = ['Newest first', 'Oldest first', 'Suspected first', 'Genuine first'];
-const verdictOptions = ['All', 'Genuine', 'Suspected', 'Processing'];
+const userVerdictOptions = ['All', 'Genuine', 'Suspected', 'Processing'];
+const adminVerdictOptions = ['All', 'Genuine', 'Suspected', 'Pending'];
 const priorityOptions = ['All', 'Low', 'Medium', 'High', 'Urgent'];
 
 const DEFAULT_SORT = sortOptions[0];
 const DEFAULT_VERDICT = 'All';
 const DEFAULT_PRIORITY = 'All';
 
-export default function FilterCasesModal({ visible, onClose, cases, onApply }: FilterCasesModalProps) {
+export default function FilterCasesModal({ visible, onClose, cases, mode = 'user', onApply }: FilterCasesModalProps) {
 	const { isMounted, sheetY, backdropOpacity, dragHandlePanHandlers } = useBottomSheetTransition({
 		visible,
 		onClose,
@@ -47,6 +49,7 @@ export default function FilterCasesModal({ visible, onClose, cases, onApply }: F
 	const [sortBy, setSortBy] = useState<string>(DEFAULT_SORT);
 	const [verdict, setVerdict] = useState<string | null>(DEFAULT_VERDICT);
 	const [priority, setPriority] = useState<string | null>(DEFAULT_PRIORITY);
+	const verdictOptions = mode === 'admin' ? adminVerdictOptions : userVerdictOptions;
 
 	if (!isMounted) return null;
 
@@ -55,7 +58,11 @@ export default function FilterCasesModal({ visible, onClose, cases, onApply }: F
 
 		if (verdictValue && verdictValue !== 'All') {
 			filteredCases = filteredCases.filter((item) => {
-				if (verdictValue === 'Pending') return isPendingCase(item);
+				if (verdictValue === 'Pending') {
+					return mode === 'admin'
+						? item.workflowStatus === 'PendingReview'
+						: isPendingCase(item);
+				}
 				if (verdictValue === 'Processing') return item.workflowStatus === 'Processing';
 				return item.status === verdictValue;
 			});
