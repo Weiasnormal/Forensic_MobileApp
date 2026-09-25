@@ -9,26 +9,26 @@ import { useRouter } from "expo-router";
 import { FileText, Search } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  SectionList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    SectionList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import CaseCard from "../../_components/caseCards";
 import FilterCasesModal from "../../_components/modals/filtercases";
 import {
-  formatCaseDateLabel,
-  getCaseSummary,
-  type SavedCase,
-  useCaseStore,
+    formatCaseDateLabel,
+    getCaseSummary,
+    type SavedCase,
+    useCaseStore,
 } from "../../store/caseStore";
 import {
-  caseMatchesSearch,
-  normalizeCaseSearchQuery,
+    caseMatchesSearch,
+    normalizeCaseSearchQuery,
 } from "../../utils/caseSearch";
 
 const quickFilters = ["All", "Genuine", "Suspected", "Processing"];
@@ -328,6 +328,7 @@ export default function UserCasesScreen({
         visible={showFilter}
         onClose={() => setShowFilter(false)}
         cases={cases}
+        mode="user"
         onApply={(filters) => {
           setAdvancedFilters(filters);
           setActiveFilter("All");
