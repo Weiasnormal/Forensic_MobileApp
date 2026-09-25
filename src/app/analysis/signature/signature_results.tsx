@@ -262,7 +262,7 @@ export function SignatureResultsScreen() {
           currentCaseId,
           {
             ...remoteResult,
-            analysisTimeMs: storedAnalysisTimeMs,
+            analysisTimeMs: detail.timeElapsedMs ?? storedAnalysisTimeMs,
           },
           detail.caseStatus,
           detail.finalVerdict === FinalVerdict.Forged
@@ -658,6 +658,7 @@ export function SignatureResultsScreen() {
   const referenceSlots = [0, 1, 2, 3] as const;
 
   const processingDurationMs =
+    reviewDetail?.timeElapsedMs ??
     activeResult?.analysisTimeMs ??
     (processingJob?.status === "success"
       ? processingJob.updatedAt - processingJob.startedAt

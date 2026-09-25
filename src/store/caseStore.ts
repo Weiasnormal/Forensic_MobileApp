@@ -192,6 +192,7 @@ export interface DraftCase {
 export interface SavedCase extends DraftCase {
   createdAt: string;
   examiner: string;
+  timeElapsedMs?: number | null;
   userId?: string;
   ownerUserId?: string;
   tenantId?: string;

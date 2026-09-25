@@ -142,8 +142,10 @@ export default function CaseResultAdmin() {
       ? "SUSPECTED"
       : "GENUINE"
     : "PENDING";
-  const processingTime = localAnalysisResult?.analysisTimeMs
-    ? `${(localAnalysisResult.analysisTimeMs / 1000).toFixed(2)}s`
+  const processingDurationMs =
+    caseDetail?.timeElapsedMs ?? localAnalysisResult?.analysisTimeMs;
+  const processingTime = processingDurationMs
+    ? `${(processingDurationMs / 1000).toFixed(2)}s`
     : "—";
 
   const isAlreadyReviewed = Boolean(
