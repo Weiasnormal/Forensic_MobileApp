@@ -58,10 +58,10 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ef70e5b5-66eb-40b0-8437-c3114d59338f"
+        "projectId": "1cfe9d98-f108-43c0-b013-1b2ce40c413c"
       }
     },
-    "owner": "weiasnormal",
+    "owner": "averaapplication",
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
