@@ -48,7 +48,9 @@
         "expo-build-properties",
         {
           "android": {
-            "buildArchs": ["arm64-v8a"]
+            "buildArchs": [
+              "arm64-v8a"
+            ]
           }
         }
       ]
@@ -56,11 +58,10 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "941bc4fe-82f8-42c3-83c9-9e48bd50bd30"
+        "projectId": "ef70e5b5-66eb-40b0-8437-c3114d59338f"
       }
     },
-    "owner": "averaapp",
-
+    "owner": "weiasnormal",
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
