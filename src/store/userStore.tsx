@@ -1,19 +1,20 @@
+import { API_KEY } from "@/constants/api";
 import {
-    fetchCurrentUser,
-    getProfilePictureUrl,
+  fetchCurrentUser,
+  getProfilePictureUrl,
 } from "@/services/authApi";
 import type { SignatureAnalysisViewMode } from "@/services/signatureAnalysis";
 import { normalizePersonName } from "@/utils/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
 import { useAuthStore } from "./authStore";
 
@@ -141,8 +142,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       let remoteAvatarUri = remoteProfile.avatarUri ?? null;
-      if (!localProfile.avatarUri && !remoteAvatarUri) {
-        const avatarUri = `${FileSystem.documentDirectory}avatars/avatar-current`;
+      if (!remoteAvatarUri) {
+        const cacheIdentity = (loadUserId || loadEmail || "current-user").replace(
+          /[^a-zA-Z0-9_-]/g,
+          "_",
+        );
+        const avatarUri = `${FileSystem.documentDirectory}avatars/avatar-${cacheIdentity}`;
         try {
           await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}avatars/`, {
             intermediates: true,
@@ -150,9 +155,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           const download = await FileSystem.downloadAsync(
             getProfilePictureUrl(),
             avatarUri,
-            { headers: { Authorization: `Bearer ${accessToken}` } },
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "X-Api-Key": API_KEY || "",
+              },
+            },
           );
-          remoteAvatarUri = download.uri;
+          if (download.status >= 200 && download.status < 300) {
+            remoteAvatarUri = download.uri;
+          }
         } catch {
           remoteAvatarUri = null;
         }
@@ -174,7 +186,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           localProfile.organization?.trim() ||
           "",
         dailyCaseLimit: remoteProfile.dailyCaseLimit ?? null,
-        avatarUri: localProfile.avatarUri ?? remoteAvatarUri,
+        avatarUri: remoteAvatarUri ?? localProfile.avatarUri ?? null,
         defaultResultView: localProfile.defaultResultView,
       };
       userRef.current = nextUser;
