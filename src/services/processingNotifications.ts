@@ -6,6 +6,8 @@ import { Platform } from "react-native";
 const IS_EXPO_GO =
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 const NOTIFICATIONS_ENABLED_KEY = "avera_notifications_enabled";
+const NOTIFICATION_PERMISSION_PROMPTED_KEY =
+  "avera_notification_permission_prompted";
 
 let notificationsModule: typeof ExpoNotifications | null = null;
 let loadAttempted = false;
@@ -55,9 +57,27 @@ export async function setNotificationsEnabledPreference(
   }
 
   if (value) {
-    return ensurePermission();
+    const granted = await ensurePermission();
+    try {
+      await AsyncStorage.setItem(NOTIFICATION_PERMISSION_PROMPTED_KEY, "true");
+    } catch (error) {
+      console.warn(
+        "[processingNotifications] Unable to persist permission prompt state",
+        error,
+      );
+    }
+    return granted;
   }
 
+  permissionRequested = false;
+  try {
+    await AsyncStorage.removeItem(NOTIFICATION_PERMISSION_PROMPTED_KEY);
+  } catch (error) {
+    console.warn(
+      "[processingNotifications] Unable to reset permission prompt state",
+      error,
+    );
+  }
   return true;
 }
 
@@ -84,6 +104,16 @@ export async function configureProcessingNotifications() {
     }
 
     isConfigured = true;
+    const enabled = await getNotificationsEnabledPreference();
+    if (enabled) {
+      const prompted = await AsyncStorage.getItem(
+        NOTIFICATION_PERMISSION_PROMPTED_KEY,
+      );
+      if (prompted !== "true") {
+        await ensurePermission();
+        await AsyncStorage.setItem(NOTIFICATION_PERMISSION_PROMPTED_KEY, "true");
+      }
+    }
   } catch (error) {
     console.warn("[processingNotifications] Setup failed", error);
   }
