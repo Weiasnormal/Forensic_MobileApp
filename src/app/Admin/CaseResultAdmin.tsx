@@ -28,9 +28,17 @@ import { normalizePersonDisplay } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  Animated,
+  LayoutChangeEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -62,6 +70,8 @@ export default function CaseResultAdmin() {
   const caseId = params.caseId ?? "";
 
   const [activeView, setActiveView] = useState<ViewMode>("Heatmap");
+  const [tabsWidth, setTabsWidth] = useState(0);
+  const viewTabAnimation = useRef(new Animated.Value(0)).current;
   const [caseDetail, setCaseDetail] = useState<AdminCaseDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -90,6 +100,17 @@ export default function CaseResultAdmin() {
   const localAnalysisResult = useCaseStore((s) =>
     caseId ? s.signatureAnalysisResults[caseId] : undefined,
   );
+
+  const handleViewChange = (mode: ViewMode, index: number) => {
+    setActiveView(mode);
+    Animated.timing(viewTabAnimation, {
+      toValue: index,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const viewTabWidth = tabsWidth > 0 ? (tabsWidth - 8) / viewModes.length : 0;
 
   const loadCase = useCallback(async () => {
     if (!caseId) {
@@ -493,14 +514,36 @@ export default function CaseResultAdmin() {
           </View>
         </View>
 
-        <View style={styles.viewTabsRow}>
-          {viewModes.map((mode) => {
+        <View
+          style={styles.viewTabsRow}
+          onLayout={(event: LayoutChangeEvent) =>
+            setTabsWidth(event.nativeEvent.layout.width)
+          }
+        >
+          {tabsWidth > 0 && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.viewTabPill,
+                {
+                  width: viewTabWidth,
+                  transform: [
+                    { translateX: viewTabAnimation.interpolate({
+                      inputRange: [0, 1, 2],
+                      outputRange: [0, viewTabWidth, viewTabWidth * 2],
+                    }) },
+                  ],
+                },
+              ]}
+            />
+          )}
+          {viewModes.map((mode, index) => {
             const selected = mode === activeView;
             return (
               <Pressable
                 key={mode}
-                onPress={() => setActiveView(mode)}
-                style={[styles.viewTab, selected && styles.viewTabActive]}
+                onPress={() => handleViewChange(mode, index)}
+                style={styles.viewTab}
               >
                 <Text
                   style={[
@@ -1010,19 +1053,32 @@ const styles = StyleSheet.create({
   },
   infoValue: { ...getTypographyStyle("b3Button"), color: colors.textPrimary },
 
-  viewTabsRow: { flexDirection: "row", gap: 8 },
+  viewTabsRow: {
+    flexDirection: "row",
+    backgroundColor: colors.background,
+    borderRadius: 18,
+    padding: 4,
+    position: "relative",
+  },
+  viewTabPill: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    bottom: 4,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 14,
+    elevation: 2,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
   viewTab: {
     flex: 1,
     paddingVertical: 10,
     alignItems: "center",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.dividerLight,
-    backgroundColor: colors.cardBackground,
-  },
-  viewTabActive: {
-    backgroundColor: colors.cardBackground,
-    borderColor: colors.statsBackground,
+    borderRadius: 14,
+    zIndex: 1,
   },
   viewTabText: {
     ...getTypographyStyle("b3Button"),
