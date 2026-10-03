@@ -3,7 +3,7 @@ import ToggleSwitch from "@/_components/common/ToggleSwitch";
 import { useBottomSheetTransition } from "@/_components/transition";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
-import { Check, X } from "lucide-react-native";
+import { Check, ScanLine, X } from "lucide-react-native";
 import React from "react";
 import {
     Animated,
@@ -59,7 +59,7 @@ export default function CropGuideModal({
           style={[
             styles.sheet,
             {
-              paddingBottom: Math.max(28, insets.bottom + 16),
+              paddingBottom: Math.max(36, insets.bottom + 24),
               transform: [{ translateY: sheetY }],
             },
           ]}
@@ -73,6 +73,17 @@ export default function CropGuideModal({
             Drag the frame tight around the signature. Leave out paper edges
             and lines.
           </Text>
+
+          <View style={styles.whyRow}>
+            <View style={styles.whyIcon}>
+              <ScanLine size={18} color={colors.primary} strokeWidth={1.8} />
+            </View>
+            <View style={styles.whyContent}>
+              <Text style={styles.whyText} allowFontScaling={false}>
+                Use a flatbed scan for best results.
+              </Text>
+            </View>
+          </View>
 
           <View style={styles.compareRow}>
             <View style={styles.compareCard}>
@@ -142,12 +153,6 @@ export default function CropGuideModal({
             </View>
           </View>
 
-          <View style={styles.whyRow}>
-            <Text style={styles.whyText} allowFontScaling={false}>
-              Keeps the background out for a more accurate match.
-            </Text>
-          </View>
-
           <View style={styles.preferenceRow}>
             <Text style={styles.preferenceText} allowFontScaling={false}>
               Show again next time
@@ -177,8 +182,8 @@ const styles = StyleSheet.create({
     borderTopColor: colors.sheetBorder,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingHorizontal: 22,
-    paddingTop: 10,
+    paddingHorizontal: 24,
+    paddingTop: 14,
   },
   handle: {
     width: 36,
@@ -186,21 +191,21 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.sheetHandle,
     alignSelf: "center",
-    marginBottom: 18,
+    marginBottom: 22,
   },
   title: {
     ...getTypographyStyle("t3Title"),
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   description: {
     ...getTypographyStyle("c1Caption", "regular"),
     color: colors.textSecondary,
     lineHeight: 18,
-    marginBottom: 18,
+    marginBottom: 22,
   },
-  compareRow: { flexDirection: "row", gap: 14, marginBottom: 18 },
-  compareCard: { flex: 1, gap: 8 },
+  compareRow: { flexDirection: "row", gap: 16, marginBottom: 22 },
+  compareCard: { flex: 1, gap: 10 },
   diagram: {
     height: 92,
     backgroundColor: colors.cardBackground,
@@ -223,10 +228,26 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   whyRow: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 14,
-    marginBottom: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 15,
+  },
+  whyIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: colors.background2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  whyContent: {
+    flex: 1,
   },
   whyText: {
     ...getTypographyStyle("c1Caption", "regular"),
@@ -238,7 +259,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 22,
   },
   preferenceText: {
     ...getTypographyStyle("c1Caption", "regular"),
