@@ -16,10 +16,10 @@ export const colors = {
   label: "#94A3B8",
   labelsuccess: "#16A34A",
 
-  danger: "#DC2626",
+  danger: "#E24B4A",
   dangerLight: "#FEF2F2",
   dangerBorder: "#FECACA",
-  dangerButton: '#E54848',
+  dangerButton: '#E24B4A',
 
   warningBackground: "#F7F8FA",
   warningBorder: "#ECEEF1",
@@ -37,7 +37,7 @@ export const colors = {
   resultBackground: "#f3f5f7",
 
   // Case status
-  statusSuspected: "#DC2626",
+  statusSuspected: "#E24B4A",
   statusSuspectedBg: "#FEF2F2",
   statusGenuine: "#16A34A",
   statusGenuineBg: "#F1FAF4",
@@ -47,7 +47,7 @@ export const colors = {
   statusDraftBg: "#EFEFEF",
 
   // Case priority
-  priorityUrgent: "#DC2626",
+  priorityUrgent: "#E24B4A",
   priorityHigh: "#64748B",
   priorityMedium: "#64748B",
   priorityLow: "#64748B",

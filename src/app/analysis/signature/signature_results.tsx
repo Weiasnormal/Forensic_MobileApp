@@ -24,9 +24,17 @@ import * as FileSystem from "expo-file-system/legacy";
 import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  Animated,
+  LayoutChangeEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -338,6 +346,10 @@ export function SignatureResultsScreen() {
   const [activeView, setActiveView] = useState<ViewMode>(
     profile.defaultResultView ?? "Heatmap",
   );
+  const [tabsWidth, setTabsWidth] = useState(0);
+  const viewTabAnimation = useRef(
+    new Animated.Value(viewModes.indexOf(activeView)),
+  ).current;
   const insets = useSafeAreaInsets();
   const [previewSource, setPreviewSource] = useState<{ uri: string } | null>(
     null,
@@ -350,6 +362,17 @@ export function SignatureResultsScreen() {
   } | null>(null);
 
   const activeTone = useMemo(() => VIEW_MODE_THEME[activeView], [activeView]);
+
+  const handleViewChange = (mode: ViewMode, index: number) => {
+    setActiveView(mode);
+    Animated.timing(viewTabAnimation, {
+      toValue: index,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const viewTabWidth = tabsWidth > 0 ? (tabsWidth - 8) / viewModes.length : 0;
 
   const payloadRows = useMemo(() => {
     if (!analysisResult) return [];
@@ -671,7 +694,13 @@ export function SignatureResultsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <TopBar
-        title="Upload Signatures"
+        title={String(
+          params.caseId ??
+            currentCase?.caseCode ??
+            currentCaseId ??
+            activeResult.case_name ??
+            "Case",
+        )}
         step={""}
         onBackPress={() => nav.back()}
       />
@@ -779,14 +808,36 @@ export function SignatureResultsScreen() {
           </View>
         </View>
 
-        <View style={styles.viewTabsRow}>
-          {viewModes.map((mode) => {
+        <View
+          style={styles.viewTabsRow}
+          onLayout={(event: LayoutChangeEvent) =>
+            setTabsWidth(event.nativeEvent.layout.width)
+          }
+        >
+          {tabsWidth > 0 && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.viewTabPill,
+                {
+                  width: viewTabWidth,
+                  transform: [
+                    { translateX: viewTabAnimation.interpolate({
+                      inputRange: [0, 1, 2],
+                      outputRange: [0, viewTabWidth, viewTabWidth * 2],
+                    }) },
+                  ],
+                },
+              ]}
+            />
+          )}
+          {viewModes.map((mode, index) => {
             const selected = mode === activeView;
             return (
               <Pressable
                 key={mode}
-                onPress={() => setActiveView(mode)}
-                style={[styles.viewTab, selected && styles.viewTabActive]}
+                onPress={() => handleViewChange(mode, index)}
+                style={styles.viewTab}
               >
                 <Text
                   style={[
@@ -1278,19 +1329,33 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: 6,
   },
-  viewTabsRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+  viewTabsRow: {
+    flexDirection: "row",
+    backgroundColor: colors.background,
+    borderRadius: 18,
+    padding: 4,
+    marginTop: 8,
+    position: "relative",
+  },
+  viewTabPill: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    bottom: 4,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 14,
+    elevation: 2,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
   viewTab: {
     flex: 1,
     paddingVertical: 10,
     alignItems: "center",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.dividerLight,
-    backgroundColor: colors.cardBackground,
-  },
-  viewTabActive: {
-    backgroundColor: colors.cardBackground,
-    borderColor: colors.statsBackground,
+    borderRadius: 14,
+    zIndex: 1,
   },
   viewTabText: {
     ...getTypographyStyle("b3Button"),

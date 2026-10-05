@@ -276,11 +276,11 @@ const MemberDetailsScreen: React.FC = () => {
         title={isSuspended ? "Unsuspend analyst?" : "Suspend analyst?"}
         message={
           isSuspended
-            ? "This will restore the analyst's organization access. Continue?"
-            : "This will temporarily disable the analyst's access. Continue?"
+            ? "The analyst will regain access to the system if reactivated."
+            : "The analyst will lose access to the system until reactivated."
         }
         confirmLabel={isSuspended ? "Unsuspend" : "Suspend"}
-        variant={isSuspended ? "success" : "danger"}
+        variant={isSuspended ? "primary" : "danger"}
         isLoading={isUpdatingAccess}
         onCancel={() => setConfirmationVisible(false)}
         onConfirm={async () => {
@@ -416,7 +416,7 @@ const MemberDetailsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.cardBackground,
   },
   content: {
     padding: 16,

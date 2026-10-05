@@ -3,7 +3,6 @@ import PermissionDisclosure from "@/_components/common/PermissionDisclosure";
 import PrimaryButton from "@/_components/common/PrimaryButton";
 import CropGuideModal from "@/_components/modals/crop_guide_modal";
 import ErrorModal from "@/_components/modals/error_modal";
-import { scanForensicDocument } from "@/_components/modals/media_source_picker";
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
 import { hasCompleteUploads, useCaseStore } from "@/store/caseStore";
@@ -11,6 +10,10 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import * as FileSystem from "expo-file-system/legacy";
+import DocumentScanner, {
+  ResponseType,
+  ScanDocumentResponseStatus,
+} from "react-native-document-scanner-plugin";
 import { useRouter } from "expo-router";
 import { Info, Plus } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
@@ -32,6 +35,37 @@ import {
 const UPLOAD_DIRECTORY = `${FileSystem.documentDirectory ?? ""}case-uploads/`;
 const CROP_GUIDE_SEEN_KEY = "avera:hasSeenCropGuide";
 const CROP_GUIDE_AUTO_SHOW_KEY = "avera:showCropGuideAutomatically";
+
+async function scanForensicDocument(
+  onImageScanned: (uri: string) => void,
+  onError?: (title: string, message: string) => void,
+): Promise<boolean> {
+  try {
+    const { scannedImages, status } = await DocumentScanner.scanDocument({
+      croppedImageQuality: 100,
+      maxNumDocuments: 1,
+      responseType: ResponseType.ImageFilePath,
+    });
+
+    if (
+      status === ScanDocumentResponseStatus.Cancel ||
+      !scannedImages?.length
+    ) {
+      onError?.(
+        "Scan not completed",
+        "Try again without the clean-up tool.",
+      );
+      return false;
+    }
+
+    onImageScanned(scannedImages[0]);
+    return true;
+  } catch (error) {
+    console.error("[scanForensicDocument] threw:", error);
+    onError?.("Scanner Error", "Failed to initialize the document scanner.");
+    return false;
+  }
+}
 
 function getFileExtension(uri: string): string {
   const sanitizedUri = uri.split("?")[0].split("#")[0];
@@ -211,6 +245,15 @@ export default function SignatureUploadsRoute() {
     target: "reference" | "suspect",
     refIndex?: number,
   ) => {
+    if (target === "suspect" && !uploads.references.every(Boolean)) {
+      setErrorModal({
+        title: "Complete references first",
+        message:
+          "Fill in all four reference signatures before adding the suspected signature.",
+      });
+      return;
+    }
+
     handleCameraPress(target, refIndex);
   };
 
@@ -283,7 +326,7 @@ export default function SignatureUploadsRoute() {
             </Pressable>
           </View>
           <Text style={styles.sectionSubheading} allowFontScaling={false}>
-            Upload 4 reference signatures
+            Add 4 reference samples
           </Text>
         </View>
         <View style={styles.referenceGrid}>
@@ -347,13 +390,13 @@ export default function SignatureUploadsRoute() {
         <View style={styles.suspectHeader}>
           <Text style={styles.sectionHeading}>Suspected Signature</Text>
           <Text style={styles.sectionSubheading}>
-            Upload the signature to be verified
+            Add 1 sample to verify
           </Text>
         </View>
         <Pressable
           onPress={() => {
             if (uploads.suspect) {
-              openPreview(uploads.suspect, "Suspected Signature");
+              openPreview(uploads.suspect, "Suspected Sample");
               return;
             }
 
@@ -369,9 +412,7 @@ export default function SignatureUploadsRoute() {
               <View style={styles.suspectUploadButton}>
                 <Ionicons name="add" size={28} color={colors.suspectAccent} />
               </View>
-              <Text style={styles.suspectSlotTitle}>
-                Add suspected signature
-              </Text>
+              <Text style={styles.suspectSlotTitle}>Add suspected signature</Text>
               <Text style={styles.suspectSlotSubtitle}>
                 Tap to upload or take a photo
               </Text>
