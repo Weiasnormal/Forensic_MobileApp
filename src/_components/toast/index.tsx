@@ -1,14 +1,19 @@
 import { colors } from "@/constants/colors";
 import { getTypographyStyle } from "@/constants/typography";
-import { AlertCircle, CheckCircle2, Info, LucideIcon } from "lucide-react-native";
+import {
+    AlertCircle,
+    CheckCircle2,
+    Info,
+    LucideIcon,
+} from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AccessibilityInfo,
-  Animated,
-  Easing,
-  StyleSheet,
-  Text,
-  ViewStyle,
+    AccessibilityInfo,
+    Animated,
+    Easing,
+    StyleSheet,
+    Text,
+    ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -184,7 +189,10 @@ const Toast: React.FC<ToastProps> = ({
   // Auto-dismiss. A new message or replayKey restarts the countdown.
   useEffect(() => {
     if (!visible) return;
-    const timeout = setTimeout(() => onDismissRef.current?.(), resolvedDuration);
+    const timeout = setTimeout(
+      () => onDismissRef.current?.(),
+      resolvedDuration,
+    );
     return () => clearTimeout(timeout);
   }, [visible, resolvedDuration, message, replayKey]);
 
@@ -199,7 +207,9 @@ const Toast: React.FC<ToastProps> = ({
     <Animated.View
       pointerEvents="none"
       accessibilityRole="alert"
-      accessibilityLiveRegion={content.variant === "error" ? "assertive" : "polite"}
+      accessibilityLiveRegion={
+        content.variant === "error" ? "assertive" : "polite"
+      }
       style={[
         styles.wrap,
         { bottom: Math.max(18, insets.bottom + 12) },
@@ -296,8 +306,8 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 16, // matches GroupedCard and the other cards
-    shadowColor: "#000", // FLAG: no black token exists in colors.ts, left as is
+    borderRadius: 16,
+    shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },

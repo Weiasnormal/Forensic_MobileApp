@@ -1320,8 +1320,6 @@ const styles = StyleSheet.create({
     minHeight: 118,
     gap: 6,
   },
-  // rgba(255,255,255,0.65) doesn't match either iconBadgeBackground token
-  // (0.88/0.90 opacity) closely enough to swap silently — flagging, left as-is.
   thumbPlaceholderIconWrap: {
     width: 56,
     height: 56,
@@ -1374,15 +1372,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.7)", // same translucent-white flag as thumbPlaceholderIconWrap
+    backgroundColor: "rgba(255,255,255,0.7)",
   },
   suspectLabel: {
     ...getTypographyStyle("b3Button"),
-    color: colors.danger, // #EF4444 approximated to danger #DC2626, not exact
+    color: colors.danger,
   },
   suspectHint: {
     ...getTypographyStyle("b3Button"),
-    color: colors.suspectAccent, // exact semantic fit — this is literally the "suspect" amber family
+    color: colors.suspectAccent,
     marginTop: 4,
   },
   previewBackdrop: {
@@ -1415,7 +1413,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.statsBackground, // same #F1F5F9 approximation as above
+    backgroundColor: colors.statsBackground,
   },
   previewImage: {
     width: "100%",
@@ -1424,7 +1422,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  /* Findings detail modal styles */
   findingsModalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.6)",

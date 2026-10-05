@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.cardBorderMuted, // FLAG — was '#E3EAF3', unconfirmed exact match
+    borderColor: colors.cardBorderMuted,
     paddingVertical: 12,
     paddingHorizontal: 20,
     overflow: "hidden",
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   buttonText: {
-    ...getTypographyStyle("c2Caption", "bold"), // matches size (12) + weight (bold≈800) closely
+    ...getTypographyStyle("c2Caption", "bold"),
     color: colors.primary,
   },
   urgentButton: {

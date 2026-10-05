@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.dividerLight, // FLAG — was '#EEF2F7', unconfirmed exact match
+    borderBottomColor: colors.dividerLight,
   },
   avatar: {
     width: 38,
@@ -116,13 +116,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   name: {
-    ...getTypographyStyle("headline"), // exact match: 14/bold ≈ original 14/700 — no flag
+    ...getTypographyStyle("headline"),
     color: colors.textPrimary,
     flex: 1,
   },
   countLine: {
-    ...getTypographyStyle("c1Caption"), // exact match: 13/semiBold ≈ original 13/600 — no flag
-    color: colors.textSecondary, // FLAG — was '#64748B', differs from your confirmed textSecondary hex '#667085'
+    ...getTypographyStyle("c1Caption"),
+    color: colors.textSecondary,
   },
   metaColumn: {
     alignItems: "flex-end",
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
   },
   countValue: {
-    ...getTypographyStyle("headline"), // FLAG — was fontWeight:'900'; headline is bold(700), no '900' token exists
+    ...getTypographyStyle("headline"),
     color: colors.primary,
   },
 });

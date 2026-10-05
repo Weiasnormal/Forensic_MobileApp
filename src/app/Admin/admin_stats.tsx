@@ -3,36 +3,33 @@ import { getTypographyStyle } from "@/constants/typography";
 import { getTeamSummary, useAdminStore } from "@/store/adminStore";
 import { type SavedCase, useCaseStore } from "@/store/caseStore";
 import {
-  AlertCircle,
-  ChevronDown,
-  CircleCheck,
-  FolderOpen,
-  Info,
-  type LucideIcon,
-  Users,
+    AlertCircle,
+    ChevronDown,
+    CircleCheck,
+    FolderOpen,
+    Info,
+    type LucideIcon,
+    Users,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  type DimensionValue,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    type DimensionValue,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
+    SafeAreaView,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import Svg, { Circle, Polyline } from "react-native-svg";
-import {
-  TeamOverviewCard,
-  type TeamOverviewData,
-} from "./cards";
+import { TeamOverviewCard, type TeamOverviewData } from "./cards";
 
 const TIME_RANGE_OPTIONS = [
   "Today",
@@ -718,7 +715,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   title: {
-    ...getTypographyStyle("t1Title"), 
+    ...getTypographyStyle("t1Title"),
     color: colors.textPrimary,
     letterSpacing: -0.6,
   },
@@ -734,7 +731,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   pillText: {
-    ...getTypographyStyle("l2List"), // FLAG — was 12px, token is 11px
+    ...getTypographyStyle("l2List"),
     color: colors.label,
   },
   dropdownMenu: {
@@ -755,10 +752,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   dropdownOptionPressed: {
-    backgroundColor: "#F2F6FE", // FLAG — no matching token identified
+    backgroundColor: "#F2F6FE",
   },
   dropdownOptionText: {
-    ...getTypographyStyle("headline"), // exact match: 14/bold
+    ...getTypographyStyle("headline"),
     color: colors.textPrimary,
   },
   statsGrid: {
@@ -816,7 +813,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background2,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#DDE6F2", // FLAG — no matching token identified
+    borderColor: "#DDE6F2",
     padding: 16,
     marginBottom: 16,
     shadowColor: "#0F172A",
@@ -841,7 +838,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   legendText: {
-    ...getTypographyStyle("c2Caption"), // exact match: 11/semiBold
+    ...getTypographyStyle("c2Caption"),
     color: colors.label,
   },
   axisRow: {
@@ -851,7 +848,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   axisLabel: {
-    ...getTypographyStyle("c3Caption"), // exact match: 10/semiBold
+    ...getTypographyStyle("c3Caption"),
     flex: 1,
     textAlign: "center",
     color: colors.label,
@@ -862,7 +859,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   docLabel: {
-    ...getTypographyStyle("headline"), // exact match: 14/bold
+    ...getTypographyStyle("headline"),
     width: 112,
     color: colors.textPrimary,
   },
@@ -873,7 +870,7 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 5,
     borderRadius: 999,
-    backgroundColor: "#E2E8F0", // FLAG — no matching token identified
+    backgroundColor: "#E2E8F0",
     overflow: "hidden",
   },
   progressFill: {
@@ -882,7 +879,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   docCount: {
-    ...getTypographyStyle("headline"), // exact match: 14/bold
+    ...getTypographyStyle("headline"),
     width: 20,
     textAlign: "right",
     color: colors.textPrimary,
@@ -913,7 +910,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.textSecondary,
   },
-  // ── Document Types skeleton ──
   skeletonDocRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -937,7 +933,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: colors.skeletonLight,
   },
-  // ── Top Analysts skeleton ──
   skeletonAnalystRow: {
     flexDirection: "row",
     alignItems: "center",

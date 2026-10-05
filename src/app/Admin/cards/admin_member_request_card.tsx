@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.cardBorderMuted, // FLAG — was '#E3EAF3', unconfirmed exact match
+    borderColor: colors.cardBorderMuted,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -80,24 +80,24 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: colors.badgeBackground, // FLAG — was '#EAF3FF', unconfirmed exact match
+    backgroundColor: colors.badgeBackground,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    ...getTypographyStyle("l1List"), // FLAG — was fontSize:13, fontWeight:'800' (no '800' token exists; using bold)
+    ...getTypographyStyle("l1List"),
     color: colors.primary,
   },
   info: {
     flex: 1,
   },
   name: {
-    ...getTypographyStyle("l1List"), // FLAG — same '800'→bold note as above
+    ...getTypographyStyle("l1List"),
     color: colors.textPrimary,
   },
   timeAgo: {
     ...getTypographyStyle("c2Caption"),
-    color: colors.textTertiary, // FLAG — was '#94A3B8', unconfirmed exact match
+    color: colors.textTertiary,
     marginTop: 1,
   },
   actions: {
@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconButtonAccept: {
-    backgroundColor: colors.successBg, // FLAG — was '#ECFDF3', unconfirmed exact match
+    backgroundColor: colors.successBg,
   },
   iconButtonReject: {
-    backgroundColor: colors.dangerBgAlt, // FLAG — was '#FEF1F1', unconfirmed exact match (dangerLight is the alt candidate)
+    backgroundColor: colors.dangerBgAlt,
   },
 });

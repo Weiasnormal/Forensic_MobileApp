@@ -98,11 +98,11 @@ const styles = StyleSheet.create({
   },
   boldText: {
     fontWeight: "bold",
-    color: colors.textSecondary, // Match description color but bolder
+    color: colors.textSecondary,
   },
   quoteContainer: {
     marginTop: 12,
-    backgroundColor: colors.background, // Light gray/blue background
+    backgroundColor: colors.background,
     borderLeftWidth: 3,
     borderLeftColor: colors.textSecondary,
     borderTopRightRadius: 8,
