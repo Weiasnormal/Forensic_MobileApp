@@ -3,7 +3,7 @@ export type AppRole = "user" | "admin";
 export const DEFAULT_ROLE: AppRole = "user";
 
 export const ROLE_LABEL: Record<AppRole, string> = {
-  user: "Forensic Analyst",
+  user: "Forensic Document Examiner",
   admin: "Org Admin",
 };
 
@@ -14,7 +14,7 @@ export const ROLE_SETTINGS = {
       redirectTo: "/User/user_dashboard" as const,
     },
     signUp: {
-      subtitle: "Almost there. Joining as a Forensic Analyst",
+      subtitle: "Almost there. Joining as a Forensic Document Examiner",
       emailPlaceholder: "user@institution.gov.ph",
     },
     signUpCode: {
