@@ -65,7 +65,7 @@ const OrgInviteCodeScreen: React.FC = () => {
 
         <Text style={styles.code}>{inviteCode ?? '— — — — — — —'}</Text>
         <Text style={styles.caption}>
-          Share this code with analysts to let them join your organization.
+          Share this code with examiners to let them join your organization.
         </Text>
 
         <PrimaryButton

@@ -227,7 +227,7 @@ export default function UserCasesScreen({
         {showSearchFeedback ? (
           <>
             <Text allowFontScaling={false} style={styles.searchHint}>
-              Search covers case code, subject, analyst username, document type,
+              Search covers case code, subject, examiner username, document type,
               priority, date, genuine, suspected, or processing.
             </Text>
           </>

@@ -204,7 +204,7 @@ export default function UserDashboardScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.5}
               >
-                Hello, Analyst {limitDashboardName(user?.lastName || "")}
+                Hello, Examiner {limitDashboardName(user?.lastName || "")}
               </Text>
             </View>
             <View style={styles.homeHeaderActions}>

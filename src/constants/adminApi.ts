@@ -1,4 +1,4 @@
-// Admin and tenant routes are kept separate from the analyst-facing endpoint map.
+// Admin and tenant routes are kept separate from the examiner-facing endpoint map.
 
 export const ADMIN_API_ENDPOINTS = {
   team: {

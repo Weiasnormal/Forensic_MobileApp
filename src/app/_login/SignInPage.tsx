@@ -348,13 +348,13 @@ export default function LogInPage() {
         visible={!!welcomeInfo}
         title={
           welcomeInfo?.isFirstTime
-            ? `Welcome ${resolvedRole === "admin" ? "Admin" : "Analyst"}!`
-            : `Welcome back, ${resolvedRole === "admin" ? "Admin" : "Analyst"}!`
+            ? `Welcome ${resolvedRole === "admin" ? "Admin" : "Examiner"}!`
+            : `Welcome back, ${resolvedRole === "admin" ? "Admin" : "Examiner"}!`
         }
         message={
           welcomeInfo?.isFirstTime
-            ? `Your ${resolvedRole === "admin" ? "admin" : "analyst"} account is ready.`
-            : `Your ${resolvedRole === "admin" ? "admin" : "analyst"} account is ready. Your dashboard and case queue are ready.`
+            ? `Your ${resolvedRole === "admin" ? "admin" : "examiner"} account is ready.`
+            : `Your ${resolvedRole === "admin" ? "admin" : "examiner"} account is ready. Your dashboard and case queue are ready.`
         }
         primaryLabel="Continue"
         onPrimaryPress={handleDismissWelcome}

@@ -395,7 +395,7 @@ function AdminHomeTab({
       <View style={styles.statsGrid}>
         <View style={styles.statsGridRow}>
           <StatCard
-            label="Active Analysts"
+            label="Active Examiners"
             value={String(activeAnalysts)}
             icon={Users}
             tint={colors.primary}

@@ -202,8 +202,8 @@ export default function AdminTeamScreen() {
           </View>
         ) : (
           <EmptyStateCard
-            title="No analysts yet"
-            subtitle="Share your invite code to add analysts."
+            title="No examiners yet"
+            subtitle="Share your invite code to add examiners."
             icon={require("../../../assets/images/no_analyst.png")}
           />
         )}

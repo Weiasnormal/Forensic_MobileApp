@@ -14,9 +14,9 @@ interface FAQEntry {
 
 const FAQ_ITEMS: FAQEntry[] = [
 	{
-		question: 'How do I add analysts to my org?',
+		question: 'How do I add examiners to my org?',
 		answer:
-			'Go to Manage Team & Approvals from your profile, then tap Invite Analyst. Share the generated org invite code with the person you want to add — they\'ll enter it during sign up to join your organization.',
+			'Go to Manage Team & Approvals from your profile, then tap Invite Examiner. Share the generated org invite code with the person you want to add — they\'ll enter it during sign up to join your organization.',
 	},
 	{
 		question: 'What does Suspected mean?',
@@ -24,19 +24,19 @@ const FAQ_ITEMS: FAQEntry[] = [
 			'A case is marked Suspected when the signature verification model detects significant deviation from the reference signature beyond the configured confidence threshold. It flags the case for closer manual review, not a final determination.',
 	},
 	{
-		question: "Can I restrict an analyst's workload?",
+		question: "Can I restrict an examiner's workload?",
 		answer:
-			'Yes. From Manage Team & Approvals, open an analyst\'s profile and set a maximum active case limit. New cases won\'t be auto-assigned to them once that limit is reached.',
+			'Yes. From Manage Team & Approvals, open an examiner\'s profile and set a maximum active case limit. New cases won\'t be auto-assigned to them once that limit is reached.',
 	},
 	{
 		question: 'How do I export a case report?',
 		answer:
-			'Open the case, then tap the export icon in the top right of the case detail screen. Reports export as PDF and include the comparison images, confidence score, and analyst notes.',
+			'Open the case, then tap the export icon in the top right of the case detail screen. Reports export as PDF and include the comparison images, confidence score, and examiner notes.',
 	},
 	{
-		question: 'How is analyst accuracy calculated?',
+		question: 'How is examiner accuracy calculated?',
 		answer:
-			'Accuracy is calculated as the percentage of an analyst\'s case decisions that match the final verified outcome, tracked over their last 90 days of closed cases.',
+			'Accuracy is calculated as the percentage of an examiner\'s case decisions that match the final verified outcome, tracked over their last 90 days of closed cases.',
 	},
 ];
 

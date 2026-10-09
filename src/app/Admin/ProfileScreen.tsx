@@ -135,14 +135,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {role} • {organization}
+              {role === "Analyst" ? "Examiner" : role} • {organization}
             </Text>
           </View>
         </View>
 
         <View style={styles.heroStats}>
           <HeroStat value={String(totalCases)} label="CASES" />
-          <HeroStat value={String(totalAnalysts)} label="ANALYSTS" />
+          <HeroStat value={String(totalAnalysts)} label="EXAMINERS" />
           <HeroStat value={String(suspectCount)} label="SUSPECTED" last />
         </View>
       </View>

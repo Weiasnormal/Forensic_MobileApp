@@ -301,11 +301,11 @@ export default function AdminStatsScreen() {
         <View style={styles.statsGrid}>
           <View style={styles.statsGridRow}>
             <StatCard
-              label="Active Analysts"
+              label="Active Examiners"
               value={String(activeCount)}
               icon={Users} // was "people-outline"
               tint={colors.primary}
-              subtext={`${activeCount} of ${totalAnalysts} analysts`}
+              subtext={`${activeCount} of ${totalAnalysts} examiners`}
             />
             <StatCard
               label="Total Cases"
@@ -341,7 +341,7 @@ export default function AdminStatsScreen() {
           <View style={styles.infoCard}>
             <Info size={22} color={colors.textSecondary} />
             <Text allowFontScaling={false} style={styles.infoCardText}>
-              Statistics will populate once analysts begin submitting cases.
+              Statistics will populate once examiners begin submitting cases.
             </Text>
           </View>
         ) : null}
@@ -397,7 +397,7 @@ export default function AdminStatsScreen() {
         </View>
 
         <Text allowFontScaling={false} style={styles.sectionHeader}>
-          Top Analysts
+          Top Examiners
         </Text>
 
         {topAnalysts.length > 0 ? (

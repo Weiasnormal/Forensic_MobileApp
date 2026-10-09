@@ -482,7 +482,7 @@ export default function CaseResultAdmin() {
 
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Analyst</Text>
+            <Text style={styles.infoLabel}>Examiner</Text>
             <Text style={styles.infoValue}>
               {caseDetail.examiner
                 ? normalizePersonDisplay(caseDetail.examiner)

@@ -129,7 +129,7 @@ export default function UserProfileScreen() {
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {user.role === "User" ? "Analyst" : user.role} • {user.organization}
+              {user.role === "User" ? "Examiner" : user.role} • {user.organization}
             </Text>
           </View>
         </View>

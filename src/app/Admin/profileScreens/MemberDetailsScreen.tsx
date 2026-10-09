@@ -188,7 +188,7 @@ const MemberDetailsScreen: React.FC = () => {
         />
         <View style={styles.centeredState}>
           <Text allowFontScaling={false} style={styles.stateText}>
-            Organization administrators do not have analyst member details.
+            Organization administrators do not have examiner member details.
           </Text>
         </View>
       </SafeAreaView>
@@ -211,7 +211,7 @@ const MemberDetailsScreen: React.FC = () => {
           {memberName}
         </Text>
         <Text allowFontScaling={false} style={styles.role}>
-          {memberDetail.role}
+          {memberDetail.role === "Analyst" ? "Examiner" : memberDetail.role}
         </Text>
 
         <SectionLabel label="Case Management" style={styles.sectionSpacing} />
@@ -220,8 +220,8 @@ const MemberDetailsScreen: React.FC = () => {
           title="View Case History"
           subtitle={
             memberCaseCount > 0
-              ? `${memberCaseCount} case${memberCaseCount === 1 ? "" : "s"} created by this analyst`
-              : "No cases created by this analyst"
+              ? `${memberCaseCount} case${memberCaseCount === 1 ? "" : "s"} created by this examiner`
+              : "No cases created by this examiner"
           }
           onPress={() =>
             router.push({
@@ -250,11 +250,11 @@ const MemberDetailsScreen: React.FC = () => {
         <SectionLabel label="Access Controls" style={styles.sectionSpacing} />
         <DangerRow
           icon={MinusCircle}
-          title={isSuspended ? "Unsuspend Analyst" : "Suspend Analyst"}
+          title={isSuspended ? "Unsuspend Examiner" : "Suspend Examiner"}
           color={isSuspended ? colors.textPrimary : colors.danger}
           subtitle={
             isSuspended
-              ? "Restore the analyst's organization access"
+              ? "Restore the examiner's organization access"
               : "Temporarily disable access"
           }
           onPress={() => {
@@ -273,11 +273,11 @@ const MemberDetailsScreen: React.FC = () => {
 
       <ConfirmActionModal
         visible={confirmationVisible}
-        title={isSuspended ? "Unsuspend analyst?" : "Suspend analyst?"}
+        title={isSuspended ? "Unsuspend examiner?" : "Suspend examiner?"}
         message={
           isSuspended
-            ? "The analyst will regain access to the system if reactivated."
-            : "The analyst will lose access to the system until reactivated."
+            ? "The examiner will regain access to the system if reactivated."
+            : "The examiner will lose access to the system until reactivated."
         }
         confirmLabel={isSuspended ? "Unsuspend" : "Suspend"}
         variant={isSuspended ? "primary" : "danger"}

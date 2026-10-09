@@ -172,7 +172,7 @@ export default function AdminCasesScreen({
       >
         <View style={styles.headerRow}>
           <Text style={styles.pageTitle}>
-            {memberId ? "Analyst Cases" : "All Cases"}
+            {memberId ? "Examiner Cases" : "All Cases"}
           </Text>
           <View style={styles.countBadge}>
             <Text allowFontScaling={false} style={styles.countBadgeText}>
@@ -206,7 +206,7 @@ export default function AdminCasesScreen({
 
         {showSearchFeedback ? (
           <Text allowFontScaling={false} style={styles.searchHint}>
-            Search covers case code, subject, analyst username, document type,
+            Search covers case code, subject, examiner username, document type,
             priority, date, genuine, suspected, or pending.
           </Text>
         ) : null}
@@ -241,7 +241,7 @@ export default function AdminCasesScreen({
         <View style={[styles.emptyArea, { marginTop: headerHeight }]}>
           <EmptyStateCard
             title="No cases yet"
-            subtitle="Cases submitted by analysts will appear here."
+            subtitle="Cases submitted by examiners will appear here."
             icon={require("../../../assets/images/no_cases.png")}
           />
         </View>
