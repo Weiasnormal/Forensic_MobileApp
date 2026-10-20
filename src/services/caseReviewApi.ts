@@ -343,6 +343,7 @@ export async function fetchCaseForReview(
 ): Promise<AdminCaseDetail> {
   const res = await fetch(buildApiUrl(API_ENDPOINTS.cases.get(caseId)), {
     method: "GET",
+    cache: "no-store",
     headers: headers(),
   });
 

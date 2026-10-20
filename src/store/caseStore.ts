@@ -1135,9 +1135,11 @@ export const useCaseStore = create<CaseStore>()(
               buildApiUrl(API_ENDPOINTS.analysis.start(caseId)),
               {
                 method: "GET",
+                cache: "no-store",
                 headers: {
                   "Content-Type": "application/json",
                   Accept: "application/json",
+                  "Cache-Control": "no-cache",
                   "X-Api-Key": API_KEY || "",
                   ...getAuthHeader(),
                 },
@@ -1380,9 +1382,11 @@ export const useCaseStore = create<CaseStore>()(
               buildApiUrl(API_ENDPOINTS.analysis.start(caseId)),
               {
                 method: "GET",
+                cache: "no-store",
                 headers: {
                   "Content-Type": "application/json",
                   Accept: "application/json",
+                  "Cache-Control": "no-cache",
                   "X-Api-Key": API_KEY || "",
                   ...getAuthHeader(),
                 },

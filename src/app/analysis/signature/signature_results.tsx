@@ -595,13 +595,17 @@ export function SignatureResultsScreen() {
 
     setIsExportingPdf(true);
     try {
-      const reportPdfUrl = buildApiUrl(`/cases/${currentCaseId}/results`);
+      const reportPdfUrl = buildApiUrl(
+        `/cases/${currentCaseId}/results?downloadedAt=${Date.now()}`,
+      );
       const localUri =
         FileSystem.documentDirectory +
         `AVERA_Forensic_Report_${currentCaseId}.pdf`;
 
       const { uri } = await FileSystem.downloadAsync(reportPdfUrl, localUri, {
         headers: {
+          Accept: "application/pdf",
+          "Cache-Control": "no-cache",
           "X-Api-Key": API_KEY || "",
           ...getAuthHeader(),
         },
