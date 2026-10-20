@@ -83,6 +83,13 @@ const VIEW_MODE_TO_VARIANT: Record<ViewMode, OverlayVariant> = {
 
 type ViewMode = SignatureAnalysisViewMode;
 
+function getReportCaseIdentifier(
+  caseCode: string | undefined,
+  fallbackCaseId: string,
+): string {
+  return (caseCode ?? fallbackCaseId).replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
+}
+
 const VIEW_MODE_THEME: Record<
   ViewMode,
   { bg: string; edge: string; badge: string }
@@ -595,12 +602,16 @@ export function SignatureResultsScreen() {
 
     setIsExportingPdf(true);
     try {
+      const reportCaseIdentifier = getReportCaseIdentifier(
+        reviewDetail?.caseCode ?? currentCase?.caseCode,
+        currentCaseId,
+      );
       const reportPdfUrl = buildApiUrl(
         `/cases/${currentCaseId}/results?downloadedAt=${Date.now()}`,
       );
       const localUri =
         FileSystem.documentDirectory +
-        `AVERA_Forensic_Report_${currentCaseId}.pdf`;
+        `AVERA_Forensic_Report_${reportCaseIdentifier}.pdf`;
 
       const { uri } = await FileSystem.downloadAsync(reportPdfUrl, localUri, {
         headers: {
@@ -627,7 +638,7 @@ export function SignatureResultsScreen() {
         const savedFileUri =
           await FileSystem.StorageAccessFramework.createFileAsync(
             directoryPermission.directoryUri,
-            `AVERA_Forensic_Report_${currentCaseId}.pdf`,
+            `AVERA_Forensic_Report_${reportCaseIdentifier}.pdf`,
             "application/pdf",
           );
         const pdfBase64 = await FileSystem.readAsStringAsync(uri, {
