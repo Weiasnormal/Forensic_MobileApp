@@ -710,10 +710,10 @@ export function SignatureResultsScreen() {
     <SafeAreaView style={styles.screen}>
       <TopBar
         title={String(
-          params.caseId ??
+          reviewDetail?.caseCode ??
             currentCase?.caseCode ??
-            currentCaseId ??
             activeResult.case_name ??
+            currentCaseId ??
             "Case",
         )}
         step={""}
